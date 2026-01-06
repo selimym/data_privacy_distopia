@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from datafusion.api.routes import health
+from datafusion.api import router as api_router
 from datafusion.config import settings
 from datafusion.database import Base, engine
 
@@ -36,4 +36,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(health.router, prefix=settings.api_prefix, tags=["health"])
+app.include_router(api_router, prefix=settings.api_prefix)
