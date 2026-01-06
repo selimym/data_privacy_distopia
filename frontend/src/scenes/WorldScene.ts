@@ -7,6 +7,7 @@ import {
   MOVEMENT_EASING
 } from '../config';
 import { listNPCs } from '../api/npcs';
+import type { NPCBasic } from '../types/npc';
 
 export class WorldScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Sprite;
@@ -20,6 +21,11 @@ export class WorldScene extends Phaser.Scene {
   private playerGridX: number = 0;
   private playerGridY: number = 0;
   private isMoving: boolean = false;
+
+  // NPC rendering
+  private npcs: NPCBasic[] = [];
+  private npcSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
+  private selectedNpcId: string | null = null;
 
   constructor() {
     super({ key: 'WorldScene' });
@@ -35,20 +41,77 @@ export class WorldScene extends Phaser.Scene {
     this.input.keyboard!.enabled = true;
     this.game.canvas.focus();
 
-    // Test API integration
-    this.testAPIConnection();
+    // Load and render NPCs
+    this.loadNPCs();
 
     console.log('WorldScene ready');
   }
 
-  private async testAPIConnection() {
+  private async loadNPCs() {
     try {
-      const result = await listNPCs(10, 0);
-      console.log('API Test - NPCs loaded:', result);
-      console.log(`Total NPCs: ${result.total}, Loaded: ${result.items.length}`);
+      // Load all NPCs from API (no pagination limit for now)
+      const result = await listNPCs(1000, 0);
+      this.npcs = result.items;
+
+      console.log(`Loaded ${this.npcs.length} NPCs from API`);
+
+      // Create sprites for each NPC
+      this.createNPCSprites();
     } catch (error) {
-      console.error('API Test - Failed to load NPCs:', error);
+      console.error('Failed to load NPCs:', error);
     }
+  }
+
+  private createNPCSprites() {
+    for (const npc of this.npcs) {
+      const x = npc.map_x * TILE_SIZE + TILE_SIZE / 2;
+      const y = npc.map_y * TILE_SIZE + TILE_SIZE / 2;
+
+      const sprite = this.add.sprite(x, y, 'npc');
+
+      // Make sprite interactive
+      sprite.setInteractive({ useHandCursor: true });
+
+      // Handle click event
+      sprite.on('pointerdown', () => {
+        this.handleNpcClick(npc.id);
+      });
+
+      // Store sprite reference
+      this.npcSprites.set(npc.id, sprite);
+    }
+
+    console.log(`Created ${this.npcSprites.size} NPC sprites`);
+  }
+
+  private handleNpcClick(npcId: string) {
+    // Reset previous selection tint
+    if (this.selectedNpcId) {
+      const previousSprite = this.npcSprites.get(this.selectedNpcId);
+      if (previousSprite) {
+        previousSprite.clearTint();
+      }
+    }
+
+    // Set new selection
+    this.selectedNpcId = npcId;
+    const selectedSprite = this.npcSprites.get(npcId);
+
+    if (selectedSprite) {
+      // Apply yellow tint to selected sprite
+      selectedSprite.setTint(0xffff00);
+    }
+
+    // Find NPC data for logging
+    const npc = this.npcs.find(n => n.id === npcId);
+    if (npc) {
+      console.log(`Selected NPC: ${npc.first_name} ${npc.last_name} (${npcId})`);
+    } else {
+      console.log(`Selected NPC: ${npcId}`);
+    }
+
+    // Emit event for potential future use
+    this.events.emit('npc-clicked', npcId);
   }
 
   update() {
