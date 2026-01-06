@@ -200,70 +200,52 @@ CREATE INDEX ix_npcs_scenario_key ON npcs(scenario_key);
 
 **Priority:** High
 **Estimated Effort:** Medium
+**Status:** ⏳ Pending
 
 ---
 
-#### 2. Schema Type Consistency
+#### 2. Schema Type Consistency ✅ RESOLVED
 **Issue:** Datetime vs Date inconsistency between models and schemas
 
-**Example:**
-```python
-# Model:
-created_at: Mapped[datetime] = ...  # DateTime with timezone
+**Resolution:**
+- ✅ Fixed all Pydantic schemas to use `datetime` for created_at/updated_at
+- ✅ Updated health.py and npc.py schemas
+- ✅ Proper type matching with SQLAlchemy models
 
-# Schema:
-created_at: date  # ← Should be datetime!
-```
-
-**Impact:** Type coercion happening implicitly; could cause timezone issues
-
-**Resolution Needed:**
-- Audit all Pydantic schemas
-- Change `date` to `datetime` where appropriate
-- Ensure timezone handling is consistent
-
-**Priority:** Medium
-**Estimated Effort:** Small
+**Commit:** `[to be added]` - Fix datetime/date type inconsistencies
+**Status:** ✅ Complete
 
 ---
 
-#### 3. Configuration Management
+#### 3. Configuration Management ✅ RESOLVED
 **Issue:** Magic numbers hardcoded in code
 
-**Examples:**
-```python
-limit: int = Query(default=100, ge=1, le=1000)  # Why 1000?
-duration: 100  # Why 100ms?
-```
+**Resolution:**
+- ✅ Backend: Added pagination config to settings
+  - `default_page_size = 100`
+  - `min_page_size = 1`
+  - `max_page_size = 1000`
+- ✅ Frontend: Added movement config constants
+  - `MOVEMENT_DURATION_MS = 100`
+  - `MOVEMENT_EASING = 'Linear'`
+- ✅ Updated all code to use config values
 
-**Resolution Needed:**
-- Move to `backend/src/datafusion/config.py`
-- Create game config constants
-- Document reasoning for values
-
-**Priority:** Medium
-**Estimated Effort:** Small
+**Commit:** `[to be added]` - Eliminate magic numbers
+**Status:** ✅ Complete
 
 ---
 
-#### 4. Error Response Schema
+#### 4. Error Response Schema ✅ RESOLVED
 **Issue:** Inconsistent error responses; no Pydantic schema
 
-**Current:**
-- Some endpoints return 404
-- Some return 501
-- Error format not standardized
+**Resolution:**
+- ✅ Created `ErrorResponse` schema in schemas/errors.py
+- ✅ Added error response documentation to API endpoints
+- ✅ Standardized 404 and 501 error formats
+- ✅ Added OpenAPI documentation for error responses
 
-**Resolution Needed:**
-```python
-class ErrorResponse(BaseModel):
-    error: str
-    detail: str
-    status_code: int
-```
-
-**Priority:** Medium
-**Estimated Effort:** Small
+**Commit:** `[to be added]` - Add standardized error schema
+**Status:** ✅ Complete
 
 ---
 
@@ -402,7 +384,18 @@ class ErrorResponse(BaseModel):
 
 ## Update History
 
-- **2026-01-06:** Initial document created after Phase 0.10 completion
+- **2026-01-06 (Evening):** Technical debt cleanup
+  - ✅ Resolved: Schema type consistency (datetime vs date)
+  - ✅ Resolved: Configuration management (magic numbers)
+  - ✅ Resolved: Error response schema standardization
+  - All "Important (Before Production)" items except API testing now complete
+
+- **2026-01-06 (Afternoon):** Database performance optimizations
+  - Added SQLAlchemy relationships
+  - Implemented database indexes
+  - Fixed N+1 query problem
+
+- **2026-01-06 (Morning):** Initial document created after Phase 0.10 completion
   - Documented all issues from Phases 0.2-0.10
   - Added future improvements from architecture review
   - Captured lessons learned

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from datafusion.config import settings
 from datafusion.database import get_db
 from datafusion.models.health import (
     HealthCondition,
@@ -15,6 +16,7 @@ from datafusion.models.health import (
 )
 from datafusion.models.npc import NPC
 from datafusion.schemas.domains import DomainType, NPCWithDomains
+from datafusion.schemas.errors import ErrorResponse
 from datafusion.schemas.health import (
     HealthConditionRead,
     HealthMedicationRead,
@@ -29,7 +31,11 @@ router = APIRouter(prefix="/npcs", tags=["npcs"])
 
 @router.get("/", response_model=NPCListResponse)
 async def list_npcs(
-    limit: int = Query(default=100, ge=1, le=1000),
+    limit: int = Query(
+        default=settings.default_page_size,
+        ge=settings.min_page_size,
+        le=settings.max_page_size,
+    ),
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
 ):
@@ -50,7 +56,11 @@ async def list_npcs(
     )
 
 
-@router.get("/{npc_id}", response_model=NPCWithDomains)
+@router.get(
+    "/{npc_id}",
+    response_model=NPCWithDomains,
+    responses={404: {"model": ErrorResponse, "description": "NPC not found"}},
+)
 async def get_npc(
     npc_id: UUID,
     domains: set[DomainType] = Query(default_factory=set),
@@ -77,7 +87,13 @@ async def get_npc(
     )
 
 
-@router.get("/{npc_id}/domain/{domain}")
+@router.get(
+    "/{npc_id}/domain/{domain}",
+    responses={
+        404: {"model": ErrorResponse, "description": "NPC or domain data not found"},
+        501: {"model": ErrorResponse, "description": "Domain not yet implemented"},
+    },
+)
 async def get_npc_domain_data(
     npc_id: UUID,
     domain: DomainType,

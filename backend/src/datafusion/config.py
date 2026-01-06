@@ -20,5 +20,10 @@ class Settings(BaseSettings):
     app_name: str = "DataFusion World API"
     app_version: str = "0.1.0"
 
+    # API Pagination
+    default_page_size: int = 100
+    min_page_size: int = 1
+    max_page_size: int = 1000
+
 
 settings = Settings()

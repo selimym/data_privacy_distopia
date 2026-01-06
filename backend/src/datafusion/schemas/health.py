@@ -1,6 +1,6 @@
 """Pydantic schemas for health record API endpoints."""
 
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -18,8 +18,8 @@ class HealthConditionRead(BaseModel):
     severity: Severity
     is_chronic: bool
     is_sensitive: bool
-    created_at: date
-    updated_at: date
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -33,8 +33,8 @@ class HealthMedicationRead(BaseModel):
     dosage: str
     prescribed_date: date
     is_sensitive: bool
-    created_at: date
-    updated_at: date
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -49,8 +49,8 @@ class HealthVisitRead(BaseModel):
     reason: str
     notes: str | None
     is_sensitive: bool
-    created_at: date
-    updated_at: date
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -65,8 +65,8 @@ class HealthRecordRead(BaseModel):
     conditions: list[HealthConditionRead]
     medications: list[HealthMedicationRead]
     visits: list[HealthVisitRead]
-    created_at: date
-    updated_at: date
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -81,8 +81,8 @@ class HealthRecordFiltered(BaseModel):
     conditions: list[HealthConditionRead]
     medications: list[HealthMedicationRead]
     visits: list[HealthVisitRead]
-    created_at: date
-    updated_at: date
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -1,6 +1,6 @@
 """Pydantic schemas for NPC API endpoints."""
 
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -41,8 +41,8 @@ class NPCRead(NPCBase):
     """Schema for NPC API responses with full details."""
 
     id: UUID
-    created_at: date
-    updated_at: date
+    created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

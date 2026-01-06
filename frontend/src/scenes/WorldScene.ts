@@ -1,5 +1,11 @@
 import Phaser from 'phaser';
-import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT } from '../config';
+import {
+  TILE_SIZE,
+  MAP_WIDTH,
+  MAP_HEIGHT,
+  MOVEMENT_DURATION_MS,
+  MOVEMENT_EASING
+} from '../config';
 import { listNPCs } from '../api/npcs';
 
 export class WorldScene extends Phaser.Scene {
@@ -131,8 +137,8 @@ export class WorldScene extends Phaser.Scene {
       targets: this.player,
       x: newX,
       y: newY,
-      duration: 100,
-      ease: 'Linear',
+      duration: MOVEMENT_DURATION_MS,
+      ease: MOVEMENT_EASING,
       onComplete: () => {
         this.isMoving = false;
       },
