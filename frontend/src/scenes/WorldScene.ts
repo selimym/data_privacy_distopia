@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { TILE_SIZE, MAP_WIDTH, MAP_HEIGHT } from '../config';
+import { listNPCs } from '../api/npcs';
 
 export class WorldScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Sprite;
@@ -28,7 +29,20 @@ export class WorldScene extends Phaser.Scene {
     this.input.keyboard!.enabled = true;
     this.game.canvas.focus();
 
+    // Test API integration
+    this.testAPIConnection();
+
     console.log('WorldScene ready');
+  }
+
+  private async testAPIConnection() {
+    try {
+      const result = await listNPCs(10, 0);
+      console.log('API Test - NPCs loaded:', result);
+      console.log(`Total NPCs: ${result.total}, Loaded: ${result.items.length}`);
+    } catch (error) {
+      console.error('API Test - Failed to load NPCs:', error);
+    }
   }
 
   update() {
