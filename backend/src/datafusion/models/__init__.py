@@ -1,5 +1,13 @@
 """Models package - exports all database models."""
 
+from datafusion.models.abuse import (
+    AbuseAction,
+    AbuseExecution,
+    AbuseRole,
+    ConsequenceSeverity,
+    TargetType,
+)
+from datafusion.models.consequence import ConsequenceTemplate, TimeSkip
 from datafusion.models.health import (
     HealthCondition,
     HealthMedication,
@@ -20,4 +28,11 @@ __all__ = [
     "Severity",
     "InferenceRule",
     "ContentRating",
+    "AbuseRole",
+    "AbuseAction",
+    "AbuseExecution",
+    "TargetType",
+    "ConsequenceSeverity",
+    "ConsequenceTemplate",
+    "TimeSkip",
 ]
