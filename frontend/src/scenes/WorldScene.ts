@@ -8,6 +8,7 @@ import {
 } from '../config';
 import { listNPCs } from '../api/npcs';
 import type { NPCBasic } from '../types/npc';
+import { DataPanel } from '../ui/DataPanel';
 
 export class WorldScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Sprite;
@@ -27,6 +28,9 @@ export class WorldScene extends Phaser.Scene {
   private npcSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
   private selectedNpcId: string | null = null;
 
+  // Data panel UI
+  private dataPanel!: DataPanel;
+
   constructor() {
     super({ key: 'WorldScene' });
   }
@@ -40,6 +44,14 @@ export class WorldScene extends Phaser.Scene {
     // Ensure canvas has keyboard focus on load
     this.input.keyboard!.enabled = true;
     this.game.canvas.focus();
+
+    // Initialize data panel UI
+    this.dataPanel = new DataPanel(this);
+
+    // Listen for NPC click events
+    this.events.on('npc-clicked', (npcId: string) => {
+      this.dataPanel.show(npcId);
+    });
 
     // Load and render NPCs
     this.loadNPCs();
@@ -206,5 +218,15 @@ export class WorldScene extends Phaser.Scene {
         this.isMoving = false;
       },
     });
+  }
+
+  shutdown() {
+    // Clean up data panel
+    if (this.dataPanel) {
+      this.dataPanel.destroy();
+    }
+
+    // Remove event listeners
+    this.events.off('npc-clicked');
   }
 }

@@ -3,6 +3,7 @@ import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { WorldScene } from './scenes/WorldScene';
 import { GAME_WIDTH, GAME_HEIGHT } from './config';
+import './styles/panel.css';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

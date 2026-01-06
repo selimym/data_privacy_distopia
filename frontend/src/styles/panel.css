@@ -1,0 +1,397 @@
+/* Data Panel - Dark Cyberpunk Theme */
+
+.data-panel {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  width: 420px;
+  max-height: 90vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #0f3460;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6),
+              0 0 20px rgba(15, 52, 96, 0.4);
+  color: #e0e0e0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 24px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+/* Scrollbar Styling */
+.data-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.data-panel::-webkit-scrollbar-track {
+  background: rgba(15, 52, 96, 0.2);
+  border-radius: 4px;
+}
+
+.data-panel::-webkit-scrollbar-thumb {
+  background: #0f3460;
+  border-radius: 4px;
+}
+
+.data-panel::-webkit-scrollbar-thumb:hover {
+  background: #1a5490;
+}
+
+/* Close Button */
+.close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  background: rgba(239, 71, 111, 0.1);
+  border: 1px solid #ef476f;
+  border-radius: 50%;
+  color: #ef476f;
+  font-size: 24px;
+  line-height: 28px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.close-btn:hover {
+  background: rgba(239, 71, 111, 0.2);
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(239, 71, 111, 0.4);
+}
+
+/* NPC Name Header */
+.npc-name {
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #0f3460;
+  font-size: 24px;
+  font-weight: 600;
+  color: #06ffa5;
+  text-shadow: 0 0 10px rgba(6, 255, 165, 0.3);
+}
+
+/* Domain Toggles Section */
+.domain-toggles {
+  background: rgba(15, 52, 96, 0.3);
+  border: 1px solid #0f3460;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.domain-toggles h3 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd166;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.domain-toggles label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.domain-toggles label:last-child {
+  margin-bottom: 0;
+}
+
+.domain-toggles label:hover {
+  color: #06ffa5;
+}
+
+.domain-toggles input[type="checkbox"] {
+  margin-right: 10px;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #06ffa5;
+}
+
+.domain-toggles input[type="checkbox"]:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.domain-toggles label:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Domain Content */
+.domain-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Basic Info & Health Domain Sections */
+.basic-info,
+.health-domain {
+  background: rgba(15, 52, 96, 0.2);
+  border: 1px solid #0f3460;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.basic-info h3,
+.health-domain h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #06ffa5;
+  border-bottom: 1px solid rgba(6, 255, 165, 0.2);
+  padding-bottom: 8px;
+}
+
+.health-domain h4 {
+  margin: 16px 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd166;
+}
+
+/* Info Grid Layout */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px;
+  background: rgba(26, 26, 46, 0.4);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.info-item:hover {
+  background: rgba(26, 26, 46, 0.6);
+}
+
+.info-item .label {
+  font-size: 13px;
+  color: #a0a0a0;
+  font-weight: 500;
+  margin-right: 12px;
+  min-width: 120px;
+}
+
+.info-item .value {
+  font-size: 13px;
+  color: #e0e0e0;
+  text-align: right;
+  flex: 1;
+}
+
+/* Role Styling */
+.value[class*="role-"] {
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.value.role-citizen {
+  background: rgba(6, 255, 165, 0.1);
+  color: #06ffa5;
+}
+
+.value.role-hacker {
+  background: rgba(239, 71, 111, 0.1);
+  color: #ef476f;
+}
+
+.value.role-data_broker {
+  background: rgba(255, 209, 102, 0.1);
+  color: #ffd166;
+}
+
+/* Sensitive Data Highlighting */
+.sensitive {
+  position: relative;
+  background: rgba(239, 71, 111, 0.1);
+  border-left: 3px solid #ef476f;
+  padding-left: 8px;
+}
+
+.info-item .value.sensitive {
+  color: #ef476f;
+  font-weight: 600;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge.sensitive {
+  background: rgba(239, 71, 111, 0.2);
+  color: #ef476f;
+  border: 1px solid #ef476f;
+}
+
+/* Health Sections */
+.health-section {
+  margin-top: 12px;
+}
+
+.health-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.health-list li {
+  background: rgba(26, 26, 46, 0.4);
+  border-left: 3px solid #0f3460;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.health-list li:hover {
+  background: rgba(26, 26, 46, 0.6);
+  border-left-color: #06ffa5;
+}
+
+.health-list li.sensitive {
+  border-left-color: #ef476f;
+  background: rgba(239, 71, 111, 0.05);
+}
+
+.health-list li strong {
+  color: #06ffa5;
+  font-weight: 600;
+}
+
+/* Severity Indicators */
+.severity {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  text-transform: uppercase;
+}
+
+.severity.low {
+  background: rgba(6, 255, 165, 0.2);
+  color: #06ffa5;
+}
+
+.severity.moderate {
+  background: rgba(255, 209, 102, 0.2);
+  color: #ffd166;
+}
+
+.severity.high,
+.severity.severe {
+  background: rgba(239, 71, 111, 0.2);
+  color: #ef476f;
+}
+
+/* Visit Notes */
+.notes {
+  color: #a0a0a0;
+  font-style: italic;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* State Messages */
+.loading,
+.error,
+.hint {
+  text-align: center;
+  padding: 32px 16px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.loading {
+  color: #06ffa5;
+  background: rgba(6, 255, 165, 0.05);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.error {
+  color: #ef476f;
+  background: rgba(239, 71, 111, 0.1);
+  border: 1px solid #ef476f;
+}
+
+.hint {
+  color: #ffd166;
+  background: rgba(255, 209, 102, 0.05);
+  line-height: 1.6;
+}
+
+.hint p {
+  margin: 8px 0;
+}
+
+.hint small {
+  color: #a0a0a0;
+  font-size: 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .data-panel {
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+@media (max-height: 600px) {
+  .data-panel {
+    max-height: 85vh;
+    padding: 16px;
+  }
+}
