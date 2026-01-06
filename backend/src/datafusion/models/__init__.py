@@ -7,6 +7,7 @@ from datafusion.models.health import (
     HealthVisit,
     Severity,
 )
+from datafusion.models.inference import ContentRating, InferenceRule
 from datafusion.models.npc import NPC, Role
 
 __all__ = [
@@ -17,4 +18,6 @@ __all__ = [
     "HealthMedication",
     "HealthVisit",
     "Severity",
+    "InferenceRule",
+    "ContentRating",
 ]
