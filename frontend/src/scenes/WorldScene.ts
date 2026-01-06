@@ -33,13 +33,13 @@ export class WorldScene extends Phaser.Scene {
     const { left, right, up, down } = this.cursors;
     const { W, A, S, D } = this.wasd;
 
-    if (left.isDown || A.isDown) {
+    if (Phaser.Input.Keyboard.JustDown(left) || Phaser.Input.Keyboard.JustDown(A)) {
       this.movePlayer(-1, 0);
-    } else if (right.isDown || D.isDown) {
+    } else if (Phaser.Input.Keyboard.JustDown(right) || Phaser.Input.Keyboard.JustDown(D)) {
       this.movePlayer(1, 0);
-    } else if (up.isDown || W.isDown) {
+    } else if (Phaser.Input.Keyboard.JustDown(up) || Phaser.Input.Keyboard.JustDown(W)) {
       this.movePlayer(0, -1);
-    } else if (down.isDown || S.isDown) {
+    } else if (Phaser.Input.Keyboard.JustDown(down) || Phaser.Input.Keyboard.JustDown(S)) {
       this.movePlayer(0, 1);
     }
   }
@@ -112,8 +112,8 @@ export class WorldScene extends Phaser.Scene {
       targets: this.player,
       x: newX,
       y: newY,
-      duration: 150,
-      ease: 'Power2',
+      duration: 100,
+      ease: 'Linear',
       onComplete: () => {
         this.isMoving = false;
       },
