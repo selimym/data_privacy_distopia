@@ -106,7 +106,7 @@ async def get_npc_domain_data(
 async def _get_health_data(
     npc_id: UUID, db: AsyncSession
 ) -> HealthRecordFiltered | None:
-    """Fetch health record with all related data for an NPC."""
+    """Fetch health record with all related data for an NPC using eager loading."""
     health_query = select(HealthRecord).where(HealthRecord.npc_id == npc_id)
 
     result = await db.execute(health_query)
@@ -115,32 +115,16 @@ async def _get_health_data(
     if not health_record:
         return None
 
-    conditions_query = select(HealthCondition).where(
-        HealthCondition.health_record_id == health_record.id
-    )
-    conditions_result = await db.execute(conditions_query)
-    conditions = conditions_result.scalars().all()
-
-    medications_query = select(HealthMedication).where(
-        HealthMedication.health_record_id == health_record.id
-    )
-    medications_result = await db.execute(medications_query)
-    medications = medications_result.scalars().all()
-
-    visits_query = select(HealthVisit).where(
-        HealthVisit.health_record_id == health_record.id
-    )
-    visits_result = await db.execute(visits_query)
-    visits = visits_result.scalars().all()
-
+    # Relationships are eagerly loaded via lazy="selectin" in model
+    # This eliminates N+1 queries - only 1 query for conditions, 1 for medications, 1 for visits
     health_read = HealthRecordRead(
         id=health_record.id,
         npc_id=health_record.npc_id,
         insurance_provider=health_record.insurance_provider,
         primary_care_physician=health_record.primary_care_physician,
-        conditions=[HealthConditionRead.model_validate(c) for c in conditions],
-        medications=[HealthMedicationRead.model_validate(m) for m in medications],
-        visits=[HealthVisitRead.model_validate(v) for v in visits],
+        conditions=[HealthConditionRead.model_validate(c) for c in health_record.conditions],
+        medications=[HealthMedicationRead.model_validate(m) for m in health_record.medications],
+        visits=[HealthVisitRead.model_validate(v) for v in health_record.visits],
         created_at=health_record.created_at,
         updated_at=health_record.updated_at,
     )

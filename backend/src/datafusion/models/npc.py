@@ -3,7 +3,7 @@
 import enum
 from datetime import date
 
-from sqlalchemy import Boolean, Date, Enum, Integer, String
+from sqlalchemy import Boolean, Date, Enum, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from datafusion.database import Base, TimestampMixin, UUIDMixin
@@ -23,6 +23,9 @@ class NPC(Base, UUIDMixin, TimestampMixin):
     """NPC with identity and demographic information."""
 
     __tablename__ = "npcs"
+    __table_args__ = (
+        Index("idx_npc_location", "map_x", "map_y"),
+    )
 
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -41,4 +44,4 @@ class NPC(Base, UUIDMixin, TimestampMixin):
     map_y: Mapped[int] = mapped_column(Integer, nullable=False)
 
     is_scenario_npc: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    scenario_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    scenario_key: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
