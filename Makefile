@@ -1,4 +1,4 @@
-.PHONY: dev dev-backend dev-frontend test generate-data install install-backend install-frontend clean
+.PHONY: dev dev-backend dev-frontend test seed-db install install-backend install-frontend clean
 
 dev:
 	@echo "Starting backend and frontend in parallel..."
@@ -27,9 +27,9 @@ test:
 	@echo "Running backend tests..."
 	cd backend && uv run pytest
 
-generate-data:
-	@echo "Generating test data..."
-	cd backend && uv run python -m app.scripts.generate_data
+seed-db:
+	@echo "Seeding database..."
+	cd backend && uv run python -m scripts.seed_database --population 50 --scenario rogue_employee --seed 42
 
 clean:
 	@echo "Cleaning up..."
