@@ -1,6 +1,12 @@
 import Phaser from 'phaser';
 import { getNPC } from '../api/npcs';
-import type { DomainType, NPCWithDomains } from '../types/npc';
+import { getInferences } from '../api/inferences';
+import type {
+  DomainType,
+  NPCWithDomains,
+  InferencesResponse,
+  InferenceResult,
+} from '../types/npc';
 
 export class DataPanel {
   private container: HTMLDivElement;
@@ -130,8 +136,12 @@ export class DataPanel {
     contentDiv.innerHTML = '<p class="loading">Loading data...</p>';
 
     try {
-      const data = await getNPC(npcId, Array.from(this.enabledDomains));
-      this.renderNPCData(data);
+      const domains = Array.from(this.enabledDomains);
+      const [npcData, inferencesData] = await Promise.all([
+        getNPC(npcId, domains),
+        getInferences(npcId, domains),
+      ]);
+      this.renderNPCData(npcData, inferencesData);
     } catch (error) {
       console.error('Failed to fetch NPC data:', error);
       contentDiv.innerHTML = `
@@ -140,7 +150,7 @@ export class DataPanel {
     }
   }
 
-  private renderNPCData(data: NPCWithDomains) {
+  private renderNPCData(data: NPCWithDomains, inferencesData: InferencesResponse) {
     const { npc, domains } = data;
 
     // Update NPC name
@@ -246,6 +256,16 @@ export class DataPanel {
       `;
     }
 
+    // Inferences section (only if domains are enabled)
+    if (this.enabledDomains.size > 0 && inferencesData.inferences.length > 0) {
+      html += this.renderInferences(inferencesData.inferences);
+    }
+
+    // Unlockable domains preview
+    if (inferencesData.unlockable_inferences.length > 0) {
+      html += this.renderUnlockablePreview(inferencesData.unlockable_inferences);
+    }
+
     // No domains enabled message
     if (this.enabledDomains.size === 0) {
       html += `
@@ -257,6 +277,123 @@ export class DataPanel {
     }
 
     contentDiv.innerHTML = html;
+
+    // Setup expand/collapse for inference cards
+    this.setupInferenceInteractions();
+  }
+
+  private renderInferences(inferences: InferenceResult[]): string {
+    return `
+      <div class="inferences-section">
+        <h3>🔍 Data Fusion Insights</h3>
+        <p class="section-desc">What we learned by combining data sources:</p>
+
+        ${inferences.map(inf => this.renderInferenceCard(inf)).join('')}
+      </div>
+    `;
+  }
+
+  private renderInferenceCard(inference: InferenceResult): string {
+    const scarinessClass = `scariness-${inference.scariness_level}`;
+    const skulls = '💀'.repeat(inference.scariness_level);
+
+    return `
+      <div class="inference-card ${scarinessClass}" data-rule-key="${inference.rule_key}">
+        <div class="inference-header">
+          <div class="inference-title">
+            <span class="scariness-indicator" title="Scariness level ${inference.scariness_level}/5">${skulls}</span>
+            <h4>${inference.rule_name}</h4>
+          </div>
+          <div class="inference-confidence">
+            <span class="confidence-badge">${Math.round(inference.confidence * 100)}% confidence</span>
+          </div>
+        </div>
+
+        <div class="inference-body">
+          <p class="inference-text">${inference.inference_text}</p>
+
+          <div class="inference-expandable">
+            <button class="expand-btn" data-target="evidence-${inference.rule_key}">
+              <span class="expand-icon">▶</span> Evidence (${inference.supporting_evidence.length})
+            </button>
+            <div class="expandable-content" id="evidence-${inference.rule_key}" style="display: none;">
+              <ul class="evidence-list">
+                ${inference.supporting_evidence.map(ev => `<li>${ev}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+
+          <div class="inference-expandable">
+            <button class="expand-btn" data-target="implications-${inference.rule_key}">
+              <span class="expand-icon">▶</span> Implications (${inference.implications.length})
+            </button>
+            <div class="expandable-content" id="implications-${inference.rule_key}" style="display: none;">
+              <ul class="implications-list">
+                ${inference.implications.map(imp => `<li>⚠️ ${imp}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderUnlockablePreview(unlockable: any[]): string {
+    if (unlockable.length === 0) return '';
+
+    return `
+      <div class="unlockable-section">
+        <h3>🔓 What You'd Learn</h3>
+        <p class="section-desc">Enable more domains to unlock additional insights:</p>
+
+        <div class="unlockable-list">
+          ${unlockable.map(item => `
+            <div class="unlockable-item">
+              <div class="unlockable-header">
+                <span class="domain-name">${this.formatDomainName(item.domain)}</span>
+                <span class="unlock-count">${item.rule_keys.length} new insight${item.rule_keys.length > 1 ? 's' : ''}</span>
+              </div>
+              <p class="unlockable-hint">Check the box above to reveal</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  private formatDomainName(domain: DomainType): string {
+    const names: Record<DomainType, string> = {
+      health: '🏥 Health Records',
+      finance: '💰 Financial Data',
+      judicial: '⚖️ Judicial Records',
+      location: '📍 Location Data',
+      social: '👥 Social Media',
+    };
+    return names[domain] || domain;
+  }
+
+  private setupInferenceInteractions() {
+    // Setup expand/collapse buttons
+    const expandButtons = this.container.querySelectorAll('.expand-btn');
+    expandButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        const target = (e.currentTarget as HTMLElement).dataset.target;
+        if (!target) return;
+
+        const content = this.container.querySelector(`#${target}`) as HTMLElement;
+        const icon = button.querySelector('.expand-icon');
+
+        if (content) {
+          if (content.style.display === 'none') {
+            content.style.display = 'block';
+            if (icon) icon.textContent = '▼';
+          } else {
+            content.style.display = 'none';
+            if (icon) icon.textContent = '▶';
+          }
+        }
+      });
+    });
   }
 
   private formatRole(role: string): string {

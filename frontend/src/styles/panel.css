@@ -397,6 +397,254 @@
   font-size: 12px;
 }
 
+/* Inferences Section */
+.inferences-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #0f3460;
+}
+
+.inferences-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #06ffa5;
+}
+
+.section-desc {
+  margin: 0 0 16px 0;
+  font-size: 12px;
+  color: #a0a0a0;
+  font-style: italic;
+}
+
+/* Inference Cards */
+.inference-card {
+  background: rgba(15, 52, 96, 0.3);
+  border: 1px solid #0f3460;
+  border-left: 4px solid;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.inference-card:hover {
+  background: rgba(15, 52, 96, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Scariness levels */
+.scariness-1 {
+  border-left-color: #ffd166;
+}
+
+.scariness-2 {
+  border-left-color: #ffa03d;
+}
+
+.scariness-3 {
+  border-left-color: #ff8c1a;
+}
+
+.scariness-4 {
+  border-left-color: #ff6b35;
+}
+
+.scariness-5 {
+  border-left-color: #ef476f;
+}
+
+.inference-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.inference-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.inference-title h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.scariness-indicator {
+  font-size: 14px;
+  filter: grayscale(0.2);
+}
+
+.confidence-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(6, 255, 165, 0.2);
+  color: #06ffa5;
+  border: 1px solid #06ffa5;
+  white-space: nowrap;
+}
+
+.inference-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inference-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #e0e0e0;
+  padding: 12px;
+  background: rgba(26, 26, 46, 0.4);
+  border-radius: 6px;
+  border-left: 3px solid #06ffa5;
+}
+
+/* Expandable sections */
+.inference-expandable {
+  margin-top: 8px;
+}
+
+.expand-btn {
+  width: 100%;
+  background: rgba(26, 26, 46, 0.4);
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #e0e0e0;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-btn:hover {
+  background: rgba(26, 26, 46, 0.6);
+  border-color: #06ffa5;
+}
+
+.expand-icon {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.expandable-content {
+  margin-top: 8px;
+  padding: 12px;
+  background: rgba(26, 26, 46, 0.6);
+  border-radius: 6px;
+  border: 1px solid rgba(15, 52, 96, 0.5);
+}
+
+.evidence-list,
+.implications-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.evidence-list li,
+.implications-list li {
+  padding: 8px;
+  margin-bottom: 6px;
+  background: rgba(15, 52, 96, 0.3);
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #d0d0d0;
+}
+
+.evidence-list li:last-child,
+.implications-list li:last-child {
+  margin-bottom: 0;
+}
+
+.implications-list li {
+  border-left: 3px solid #ef476f;
+  padding-left: 12px;
+}
+
+/* Unlockable Section */
+.unlockable-section {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(255, 209, 102, 0.1);
+  border: 1px solid rgba(255, 209, 102, 0.3);
+  border-radius: 8px;
+}
+
+.unlockable-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffd166;
+}
+
+.unlockable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.unlockable-item {
+  padding: 12px;
+  background: rgba(26, 26, 46, 0.4);
+  border: 1px solid rgba(255, 209, 102, 0.3);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.unlockable-item:hover {
+  background: rgba(26, 26, 46, 0.6);
+  border-color: #ffd166;
+  transform: translateX(4px);
+}
+
+.unlockable-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.domain-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.unlock-count {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(6, 255, 165, 0.2);
+  color: #06ffa5;
+}
+
+.unlockable-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #a0a0a0;
+  font-style: italic;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .data-panel {

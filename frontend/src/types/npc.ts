@@ -113,3 +113,36 @@ export interface NPCWithDomains {
   npc: NPCRead;
   domains: Partial<Record<DomainType, DomainData>>;
 }
+
+// Inference types
+export enum ContentRating {
+  SAFE = "SAFE",
+  CAUTIONARY = "CAUTIONARY",
+  SERIOUS = "SERIOUS",
+  DISTURBING = "DISTURBING",
+  DYSTOPIAN = "DYSTOPIAN",
+}
+
+export interface InferenceResult {
+  rule_key: string;
+  rule_name: string;
+  confidence: number;
+  inference_text: string;
+  supporting_evidence: string[];
+  implications: string[];
+  domains_used: DomainType[];
+  scariness_level: number;
+  content_rating: ContentRating;
+}
+
+export interface UnlockableInference {
+  domain: DomainType;
+  rule_keys: string[];
+}
+
+export interface InferencesResponse {
+  npc_id: string;
+  enabled_domains: DomainType[];
+  inferences: InferenceResult[];
+  unlockable_inferences: UnlockableInference[];
+}
