@@ -24,6 +24,10 @@ export class WorldScene extends Phaser.Scene {
     this.setupInput();
     this.setupCamera();
 
+    // Ensure canvas has keyboard focus on load
+    this.input.keyboard!.enabled = true;
+    this.game.canvas.focus();
+
     console.log('WorldScene ready');
   }
 
@@ -33,13 +37,14 @@ export class WorldScene extends Phaser.Scene {
     const { left, right, up, down } = this.cursors;
     const { W, A, S, D } = this.wasd;
 
-    if (Phaser.Input.Keyboard.JustDown(left) || Phaser.Input.Keyboard.JustDown(A)) {
+    // Hold-to-move: Check if keys are currently pressed
+    if (left.isDown || A.isDown) {
       this.movePlayer(-1, 0);
-    } else if (Phaser.Input.Keyboard.JustDown(right) || Phaser.Input.Keyboard.JustDown(D)) {
+    } else if (right.isDown || D.isDown) {
       this.movePlayer(1, 0);
-    } else if (Phaser.Input.Keyboard.JustDown(up) || Phaser.Input.Keyboard.JustDown(W)) {
+    } else if (up.isDown || W.isDown) {
       this.movePlayer(0, -1);
-    } else if (Phaser.Input.Keyboard.JustDown(down) || Phaser.Input.Keyboard.JustDown(S)) {
+    } else if (down.isDown || S.isDown) {
       this.movePlayer(0, 1);
     }
   }
