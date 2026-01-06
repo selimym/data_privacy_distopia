@@ -83,13 +83,16 @@ def generate_health_record(npc_id: UUID, seed: int | None = None) -> dict:
         Faker.seed(seed)
         random.seed(seed)
 
+    # Fictional insurance providers (not real companies)
     insurance_providers = [
-        "Blue Cross Blue Shield",
-        "Aetna",
-        "UnitedHealthcare",
-        "Cigna",
-        "Kaiser Permanente",
-        "Humana",
+        "SafeGuard Health Alliance",
+        "Wellness First Insurance Co.",
+        "CityCare Medical Group",
+        "Premier Health Partners",
+        "TotalCare Insurance Network",
+        "Liberty Medical Services",
+        "Horizon Health Solutions",
+        "Summit Care Insurance",
     ]
 
     record = {

@@ -20,6 +20,11 @@ export class DataPanel {
 
     panel.innerHTML = `
       <button class="close-btn" aria-label="Close panel">×</button>
+
+      <div class="disclaimer">
+        ⚠️ <strong>FICTIONAL DATA:</strong> All characters, organizations, and data in this game are entirely fictitious. Any resemblance to real persons or entities is purely coincidental.
+      </div>
+
       <h2 class="npc-name">Select an NPC</h2>
 
       <div class="domain-toggles">

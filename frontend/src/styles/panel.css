@@ -50,6 +50,24 @@
   background: #1a5490;
 }
 
+/* Disclaimer Banner */
+.disclaimer {
+  background: rgba(255, 209, 102, 0.15);
+  border: 1px solid rgba(255, 209, 102, 0.4);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #ffd166;
+  text-align: center;
+}
+
+.disclaimer strong {
+  font-weight: 700;
+  color: #ffd166;
+}
+
 /* Close Button */
 .close-btn {
   position: absolute;
