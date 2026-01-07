@@ -42,6 +42,7 @@ from datafusion.models.location import (
     LocationRecord,
     LocationType,
 )
+from datafusion.models.messages import Message, MessageRecord
 from datafusion.models.npc import NPC, Role
 from datafusion.models.social import (
     InferenceCategory,
@@ -93,6 +94,9 @@ __all__ = [
     "InferredLocation",
     "LocationType",
     "DayOfWeek",
+    # Message models
+    "MessageRecord",
+    "Message",
     # Social Media models
     "SocialMediaRecord",
     "PublicInference",

@@ -4,7 +4,7 @@ import enum
 from datetime import date
 
 from sqlalchemy import Boolean, Date, Enum, Index, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from datafusion.database import Base, TimestampMixin, UUIDMixin
 
@@ -45,3 +45,8 @@ class NPC(Base, UUIDMixin, TimestampMixin):
 
     is_scenario_npc: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     scenario_key: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+
+    # Relationships
+    message_record: Mapped["MessageRecord | None"] = relationship(  # type: ignore
+        back_populates="npc", uselist=False
+    )
