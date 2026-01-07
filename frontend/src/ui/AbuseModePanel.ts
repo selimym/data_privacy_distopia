@@ -102,9 +102,34 @@ export class AbuseModePanel {
       const targetSelect = this.container.querySelector('#target-select') as HTMLSelectElement;
 
       // Clear existing options except first
-      targetSelect.innerHTML = '<option value="">-- Choose an NPC --</option>';
+      targetSelect.innerHTML = '<option value="">-- Loading targets... --</option>';
+      targetSelect.disabled = true;
 
-      response.items.forEach((npc: NPCBasic) => {
+      // Filter NPCs to only include those with available actions
+      const npcsWithActions: NPCBasic[] = [];
+
+      for (const npc of response.items) {
+        try {
+          const actions = await getRoleActions('rogue_employee', npc.id);
+          if (actions.length > 0) {
+            npcsWithActions.push(npc);
+          }
+        } catch (error) {
+          console.error(`Failed to check actions for NPC ${npc.id}:`, error);
+        }
+      }
+
+      // Update dropdown with filtered NPCs
+      targetSelect.innerHTML = '<option value="">-- Choose an NPC --</option>';
+      targetSelect.disabled = false;
+
+      if (npcsWithActions.length === 0) {
+        targetSelect.innerHTML = '<option value="">-- No targets with available actions --</option>';
+        targetSelect.disabled = true;
+        return;
+      }
+
+      npcsWithActions.forEach((npc: NPCBasic) => {
         const option = document.createElement('option');
         option.value = npc.id;
         option.textContent = `${npc.first_name} ${npc.last_name}`;
@@ -112,6 +137,11 @@ export class AbuseModePanel {
       });
     } catch (error) {
       console.error('Failed to load targets:', error);
+      const targetSelect = this.container.querySelector('#target-select') as HTMLSelectElement;
+      if (targetSelect) {
+        targetSelect.innerHTML = '<option value="">-- Error loading targets --</option>';
+        targetSelect.disabled = true;
+      }
     }
   }
 
