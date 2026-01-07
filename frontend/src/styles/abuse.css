@@ -661,3 +661,250 @@
   margin-bottom: 16px;
   font-size: 24px;
 }
+
+/* Scenario Intro */
+.scenario-intro-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.scenario-intro {
+  max-width: 800px;
+  width: 90%;
+  color: #e6e6e6;
+}
+
+.intro-content {
+  text-align: center;
+}
+
+.scenario-title {
+  font-size: 48px;
+  color: #ef476f;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px rgba(239, 71, 111, 0.5);
+}
+
+.scenario-description {
+  font-size: 24px;
+  color: #ffd166;
+  margin-bottom: 32px;
+}
+
+.setup-text {
+  margin-bottom: 32px;
+  line-height: 1.8;
+}
+
+.setup-text p {
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.warning-box {
+  background: rgba(239, 71, 111, 0.1);
+  border: 2px solid #ef476f;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.warning-box strong {
+  color: #ef476f;
+}
+
+.educational-note {
+  margin-bottom: 32px;
+  color: #b3b3b3;
+  font-style: italic;
+}
+
+.btn-begin {
+  padding: 16px 48px;
+  background: linear-gradient(135deg, #e94560 0%, #ef476f 100%);
+  border: none;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.btn-begin:hover {
+  background: linear-gradient(135deg, #ef476f 0%, #e94560 100%);
+  transform: scale(1.05);
+  box-shadow: 0 0 30px rgba(239, 71, 111, 0.6);
+}
+
+/* Scenario Prompt */
+.scenario-prompt-container {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  opacity: 0;
+  z-index: 900;
+  transition: all 0.5s ease-out;
+  max-width: 600px;
+  width: 90%;
+}
+
+.scenario-prompt-container.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.scenario-prompt-container.fading-out {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
+.scenario-prompt {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #ffd166;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  color: #e6e6e6;
+}
+
+.prompt-phase {
+  color: #ffd166;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  font-weight: bold;
+}
+
+.prompt-text {
+  font-size: 18px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  min-height: 50px;
+  font-style: italic;
+}
+
+.prompt-suggestion {
+  background: rgba(255, 209, 102, 0.1);
+  border-left: 4px solid #ffd166;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.suggestion-label {
+  color: #ffd166;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.suggestion-value {
+  color: #e6e6e6;
+  font-size: 14px;
+}
+
+.btn-dismiss {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 209, 102, 0.2);
+  border: 1px solid #ffd166;
+  color: #ffd166;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+
+.btn-dismiss:hover {
+  background: rgba(255, 209, 102, 0.3);
+}
+
+/* Audit Trail */
+.audit-trail {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #ef476f;
+  border-radius: 8px;
+  padding: 16px;
+  max-width: 300px;
+  z-index: 800;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.audit-trail-header {
+  color: #ef476f;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.audit-count {
+  color: #e6e6e6;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.audit-count .count-number {
+  color: #ef476f;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.audit-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.audit-list li {
+  padding: 8px;
+  margin-bottom: 4px;
+  background: rgba(15, 52, 96, 0.3);
+  border-left: 3px solid #ef476f;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #b3b3b3;
+}
+
+.audit-list li .action-name {
+  color: #e6e6e6;
+  font-weight: bold;
+  display: block;
+}
+
+.audit-list li .target-name {
+  color: #ef476f;
+}
