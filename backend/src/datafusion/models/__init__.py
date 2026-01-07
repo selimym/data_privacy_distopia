@@ -50,6 +50,15 @@ from datafusion.models.social import (
     PublicInference,
     SocialMediaRecord,
 )
+from datafusion.models.system_mode import (
+    CitizenFlag,
+    Directive,
+    FlagOutcome,
+    FlagType,
+    Operator,
+    OperatorMetrics,
+    OperatorStatus,
+)
 
 __all__ = [
     # NPC models
@@ -102,4 +111,12 @@ __all__ = [
     # Consequence models
     "ConsequenceTemplate",
     "TimeSkip",
+    # System Mode models
+    "Operator",
+    "OperatorMetrics",
+    "Directive",
+    "CitizenFlag",
+    "OperatorStatus",
+    "FlagType",
+    "FlagOutcome",
 ]
