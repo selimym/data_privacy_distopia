@@ -338,14 +338,9 @@ export class WorldScene extends Phaser.Scene {
     // Hide normal data panel
     this.dataPanel.hide();
 
-    // Create abuse mode panel
-    const panelContainer = document.getElementById('ui-container');
-    if (panelContainer) {
-      this.abuseModePanel = new AbuseModePanel(
-        panelContainer as HTMLDivElement,
-        this.currentSessionId
-      );
-    }
+    // Create and show abuse mode panel
+    this.abuseModePanel = new AbuseModePanel(this.currentSessionId);
+    this.abuseModePanel.show();
 
     // Create audit trail
     this.createAuditTrail();
