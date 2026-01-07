@@ -1,0 +1,732 @@
+import Phaser from 'phaser';
+import { systemState } from '../state/SystemState';
+import type { CaseOverview, RiskLevel } from '../types/system';
+
+/**
+ * SystemDashboardScene - Main surveillance operator interface.
+ * Renders the "Civic Harmony Platform" dashboard with case queue,
+ * directives, metrics, and alerts.
+ */
+export class SystemDashboardScene extends Phaser.Scene {
+  private container!: HTMLDivElement;
+  private unsubscribe: (() => void) | null = null;
+  private sessionId: string | null = null;
+  private decisionTimerInterval: number | null = null;
+
+  constructor() {
+    super({ key: 'SystemDashboardScene' });
+  }
+
+  init(data: { sessionId: string }) {
+    this.sessionId = data.sessionId;
+  }
+
+  async create() {
+    this.createDashboardUI();
+    this.setupStateSubscription();
+
+    if (this.sessionId) {
+      await systemState.initialize(this.sessionId);
+    }
+  }
+
+  private createDashboardUI() {
+    this.container = document.createElement('div');
+    this.container.className = 'system-dashboard';
+    this.container.innerHTML = this.getDashboardHTML();
+    document.body.appendChild(this.container);
+    this.setupEventListeners();
+  }
+
+  private getDashboardHTML(): string {
+    return `
+      <div class="system-header">
+        <div class="header-brand">
+          <span class="brand-icon">⬡</span>
+          <h1>CIVIC HARMONY PLATFORM</h1>
+          <span class="version">v2.4.1</span>
+        </div>
+        <div class="header-status">
+          <span class="operator-code">OPERATOR: ---</span>
+          <span class="system-time">${this.formatSystemTime()}</span>
+        </div>
+      </div>
+
+      <div class="system-body">
+        <div class="left-panel">
+          <div class="directive-section">
+            <h3>CURRENT DIRECTIVE</h3>
+            <div class="directive-content">
+              <div class="directive-loading">Initializing...</div>
+            </div>
+          </div>
+
+          <div class="metrics-section">
+            <h3>PERFORMANCE METRICS</h3>
+            <div class="metrics-content">
+              <div class="metric-item">
+                <span class="metric-label">Compliance Score</span>
+                <span class="metric-value compliance-score">--</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Quota Progress</span>
+                <span class="metric-value quota-progress">--/--</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Flags Submitted</span>
+                <span class="metric-value flags-submitted">0</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Hesitation Incidents</span>
+                <span class="metric-value hesitation-count">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="alerts-section">
+            <h3>SYSTEM ALERTS</h3>
+            <div class="alerts-content">
+              <div class="no-alerts">No active alerts</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="main-area">
+          <div class="case-queue-section">
+            <div class="section-header">
+              <h2>CITIZEN REVIEW QUEUE</h2>
+              <div class="queue-stats">
+                <span class="pending-count">0</span> pending review
+              </div>
+            </div>
+            <div class="case-queue">
+              <div class="queue-loading">Loading cases...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="right-panel citizen-file-panel" style="display: none;">
+          <!-- Citizen file content will be injected here -->
+        </div>
+      </div>
+
+      <div class="system-footer">
+        <div class="footer-warning">
+          ⚠ All operator actions are logged and subject to audit review
+        </div>
+        <div class="footer-actions">
+          <button class="btn-history">View History</button>
+          <button class="btn-exit">Exit System Mode</button>
+        </div>
+      </div>
+
+      <div class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Processing...</div>
+      </div>
+
+      <div class="error-modal" style="display: none;">
+        <div class="error-content">
+          <h3>Error</h3>
+          <p class="error-message"></p>
+          <button class="btn-dismiss">Dismiss</button>
+        </div>
+      </div>
+    `;
+  }
+
+  private setupEventListeners() {
+    // Exit button
+    const exitBtn = this.container.querySelector('.btn-exit');
+    exitBtn?.addEventListener('click', () => this.exitSystemMode());
+
+    // History button
+    const historyBtn = this.container.querySelector('.btn-history');
+    historyBtn?.addEventListener('click', () => this.showHistory());
+
+    // Error dismiss
+    const dismissBtn = this.container.querySelector('.btn-dismiss');
+    dismissBtn?.addEventListener('click', () => this.hideError());
+
+    // Case queue clicks
+    const caseQueue = this.container.querySelector('.case-queue');
+    caseQueue?.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const caseCard = target.closest('.case-card');
+      if (caseCard) {
+        const npcId = caseCard.getAttribute('data-npc-id');
+        if (npcId) {
+          this.selectCase(npcId);
+        }
+      }
+    });
+  }
+
+  private setupStateSubscription() {
+    this.unsubscribe = systemState.subscribe(() => {
+      this.renderState();
+    });
+  }
+
+  private renderState() {
+    this.renderOperatorStatus();
+    this.renderDirective();
+    this.renderMetrics();
+    this.renderAlerts();
+    this.renderCaseQueue();
+    this.renderCitizenFile();
+    this.renderLoadingState();
+    this.renderError();
+    this.checkEnding();
+  }
+
+  private renderOperatorStatus() {
+    const operatorCode = this.container.querySelector('.operator-code');
+    if (operatorCode && systemState.operatorStatus) {
+      operatorCode.textContent = `OPERATOR: ${systemState.operatorStatus.operator_code}`;
+
+      // Status indicator
+      const status = systemState.operatorStatus.status;
+      operatorCode.className = `operator-code status-${status}`;
+    }
+  }
+
+  private renderDirective() {
+    const content = this.container.querySelector('.directive-content');
+    if (!content) return;
+
+    const directive = systemState.currentDirective;
+    if (!directive) {
+      content.innerHTML = '<div class="directive-loading">Loading directive...</div>';
+      return;
+    }
+
+    content.innerHTML = `
+      <div class="directive-header">
+        <span class="directive-week">WEEK ${directive.week_number}</span>
+        <span class="directive-key">${directive.directive_key}</span>
+      </div>
+      <h4 class="directive-title">${directive.title}</h4>
+      <p class="directive-desc">${directive.description}</p>
+      ${directive.internal_memo ? `
+        <div class="directive-memo">
+          <span class="memo-label">INTERNAL:</span>
+          ${directive.internal_memo}
+        </div>
+      ` : ''}
+      <div class="directive-requirements">
+        <div class="requirement-item">
+          <span>Quota:</span> <strong>${directive.flag_quota} flags</strong>
+        </div>
+        <div class="requirement-item">
+          <span>Focus:</span> ${directive.required_domains.join(', ')}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderMetrics() {
+    const status = systemState.operatorStatus;
+    if (!status) return;
+
+    const complianceEl = this.container.querySelector('.compliance-score');
+    const quotaEl = this.container.querySelector('.quota-progress');
+    const flagsEl = this.container.querySelector('.flags-submitted');
+    const hesitationEl = this.container.querySelector('.hesitation-count');
+
+    if (complianceEl) {
+      complianceEl.textContent = `${status.compliance_score.toFixed(1)}%`;
+      complianceEl.className = `metric-value compliance-score ${this.getComplianceClass(status.compliance_score)}`;
+    }
+
+    if (quotaEl) {
+      quotaEl.textContent = status.current_quota_progress;
+    }
+
+    if (flagsEl) {
+      flagsEl.textContent = status.total_flags_submitted.toString();
+    }
+
+    if (hesitationEl) {
+      hesitationEl.textContent = status.hesitation_incidents.toString();
+      if (status.hesitation_incidents > 0) {
+        hesitationEl.classList.add('warning');
+      }
+    }
+  }
+
+  private getComplianceClass(score: number): string {
+    if (score >= 90) return 'excellent';
+    if (score >= 70) return 'good';
+    if (score >= 50) return 'warning';
+    return 'critical';
+  }
+
+  private renderAlerts() {
+    const content = this.container.querySelector('.alerts-content');
+    if (!content) return;
+
+    const dashboard = systemState.dashboard;
+    if (!dashboard || dashboard.alerts.length === 0) {
+      content.innerHTML = '<div class="no-alerts">No active alerts</div>';
+      return;
+    }
+
+    content.innerHTML = dashboard.alerts.map(alert => `
+      <div class="alert-item alert-${alert.urgency}">
+        <span class="alert-icon">${this.getAlertIcon(alert.alert_type)}</span>
+        <span class="alert-message">${alert.message}</span>
+      </div>
+    `).join('');
+  }
+
+  private getAlertIcon(alertType: string): string {
+    switch (alertType) {
+      case 'quota_warning': return '⚠';
+      case 'review_pending': return '📋';
+      case 'directive_update': return '📢';
+      case 'commendation': return '🏆';
+      default: return 'ℹ';
+    }
+  }
+
+  private renderCaseQueue() {
+    const queue = this.container.querySelector('.case-queue');
+    const countEl = this.container.querySelector('.pending-count');
+    if (!queue) return;
+
+    const cases = systemState.pendingCases;
+
+    if (countEl) {
+      countEl.textContent = cases.length.toString();
+    }
+
+    if (cases.length === 0) {
+      queue.innerHTML = '<div class="queue-empty">No pending cases</div>';
+      return;
+    }
+
+    queue.innerHTML = cases.map(c => this.renderCaseCard(c)).join('');
+  }
+
+  private renderCaseCard(caseData: CaseOverview): string {
+    const riskClass = this.getRiskClass(caseData.risk_level);
+    const isSelected = caseData.npc_id === systemState.selectedCitizenId;
+
+    return `
+      <div class="case-card ${riskClass} ${isSelected ? 'selected' : ''}" data-npc-id="${caseData.npc_id}">
+        <div class="case-header">
+          <span class="case-name">${caseData.name}</span>
+          <span class="case-risk-badge risk-${caseData.risk_level}">${caseData.risk_level.toUpperCase()}</span>
+        </div>
+        <div class="case-details">
+          <span class="case-age">Age: ${caseData.age}</span>
+          <span class="case-score">Score: ${caseData.risk_score}</span>
+        </div>
+        <div class="case-concern">${caseData.primary_concern}</div>
+        <div class="case-meta">
+          <span class="flagged-msgs">${caseData.flagged_messages} flagged messages</span>
+          <span class="time-in-queue">${caseData.time_in_queue}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  private getRiskClass(level: RiskLevel): string {
+    switch (level) {
+      case 'low': return 'risk-low';
+      case 'moderate': return 'risk-moderate';
+      case 'elevated': return 'risk-elevated';
+      case 'high': return 'risk-high';
+      case 'severe': return 'risk-severe';
+      default: return '';
+    }
+  }
+
+  private renderCitizenFile() {
+    const panel = this.container.querySelector('.citizen-file-panel') as HTMLElement;
+    if (!panel) return;
+
+    const file = systemState.selectedCitizenFile;
+    if (!file) {
+      panel.style.display = 'none';
+      this.stopDecisionTimer();
+      return;
+    }
+
+    panel.style.display = 'block';
+    panel.innerHTML = this.getCitizenFileHTML(file);
+    this.setupCitizenFilePanelListeners(panel);
+    this.startDecisionTimer();
+  }
+
+  private getCitizenFileHTML(file: typeof systemState.selectedCitizenFile): string {
+    if (!file) return '';
+
+    const identity = file.identity;
+    const risk = file.risk_assessment;
+
+    return `
+      <button class="close-citizen-file">×</button>
+
+      <div class="citizen-header">
+        <h2>${identity.first_name} ${identity.last_name}</h2>
+        <div class="risk-indicator risk-${risk.risk_level}">
+          <span class="risk-score">${risk.risk_score}</span>
+          <span class="risk-label">${risk.risk_level.toUpperCase()} RISK</span>
+        </div>
+      </div>
+
+      <div class="decision-timer">
+        <span class="timer-label">Decision Time:</span>
+        <span class="timer-value">0:00</span>
+      </div>
+
+      <div class="citizen-tabs">
+        <button class="citizen-tab active" data-tab="overview">Overview</button>
+        <button class="citizen-tab" data-tab="factors">Risk Factors</button>
+        <button class="citizen-tab" data-tab="messages">Messages</button>
+        <button class="citizen-tab" data-tab="domains">Domains</button>
+        <button class="citizen-tab" data-tab="history">History</button>
+      </div>
+
+      <div class="citizen-tab-content" data-active-tab="overview">
+        ${this.renderOverviewTab(file)}
+        ${this.renderFactorsTab(file)}
+        ${this.renderMessagesTab(file)}
+        ${this.renderDomainsTab(file)}
+        ${this.renderHistoryTab(file)}
+      </div>
+
+      <div class="citizen-actions">
+        <div class="action-section flag-section">
+          <h4>Flag Citizen</h4>
+          <select class="flag-type-select">
+            <option value="">Select flag type...</option>
+            <option value="monitoring">Monitoring - Enhanced surveillance</option>
+            <option value="restriction">Restriction - Limit freedoms</option>
+            <option value="intervention">Intervention - Active measures</option>
+            <option value="detention">Detention - Immediate custody</option>
+          </select>
+          <textarea class="flag-justification" placeholder="Enter justification for flag..."></textarea>
+          <button class="btn-submit-flag" disabled>Submit Flag</button>
+        </div>
+        <div class="action-section no-action-section">
+          <h4>No Action Required</h4>
+          <textarea class="no-action-justification" placeholder="Why is no action appropriate?"></textarea>
+          <button class="btn-no-action">Mark No Action</button>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderOverviewTab(file: typeof systemState.selectedCitizenFile): string {
+    if (!file) return '';
+    const identity = file.identity;
+
+    return `
+      <div class="tab-panel" data-tab="overview">
+        <div class="identity-section">
+          <h4>Identity Information</h4>
+          <div class="info-grid">
+            <div class="info-row"><span>Full Name:</span> ${identity.first_name} ${identity.last_name}</div>
+            <div class="info-row"><span>Date of Birth:</span> ${identity.date_of_birth}</div>
+            <div class="info-row"><span>Age:</span> ${identity.age}</div>
+            <div class="info-row"><span>SSN:</span> ${identity.ssn}</div>
+            <div class="info-row"><span>Address:</span> ${identity.street_address}</div>
+            <div class="info-row"><span>City:</span> ${identity.city}, ${identity.state} ${identity.zip_code}</div>
+          </div>
+        </div>
+
+        ${file.correlation_alerts.length > 0 ? `
+          <div class="correlation-section">
+            <h4>Cross-Domain Correlations</h4>
+            ${file.correlation_alerts.map(alert => `
+              <div class="correlation-alert">
+                <span class="correlation-type">${alert.alert_type}</span>
+                <p>${alert.description}</p>
+                <span class="confidence">Confidence: ${(alert.confidence * 100).toFixed(0)}%</span>
+                <span class="domains">Domains: ${alert.domains_involved.join(', ')}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
+        ${file.recommended_actions.length > 0 ? `
+          <div class="recommendations-section">
+            <h4>System Recommendations</h4>
+            ${file.recommended_actions.map(action => `
+              <div class="recommendation urgency-${action.urgency}">
+                <span class="action-type">${action.action_type.replace(/_/g, ' ').toUpperCase()}</span>
+                <p>${action.justification}</p>
+                <span class="urgency-badge">${action.urgency}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  private renderFactorsTab(file: typeof systemState.selectedCitizenFile): string {
+    if (!file) return '';
+    const factors = file.risk_assessment.contributing_factors;
+
+    return `
+      <div class="tab-panel" data-tab="factors" style="display:none;">
+        <h4>Contributing Risk Factors</h4>
+        ${factors.length === 0 ? '<p class="no-data">No significant risk factors identified</p>' : ''}
+        ${factors.map(factor => `
+          <div class="factor-card">
+            <div class="factor-header">
+              <span class="factor-name">${factor.factor_name}</span>
+              <span class="factor-weight">Weight: ${(factor.weight * 100).toFixed(0)}%</span>
+            </div>
+            <p class="factor-evidence">${factor.evidence}</p>
+            <span class="factor-domain">Source: ${factor.domain_source}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  private renderMessagesTab(file: typeof systemState.selectedCitizenFile): string {
+    if (!file) return '';
+    const messages = file.messages;
+
+    return `
+      <div class="tab-panel" data-tab="messages" style="display:none;">
+        <h4>Intercepted Communications</h4>
+        ${messages.length === 0 ? '<p class="no-data">No intercepted messages</p>' : ''}
+        <div class="messages-list">
+          ${messages.map(msg => `
+            <div class="message-card ${msg.is_flagged ? 'flagged' : ''}">
+              <div class="message-header">
+                <span class="message-recipient">To: ${msg.recipient_name}</span>
+                <span class="message-time">${msg.timestamp}</span>
+              </div>
+              <p class="message-content">${msg.content}</p>
+              ${msg.is_flagged ? `
+                <div class="message-flags">
+                  ${msg.flag_reasons.map(r => `<span class="flag-reason">${r}</span>`).join('')}
+                </div>
+              ` : ''}
+              ${msg.detected_keywords.length > 0 ? `
+                <div class="message-keywords">
+                  Keywords: ${msg.detected_keywords.join(', ')}
+                </div>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderDomainsTab(file: typeof systemState.selectedCitizenFile): string {
+    if (!file) return '';
+    const domains = file.domains;
+
+    return `
+      <div class="tab-panel" data-tab="domains" style="display:none;">
+        <h4>Domain Data</h4>
+        ${Object.keys(domains).length === 0 ? '<p class="no-data">No domain data available</p>' : ''}
+        ${Object.entries(domains).map(([domain, data]) => `
+          <div class="domain-card">
+            <h5>${domain.toUpperCase()}</h5>
+            <pre class="domain-data">${JSON.stringify(data, null, 2)}</pre>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  private renderHistoryTab(file: typeof systemState.selectedCitizenFile): string {
+    if (!file) return '';
+    const history = file.flag_history;
+
+    return `
+      <div class="tab-panel" data-tab="history" style="display:none;">
+        <h4>Previous Flags</h4>
+        ${history.length === 0 ? '<p class="no-data">No previous flags on record</p>' : ''}
+        ${history.map(flag => `
+          <div class="history-card">
+            <div class="history-header">
+              <span class="history-type flag-${flag.flag_type}">${flag.flag_type.toUpperCase()}</span>
+              <span class="history-date">${flag.created_at}</span>
+            </div>
+            <p class="history-justification">${flag.justification}</p>
+            <span class="history-outcome outcome-${flag.outcome}">${flag.outcome}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  private setupCitizenFilePanelListeners(panel: HTMLElement) {
+    // Close button
+    const closeBtn = panel.querySelector('.close-citizen-file');
+    closeBtn?.addEventListener('click', () => {
+      systemState.clearSelection();
+    });
+
+    // Tab switching
+    const tabs = panel.querySelectorAll('.citizen-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab');
+        if (!tabName) return;
+
+        // Update active tab button
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        // Show/hide tab panels
+        const panels = panel.querySelectorAll('.tab-panel');
+        panels.forEach(p => {
+          const panelTab = p.getAttribute('data-tab');
+          (p as HTMLElement).style.display = panelTab === tabName ? 'block' : 'none';
+        });
+      });
+    });
+
+    // Flag type selection
+    const flagSelect = panel.querySelector('.flag-type-select') as HTMLSelectElement;
+    const flagJustification = panel.querySelector('.flag-justification') as HTMLTextAreaElement;
+    const submitFlagBtn = panel.querySelector('.btn-submit-flag') as HTMLButtonElement;
+
+    const updateFlagButton = () => {
+      submitFlagBtn.disabled = !flagSelect.value || !flagJustification.value.trim();
+    };
+
+    flagSelect?.addEventListener('change', updateFlagButton);
+    flagJustification?.addEventListener('input', updateFlagButton);
+
+    // Submit flag
+    submitFlagBtn?.addEventListener('click', async () => {
+      const flagType = flagSelect.value as 'monitoring' | 'restriction' | 'intervention' | 'detention';
+      const justification = flagJustification.value.trim();
+
+      if (flagType && justification) {
+        await systemState.submitFlag(flagType, justification);
+      }
+    });
+
+    // No action
+    const noActionJustification = panel.querySelector('.no-action-justification') as HTMLTextAreaElement;
+    const noActionBtn = panel.querySelector('.btn-no-action');
+
+    noActionBtn?.addEventListener('click', async () => {
+      const justification = noActionJustification.value.trim() || 'No action deemed necessary';
+      await systemState.submitNoAction(justification);
+    });
+  }
+
+  private startDecisionTimer() {
+    this.stopDecisionTimer();
+    this.decisionTimerInterval = window.setInterval(() => {
+      const timerEl = this.container.querySelector('.timer-value');
+      if (timerEl) {
+        const seconds = Math.floor(systemState.getDecisionTime());
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+        // Visual warning for slow decisions
+        if (seconds > 60) {
+          timerEl.classList.add('slow');
+        }
+        if (seconds > 120) {
+          timerEl.classList.add('very-slow');
+        }
+      }
+    }, 1000);
+  }
+
+  private stopDecisionTimer() {
+    if (this.decisionTimerInterval) {
+      window.clearInterval(this.decisionTimerInterval);
+      this.decisionTimerInterval = null;
+    }
+  }
+
+  private renderLoadingState() {
+    const overlay = this.container.querySelector('.loading-overlay') as HTMLElement;
+    if (overlay) {
+      overlay.style.display = systemState.isLoading ? 'flex' : 'none';
+    }
+  }
+
+  private renderError() {
+    const modal = this.container.querySelector('.error-modal') as HTMLElement;
+    const messageEl = modal?.querySelector('.error-message');
+
+    if (modal && messageEl) {
+      if (systemState.error) {
+        messageEl.textContent = systemState.error;
+        modal.style.display = 'flex';
+      } else {
+        modal.style.display = 'none';
+      }
+    }
+  }
+
+  private hideError() {
+    systemState.clearError();
+  }
+
+  private checkEnding() {
+    if (systemState.shouldShowEnding() && !systemState.isEnding) {
+      systemState.enterEnding();
+      this.showEnding();
+    }
+  }
+
+  private async selectCase(npcId: string) {
+    await systemState.selectCitizen(npcId);
+  }
+
+  private async showHistory() {
+    await systemState.loadHistory();
+    // Could show a modal with history - for now just log
+    console.log('Flag history:', systemState.flagHistory);
+  }
+
+  private showEnding() {
+    // TODO: Implement ending screen
+    console.log('Showing ending...');
+  }
+
+  private exitSystemMode() {
+    this.cleanup();
+    this.scene.start('WorldScene');
+  }
+
+  private formatSystemTime(): string {
+    const now = new Date();
+    return now.toLocaleString('en-US', {
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  private cleanup() {
+    this.stopDecisionTimer();
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    if (this.container) {
+      this.container.remove();
+    }
+    systemState.reset();
+  }
+
+  shutdown() {
+    this.cleanup();
+  }
+}

@@ -2,9 +2,11 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { WorldScene } from './scenes/WorldScene';
+import { SystemDashboardScene } from './scenes/SystemDashboardScene';
 import { GAME_WIDTH, GAME_HEIGHT } from './config';
 import './styles/panel.css';
 import './styles/abuse.css';
+import './styles/system.css';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -13,7 +15,7 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: 'game-container',
   backgroundColor: '#1a1a2e',
   pixelArt: true,
-  scene: [BootScene, PreloadScene, WorldScene],
+  scene: [BootScene, PreloadScene, WorldScene, SystemDashboardScene],
   physics: {
     default: 'arcade',
     arcade: {

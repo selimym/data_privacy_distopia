@@ -87,6 +87,9 @@ export class WorldScene extends Phaser.Scene {
     // Add "Enter Abuse Mode" button
     this.createAbuseModeButton();
 
+    // Add "Enter System Mode" button
+    this.createSystemModeButton();
+
     // Add menu button
     this.createMenuButton();
 
@@ -135,6 +138,74 @@ export class WorldScene extends Phaser.Scene {
     // Hide button when abuse mode is active
     this.events.on('abuse-mode-activated', () => {
       button.style.display = 'none';
+    });
+  }
+
+  private createSystemModeButton() {
+    const button = document.createElement('button');
+    button.textContent = 'Enter System Mode';
+    button.className = 'btn-enter-system-mode';
+    button.style.cssText = `
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #1a1f2e 0%, #252a3d 100%);
+      border: 2px solid #4fd1c5;
+      color: #4fd1c5;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 500;
+      transition: all 0.2s;
+    `;
+
+    button.addEventListener('mouseenter', () => {
+      button.style.background = 'linear-gradient(135deg, #252a3d 0%, #1a1f2e 100%)';
+      button.style.transform = 'scale(1.05)';
+      button.style.boxShadow = '0 0 20px rgba(79, 209, 197, 0.4)';
+    });
+
+    button.addEventListener('mouseleave', () => {
+      button.style.background = 'linear-gradient(135deg, #1a1f2e 0%, #252a3d 100%)';
+      button.style.transform = 'scale(1)';
+      button.style.boxShadow = 'none';
+    });
+
+    button.addEventListener('click', () => {
+      this.enterSystemMode();
+    });
+
+    document.body.appendChild(button);
+
+    // Hide button when abuse mode is active
+    this.events.on('abuse-mode-activated', () => {
+      button.style.display = 'none';
+    });
+  }
+
+  private enterSystemMode() {
+    // Generate a session ID (in production, this would come from the backend)
+    const sessionId = this.currentSessionId || uuidv4();
+
+    // Clean up WorldScene UI elements
+    this.cleanupUI();
+
+    // Start the System Dashboard scene with the session ID
+    this.scene.start('SystemDashboardScene', { sessionId });
+  }
+
+  private cleanupUI() {
+    // Remove all UI buttons and panels created by WorldScene
+    const uiElements = document.querySelectorAll(
+      '.btn-enter-abuse-mode, .btn-enter-system-mode, .data-panel, .npc-tooltip, .zoom-controls, [style*="position: fixed"]'
+    );
+    uiElements.forEach(el => {
+      // Only remove elements that belong to WorldScene (not Phaser game container)
+      if (!el.id?.includes('game') && !el.classList.contains('system-dashboard')) {
+        el.remove();
+      }
     });
   }
 
