@@ -4,24 +4,22 @@ import json
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from datafusion.database import get_db
 from datafusion.models.inference import ContentRating
-from datafusion.models.npc import NPC
-from datafusion.schemas.domains import DomainType, NPCWithDomains
+from datafusion.schemas.domains import DomainType
 from datafusion.schemas.errors import ErrorResponse
-from datafusion.schemas.health import HealthRecordFiltered
 from datafusion.schemas.inference import (
     InferenceResult,
     InferenceRuleRead,
     InferencesResponse,
     UnlockableInference,
+    VictimStatement,
 )
-from datafusion.schemas.npc import NPCRead
-from datafusion.services.inference_engine import InferenceEngine
+from datafusion.services.advanced_inference_engine import AdvancedInferenceEngine
+from datafusion.services.inference_rules import INFERENCE_RULES
 
 router = APIRouter(prefix="/inferences", tags=["inferences"])
 
@@ -35,25 +33,22 @@ async def list_inference_rules() -> list[InferenceRuleRead]:
     List all available inference rules.
 
     Useful for documentation and showing players what rules exist.
-    Currently returns hardcoded rules; will fetch from database in the future.
+    Loaded from inference_rules.py config file.
     """
-    engine = InferenceEngine()
-
-    # Convert hardcoded rules to InferenceRuleRead format
-    # In the future, this will query the database
+    # Convert config rules to InferenceRuleRead format
     rules_read = []
-    for rule in engine.rules:
-        # Convert set[DomainType] to JSON string
-        required_domains_json = json.dumps([d.value for d in rule.required_domains])
+    for rule in INFERENCE_RULES:
+        # Convert DomainType enums to JSON string
+        required_domains_json = json.dumps([d.value for d in rule["required_domains"]])
 
         rule_read = InferenceRuleRead(
-            id=UUID("00000000-0000-0000-0000-000000000000"),  # Placeholder for hardcoded rules
-            rule_key=rule.rule_key,
-            name=rule.name,
-            description=f"Analyzes {', '.join(d.value for d in rule.required_domains)} domain data",
+            id=UUID("00000000-0000-0000-0000-000000000000"),  # Placeholder for config-based rules
+            rule_key=rule["rule_key"],
+            name=rule["name"],
+            description=f"Analyzes {', '.join(d.value for d in rule['required_domains'])} domain data",
             required_domains=required_domains_json,
-            scariness_level=rule.scariness_level,
-            content_rating=rule.content_rating,
+            scariness_level=rule["scariness_level"],
+            content_rating=rule["content_rating"],
             is_active=True,
             created_at=datetime(2026, 1, 6, 0, 0, 0),  # Placeholder
             updated_at=datetime(2026, 1, 6, 0, 0, 0),  # Placeholder
@@ -61,33 +56,6 @@ async def list_inference_rules() -> list[InferenceRuleRead]:
         rules_read.append(rule_read)
 
     return rules_read
-
-
-async def _fetch_npc_with_domains(
-    npc_id: UUID, domains: set[DomainType], db: AsyncSession
-) -> NPCWithDomains:
-    """Fetch NPC with requested domain data."""
-    # Import here to avoid circular dependency
-    from datafusion.api.npcs import _get_health_data
-
-    npc_query = select(NPC).where(NPC.id == npc_id)
-    result = await db.execute(npc_query)
-    npc = result.scalar_one_or_none()
-
-    if not npc:
-        raise HTTPException(status_code=404, detail="NPC not found")
-
-    domain_data = {}
-
-    if DomainType.HEALTH in domains:
-        health_data = await _get_health_data(npc_id, db)
-        if health_data:
-            domain_data[DomainType.HEALTH] = health_data
-
-    return NPCWithDomains(
-        npc=NPCRead.model_validate(npc),
-        domains=domain_data,
-    )
 
 
 @router.get(
@@ -114,12 +82,37 @@ async def get_inferences(
     Analyzes NPC data across the requested domains and returns insights.
     Can be filtered by scariness level and content rating.
     """
-    # Fetch NPC with requested domains
-    npc_data = await _fetch_npc_with_domains(npc_id, domains, db)
+    # Run advanced inference engine
+    engine = AdvancedInferenceEngine(db)
+    inference_dicts = await engine.generate_inferences(npc_id, list(domains))
 
-    # Run inference engine
-    engine = InferenceEngine()
-    inferences = engine.evaluate(npc_data, domains)
+    # Convert dict results to InferenceResult models
+    inferences = []
+    for inf_dict in inference_dicts:
+        # Convert victim statements to VictimStatement models
+        victim_statements = [
+            VictimStatement(**stmt) for stmt in inf_dict.get("victim_statements", [])
+        ]
+
+        # Convert domains_used strings back to DomainType enums
+        domains_used = [DomainType(d) for d in inf_dict["domains_used"]]
+
+        inference = InferenceResult(
+            rule_key=inf_dict["rule_key"],
+            rule_name=inf_dict["rule_name"],
+            category=inf_dict["category"],
+            confidence=inf_dict["confidence"],
+            inference_text=inf_dict["inference_text"],
+            supporting_evidence=inf_dict["supporting_evidence"],
+            implications=inf_dict["implications"],
+            domains_used=domains_used,
+            scariness_level=inf_dict["scariness_level"],
+            content_rating=ContentRating(inf_dict["content_rating"]),
+            educational_note=inf_dict.get("educational_note"),
+            real_world_example=inf_dict.get("real_world_example"),
+            victim_statements=victim_statements,
+        )
+        inferences.append(inference)
 
     # Apply content filtering
     if max_scariness is not None:
@@ -139,12 +132,29 @@ async def get_inferences(
             i for i in inferences if rating_hierarchy[i.content_rating] <= max_level
         ]
 
-    # Get unlockable inferences
-    unlockable_dict = engine.get_unlockable(npc_data, domains)
-    unlockable_inferences = [
-        UnlockableInference(domain=domain, rule_keys=rule_keys)
-        for domain, rule_keys in unlockable_dict.items()
-    ]
+    # Calculate unlockable inferences by checking which rules would become available
+    # with each additional domain
+    all_domain_types = set(DomainType)
+    disabled_domains = all_domain_types - domains
+    unlockable_inferences = []
+
+    for domain in disabled_domains:
+        # Check which rules would be newly available with this domain
+        potential_domains = domains | {domain}
+        unlockable_rules = []
+
+        for rule in INFERENCE_RULES:
+            required_domains_set = set(rule["required_domains"])
+            # Rule is unlockable if it requires this domain and we now have all required domains
+            if domain in required_domains_set and required_domains_set.issubset(potential_domains):
+                # Make sure it's not already available with current domains
+                if not required_domains_set.issubset(domains):
+                    unlockable_rules.append(rule["rule_key"])
+
+        if unlockable_rules:
+            unlockable_inferences.append(
+                UnlockableInference(domain=domain, rule_keys=unlockable_rules)
+            )
 
     return InferencesResponse(
         npc_id=npc_id,
@@ -173,20 +183,41 @@ async def preview_new_inferences(
     Shows the player "if you enable this domain, you'll also learn X, Y, Z".
     Returns only the NEW inferences, not ones already available.
     """
+    engine = AdvancedInferenceEngine(db)
+
     # Get inferences with current domains
-    npc_data_current = await _fetch_npc_with_domains(npc_id, current_domains, db)
-    engine = InferenceEngine()
-    current_inferences = engine.evaluate(npc_data_current, current_domains)
-    current_rule_keys = {inf.rule_key for inf in current_inferences}
+    current_inference_dicts = await engine.generate_inferences(npc_id, list(current_domains))
+    current_rule_keys = {inf["rule_key"] for inf in current_inference_dicts}
 
     # Get inferences with new domain added
     new_domains = current_domains | {new_domain}
-    npc_data_new = await _fetch_npc_with_domains(npc_id, new_domains, db)
-    new_inferences = engine.evaluate(npc_data_new, new_domains)
+    new_inference_dicts = await engine.generate_inferences(npc_id, list(new_domains))
 
-    # Filter to only NEW inferences
-    newly_unlocked = [
-        inf for inf in new_inferences if inf.rule_key not in current_rule_keys
-    ]
+    # Filter to only NEW inferences and convert to models
+    newly_unlocked = []
+    for inf_dict in new_inference_dicts:
+        if inf_dict["rule_key"] not in current_rule_keys:
+            # Convert to InferenceResult model
+            victim_statements = [
+                VictimStatement(**stmt) for stmt in inf_dict.get("victim_statements", [])
+            ]
+            domains_used = [DomainType(d) for d in inf_dict["domains_used"]]
+
+            inference = InferenceResult(
+                rule_key=inf_dict["rule_key"],
+                rule_name=inf_dict["rule_name"],
+                category=inf_dict["category"],
+                confidence=inf_dict["confidence"],
+                inference_text=inf_dict["inference_text"],
+                supporting_evidence=inf_dict["supporting_evidence"],
+                implications=inf_dict["implications"],
+                domains_used=domains_used,
+                scariness_level=inf_dict["scariness_level"],
+                content_rating=ContentRating(inf_dict["content_rating"]),
+                educational_note=inf_dict.get("educational_note"),
+                real_world_example=inf_dict.get("real_world_example"),
+                victim_statements=victim_statements,
+            )
+            newly_unlocked.append(inference)
 
     return newly_unlocked

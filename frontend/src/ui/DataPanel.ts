@@ -8,6 +8,8 @@ import type {
   InferenceResult,
 } from '../types/npc';
 
+const STORAGE_KEY_PREFIX = 'npc_domains_';
+
 export class DataPanel {
   private container: HTMLDivElement;
   private currentNpcId: string | null = null;
@@ -20,6 +22,30 @@ export class DataPanel {
     // scene parameter kept for consistency with Phaser patterns, may be used later
     this.container = this.createPanelElement();
     this.setupEventListeners();
+  }
+
+  // Persistence methods
+  private saveUnlockedDomains(npcId: string, domains: Set<DomainType>) {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY_PREFIX + npcId,
+        JSON.stringify(Array.from(domains))
+      );
+    } catch (error) {
+      console.warn('Failed to save unlocked domains:', error);
+    }
+  }
+
+  private loadUnlockedDomains(npcId: string): Set<DomainType> {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_PREFIX + npcId);
+      if (stored) {
+        return new Set(JSON.parse(stored) as DomainType[]);
+      }
+    } catch (error) {
+      console.warn('Failed to load unlocked domains:', error);
+    }
+    return new Set();
   }
 
   private createPanelElement(): HTMLDivElement {
@@ -100,8 +126,10 @@ export class DataPanel {
           this.enabledDomains.delete(domain);
         }
 
-        // Re-fetch data with updated domains
+        // Save persistence
         if (this.currentNpcId) {
+          this.saveUnlockedDomains(this.currentNpcId, this.enabledDomains);
+          this.updatePanelColorIntensity();
           this.fetchAndRender(this.currentNpcId);
         }
       });
@@ -123,13 +151,21 @@ export class DataPanel {
 
   async show(npcId: string, enabledDomains: DomainType[] = []) {
     this.currentNpcId = npcId;
-    this.enabledDomains = new Set(enabledDomains);
+
+    // Load previously unlocked domains from persistence
+    const savedDomains = this.loadUnlockedDomains(npcId);
+
+    // Merge with any passed domains
+    this.enabledDomains = new Set([...savedDomains, ...enabledDomains]);
 
     // Update checkbox states
     this.updateCheckboxStates();
 
     // Show panel
     this.container.style.display = 'block';
+
+    // Update color based on unlocked domains
+    this.updatePanelColorIntensity();
 
     // Fetch and render data
     await this.fetchAndRender(npcId);
@@ -138,8 +174,64 @@ export class DataPanel {
   hide() {
     this.container.style.display = 'none';
     this.currentNpcId = null;
-    this.enabledDomains.clear();
+    // Don't clear enabled domains - they're persisted
     this.updateCheckboxStates();
+  }
+
+  private updatePanelColorIntensity() {
+    const domainCount = this.enabledDomains.size;
+
+    // Progressive color intensity based on unlocked domains (0-5)
+    // More domains = more scary/intense colors
+    let borderColor = '#4a90e2'; // Default blue
+    let headerColor = '#4a90e2';
+    let shadowIntensity = 0.2;
+
+    if (domainCount >= 1) {
+      borderColor = '#ffd166'; // Yellow - some data
+      headerColor = '#ffd166';
+      shadowIntensity = 0.3;
+    }
+    if (domainCount >= 2) {
+      borderColor = '#ff9d00'; // Orange - more data
+      headerColor = '#ff9d00';
+      shadowIntensity = 0.4;
+    }
+    if (domainCount >= 3) {
+      borderColor = '#ff6b35'; // Dark orange - significant data
+      headerColor = '#ff6b35';
+      shadowIntensity = 0.5;
+    }
+    if (domainCount >= 4) {
+      borderColor = '#ef476f'; // Red - very invasive
+      headerColor = '#ef476f';
+      shadowIntensity = 0.6;
+    }
+    if (domainCount >= 5) {
+      borderColor = '#d63354'; // Dark red - complete invasion
+      headerColor = '#d63354';
+      shadowIntensity = 0.8;
+    }
+
+    // Apply colors to panel
+    this.container.style.borderColor = borderColor;
+    this.container.style.boxShadow = `
+      0 8px 32px rgba(0, 0, 0, 0.6),
+      0 0 ${20 + domainCount * 10}px rgba(239, 71, 111, ${shadowIntensity})
+    `;
+
+    // Update header color
+    const nameElement = this.container.querySelector('.npc-name') as HTMLElement;
+    if (nameElement) {
+      nameElement.style.color = headerColor;
+    }
+
+    // Update disclaimer color intensity
+    const disclaimer = this.container.querySelector('.disclaimer') as HTMLElement;
+    if (disclaimer && domainCount >= 3) {
+      disclaimer.style.borderColor = borderColor;
+      disclaimer.style.background = `rgba(239, 71, 111, ${0.05 + domainCount * 0.02})`;
+    }
   }
 
   async setEnabledDomains(domains: DomainType[]) {

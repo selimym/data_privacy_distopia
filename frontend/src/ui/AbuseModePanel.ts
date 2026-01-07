@@ -23,9 +23,11 @@ export class AbuseModePanel {
   private selectedTarget: NPCBasic | null = null;
   private availableActions: AbuseAction[] = [];
   private lastExecution: AbuseExecuteResponse | null = null;
+  private onActionExecuted: ((actionName: string, targetName: string, targetId: string) => void) | null = null;
 
-  constructor(sessionId: string) {
+  constructor(sessionId: string, onActionExecuted?: (actionName: string, targetName: string, targetId: string) => void) {
     this.sessionId = sessionId;
+    this.onActionExecuted = onActionExecuted || null;
     this.container = this.createPanelElement();
     this.setupEventListeners();
   }
@@ -54,11 +56,6 @@ export class AbuseModePanel {
         <div class="actions-section" id="actions-section" style="display: none;">
           <h3>Available Actions</h3>
           <div id="actions-list"></div>
-        </div>
-
-        <div class="results-section" id="results-section" style="display: none;">
-          <h3>Result</h3>
-          <div id="result-content"></div>
         </div>
       </div>
     `;
@@ -207,47 +204,89 @@ export class AbuseModePanel {
       };
 
       this.lastExecution = await executeAbuseAction(request, this.sessionId);
-      this.renderResults();
-      this.showResults();
+
+      // Notify WorldScene that an action was executed
+      if (this.onActionExecuted) {
+        this.onActionExecuted(
+          action.name,
+          `${this.selectedTarget.first_name} ${this.selectedTarget.last_name}`,
+          this.selectedTarget.id
+        );
+      }
+
+      // Show immediate result in an automatic modal
+      this.showImmediateResultModal();
     } catch (error) {
       console.error('Failed to execute action:', error);
     }
   }
 
-  private renderResults() {
+  private showImmediateResultModal() {
     if (!this.lastExecution) return;
 
-    const resultContent = this.container.querySelector('#result-content');
-    if (!resultContent) return;
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'action-result-overlay';
 
-    resultContent.innerHTML = `
-      ${
-        this.lastExecution.warning
-          ? `<div class="result-warning">${this.lastExecution.warning}</div>`
-          : ''
-      }
+    const modal = document.createElement('div');
+    modal.className = 'action-result-modal';
 
-      <div class="immediate-result">
-        <p>${this.lastExecution.immediate_result}</p>
+    modal.innerHTML = `
+      <div class="result-modal-content">
+        ${
+          this.lastExecution.warning
+            ? `<div class="result-warning">⚠️ ${this.lastExecution.warning}</div>`
+            : ''
+        }
+
+        <div class="immediate-result">
+          <h3>What Happened</h3>
+          <p>${this.lastExecution.immediate_result}</p>
+        </div>
+
+        ${
+          this.lastExecution.was_detected
+            ? `<div class="detection-alert">
+                <h4>🚨 DETECTED</h4>
+                <p>${this.lastExecution.detection_message}</p>
+              </div>`
+            : `<div class="detection-success">
+                <h4>✓ Not Detected</h4>
+                <p>Your action went unnoticed... for now.</p>
+              </div>`
+        }
+
+        <div class="modal-buttons">
+          <button class="btn-primary" id="continue-action">Continue</button>
+          <button class="btn-secondary" id="view-consequences">
+            View Long-term Consequences
+          </button>
+        </div>
       </div>
-
-      ${
-        this.lastExecution.was_detected
-          ? `<div class="detection-alert">🚨 ${this.lastExecution.detection_message}</div>`
-          : '<div class="detection-success">✓ Not detected</div>'
-      }
-
-      <button class="btn-primary view-consequences-btn" id="view-consequences">
-        View Consequences Over Time
-      </button>
     `;
 
-    // Attach consequence viewer handler
-    const viewBtn = resultContent.querySelector('#view-consequences');
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Attach event listeners
+    const continueBtn = modal.querySelector('#continue-action');
+    continueBtn?.addEventListener('click', () => {
+      document.body.removeChild(overlay);
+    });
+
+    const viewBtn = modal.querySelector('#view-consequences');
     viewBtn?.addEventListener('click', () => {
+      document.body.removeChild(overlay);
       if (this.lastExecution) {
         const viewer = new ConsequenceViewer(this.lastExecution.execution_id);
         viewer.show();
+      }
+    });
+
+    // Click overlay to close
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        document.body.removeChild(overlay);
       }
     });
   }
@@ -257,28 +296,12 @@ export class AbuseModePanel {
     if (actionsSection) {
       actionsSection.style.display = 'block';
     }
-    this.hideResults();
   }
 
   private hideActions() {
     const actionsSection = this.container.querySelector('#actions-section') as HTMLElement;
     if (actionsSection) {
       actionsSection.style.display = 'none';
-    }
-  }
-
-  private showResults() {
-    const resultsSection = this.container.querySelector('#results-section') as HTMLElement;
-    if (resultsSection) {
-      resultsSection.style.display = 'block';
-    }
-    this.hideActions();
-  }
-
-  private hideResults() {
-    const resultsSection = this.container.querySelector('#results-section') as HTMLElement;
-    if (resultsSection) {
-      resultsSection.style.display = 'none';
     }
   }
 

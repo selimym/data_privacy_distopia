@@ -10,7 +10,6 @@ import { listNPCs } from '../api/npcs';
 import type { NPCBasic } from '../types/npc';
 import { DataPanel } from '../ui/DataPanel';
 import { AbuseModePanel } from '../ui/AbuseModePanel';
-import { WarningModal } from '../ui/WarningModal';
 import { ScenarioIntro } from '../ui/ScenarioIntro';
 import { ScenarioPromptUI } from '../ui/ScenarioPromptUI';
 import { getScenarioPrompt } from '../api/scenarios';
@@ -37,10 +36,15 @@ export class WorldScene extends Phaser.Scene {
   private playerGridY: number = 0;
   private isMoving: boolean = false;
 
+  // Map rendering
+  private map!: Phaser.Tilemaps.Tilemap;
+  private groundLayer!: Phaser.Tilemaps.TilemapLayer;
+
   // NPC rendering
   private npcs: NPCBasic[] = [];
   private npcSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
   private selectedNpcId: string | null = null;
+  private npcTooltip: HTMLDivElement | null = null;
 
   // Data panel UI
   private dataPanel!: DataPanel;
@@ -51,18 +55,19 @@ export class WorldScene extends Phaser.Scene {
   private abuseModePanel: AbuseModePanel | null = null;
   private redTintOverlay: HTMLDivElement | null = null;
   private auditTrailElement: HTMLDivElement | null = null;
-  // TODO: Track actions for audit trail
-  // private actionsThisSession: Array<{ action: string; target: string }> = [];
+  private actionsThisSession: Array<{ action: string; target: string }> = [];
+  private targetedNpcIds: Set<string> = new Set();
 
   constructor() {
     super({ key: 'WorldScene' });
   }
 
   create() {
-    this.createGrid();
+    this.createMap();
     this.createPlayer();
     this.setupInput();
     this.setupCamera();
+    this.setupZoomControls();
 
     // Ensure canvas has keyboard focus on load
     this.input.keyboard!.enabled = true;
@@ -71,6 +76,9 @@ export class WorldScene extends Phaser.Scene {
     // Initialize data panel UI
     this.dataPanel = new DataPanel(this);
 
+    // Create NPC tooltip
+    this.createNpcTooltip();
+
     // Listen for NPC click events
     this.events.on('npc-clicked', (npcId: string) => {
       this.handleNpcClickEvent(npcId);
@@ -78,6 +86,9 @@ export class WorldScene extends Phaser.Scene {
 
     // Add "Enter Abuse Mode" button
     this.createAbuseModeButton();
+
+    // Add menu button
+    this.createMenuButton();
 
     // Load and render NPCs
     this.loadNPCs();
@@ -129,10 +140,10 @@ export class WorldScene extends Phaser.Scene {
 
   private handleNpcClickEvent(npcId: string) {
     if (this.isAbuseModeActive) {
-      // In abuse mode: populate abuse panel with actions for this target
+      // In abuse mode: show abuse panel
       if (this.abuseModePanel) {
-        // The AbuseModePanel will handle target selection
-        // Just select the NPC visually
+        // Show the panel if it's hidden
+        this.abuseModePanel.show();
         this.selectedNpcId = npcId;
       }
     } else {
@@ -165,6 +176,15 @@ export class WorldScene extends Phaser.Scene {
 
       // Make sprite interactive
       sprite.setInteractive({ useHandCursor: true });
+
+      // Handle hover events
+      sprite.on('pointerover', () => {
+        this.handleNpcHover(npc.id, true);
+      });
+
+      sprite.on('pointerout', () => {
+        this.handleNpcHover(npc.id, false);
+      });
 
       // Handle click event
       sprite.on('pointerdown', () => {
@@ -226,16 +246,27 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private createGrid() {
-    for (let y = 0; y < MAP_HEIGHT; y++) {
-      for (let x = 0; x < MAP_WIDTH; x++) {
-        this.add.sprite(
-          x * TILE_SIZE + TILE_SIZE / 2,
-          y * TILE_SIZE + TILE_SIZE / 2,
-          'ground'
-        );
-      }
+  private createMap() {
+    // Create the tilemap from the loaded JSON
+    this.map = this.make.tilemap({ key: 'town' });
+
+    // Add the tileset image to the map
+    const tileset = this.map.addTilesetImage('tileset', 'tileset', TILE_SIZE, TILE_SIZE, 0, 0);
+
+    if (!tileset) {
+      console.error('Failed to load tileset');
+      return;
     }
+
+    // Create the ground layer
+    this.groundLayer = this.map.createLayer('Ground', tileset, 0, 0)!;
+
+    if (!this.groundLayer) {
+      console.error('Failed to create ground layer');
+      return;
+    }
+
+    console.log('Tilemap loaded successfully');
   }
 
   private createPlayer() {
@@ -267,6 +298,19 @@ export class WorldScene extends Phaser.Scene {
       MAP_WIDTH * TILE_SIZE,
       MAP_HEIGHT * TILE_SIZE
     );
+
+    // Handle window resize
+    this.scale.on('resize', this.handleResize, this);
+  }
+
+  private handleResize(gameSize: Phaser.Structs.Size) {
+    const width = gameSize.width;
+    const height = gameSize.height;
+
+    // Update camera viewport
+    this.cameras.resize(width, height);
+
+    console.log(`Game resized to ${width}x${height}`);
   }
 
   private movePlayer(dx: number, dy: number) {
@@ -303,19 +347,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private async enterAbuseModeFlow() {
-    // Step 1: Show warning modal
-    const warningModal = new WarningModal(
-      'rogue_employee',
-      () => {
-        // User accepted warnings - show scenario intro
-        this.showScenarioIntro();
-      },
-      () => {
-        // User declined - do nothing
-        console.log('User declined abuse mode');
-      }
-    );
-    warningModal.show();
+    // Skip warning modal and go straight to scenario intro
+    this.showScenarioIntro();
   }
 
   private showScenarioIntro() {
@@ -338,8 +371,11 @@ export class WorldScene extends Phaser.Scene {
     // Hide normal data panel
     this.dataPanel.hide();
 
-    // Create and show abuse mode panel
-    this.abuseModePanel = new AbuseModePanel(this.currentSessionId);
+    // Create and show abuse mode panel with action callback
+    this.abuseModePanel = new AbuseModePanel(
+      this.currentSessionId,
+      (actionName: string, targetName: string, targetId: string) => this.onActionExecuted(actionName, targetName, targetId)
+    );
     this.abuseModePanel.show();
 
     // Create audit trail
@@ -353,7 +389,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private createRedTintOverlay() {
-    // Create CSS overlay instead of Phaser object for better performance
+    // Create edge glow effect instead of full overlay
     this.redTintOverlay = document.createElement('div');
     this.redTintOverlay.style.cssText = `
       position: fixed;
@@ -361,10 +397,10 @@ export class WorldScene extends Phaser.Scene {
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(255, 0, 0, 0.1);
       pointer-events: none;
       z-index: 10;
-      transition: opacity 0.5s ease-in;
+      box-shadow: inset 0 0 100px 20px rgba(239, 71, 111, 0.6);
+      transition: box-shadow 0.5s ease-in;
     `;
     document.body.appendChild(this.redTintOverlay);
   }
@@ -382,25 +418,51 @@ export class WorldScene extends Phaser.Scene {
     document.body.appendChild(this.auditTrailElement);
   }
 
-  // TODO: Wire up audit trail to AbuseModePanel action execution events
-  // private updateAuditTrail(actionName: string, targetName: string) {
-  //   this.actionsThisSession.push({ action: actionName, target: targetName });
-  //   if (this.auditTrailElement) {
-  //     const countElement = this.auditTrailElement.querySelector('.count-number');
-  //     if (countElement) {
-  //       countElement.textContent = this.actionsThisSession.length.toString();
-  //     }
-  //     const listElement = this.auditTrailElement.querySelector('#audit-list') as HTMLUListElement;
-  //     if (listElement) {
-  //       const li = document.createElement('li');
-  //       li.innerHTML = `
-  //         <span class="action-name">${actionName}</span>
-  //         → <span class="target-name">${targetName}</span>
-  //       `;
-  //       listElement.prepend(li);
-  //     }
-  //   }
-  // }
+  private onActionExecuted(actionName: string, targetName: string, targetId: string) {
+    this.updateAuditTrail(actionName, targetName);
+    this.markNpcAsTargeted(targetId);
+  }
+
+  private updateAuditTrail(actionName: string, targetName: string) {
+    this.actionsThisSession.push({ action: actionName, target: targetName });
+    if (this.auditTrailElement) {
+      const countElement = this.auditTrailElement.querySelector('.count-number');
+      if (countElement) {
+        countElement.textContent = this.actionsThisSession.length.toString();
+      }
+      const listElement = this.auditTrailElement.querySelector('#audit-list') as HTMLUListElement;
+      if (listElement) {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="action-name">${actionName}</span>
+          → <span class="target-name">${targetName}</span>
+        `;
+        listElement.prepend(li);
+      }
+    }
+  }
+
+  private markNpcAsTargeted(npcId: string) {
+    // Track that this NPC has been targeted
+    this.targetedNpcIds.add(npcId);
+
+    // Apply red glow effect to the NPC sprite
+    const sprite = this.npcSprites.get(npcId);
+    if (sprite) {
+      // Set red tint with slight transparency for a glowing effect
+      sprite.setTint(0xff6b6b);
+
+      // Add a pulse effect using tweens
+      this.tweens.add({
+        targets: sprite,
+        alpha: 0.7,
+        yoyo: true,
+        repeat: -1,
+        duration: 1000,
+        ease: 'Sine.easeInOut'
+      });
+    }
+  }
 
   private async showScenarioPrompt() {
     if (!this.currentSessionId) return;
@@ -419,6 +481,330 @@ export class WorldScene extends Phaser.Scene {
       // No prompt available - that's ok
       console.log('No scenario prompt available:', error);
     }
+  }
+
+  private createNpcTooltip() {
+    this.npcTooltip = document.createElement('div');
+    this.npcTooltip.style.cssText = `
+      position: fixed;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      border: 1px solid #4a90e2;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: bold;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+      white-space: nowrap;
+    `;
+    document.body.appendChild(this.npcTooltip);
+  }
+
+  private handleNpcHover(npcId: string, isHovering: boolean) {
+    const sprite = this.npcSprites.get(npcId);
+    const npc = this.npcs.find(n => n.id === npcId);
+
+    if (!sprite || !npc) return;
+
+    if (isHovering) {
+      // Apply hover effect (scale up slightly)
+      if (this.selectedNpcId !== npcId) {
+        sprite.setScale(1.2);
+      }
+
+      // Show tooltip
+      if (this.npcTooltip) {
+        this.npcTooltip.textContent = `${npc.first_name} ${npc.last_name}`;
+        this.npcTooltip.style.display = 'block';
+
+        // Position tooltip near cursor
+        const updateTooltipPosition = (pointer: Phaser.Input.Pointer) => {
+          if (this.npcTooltip) {
+            this.npcTooltip.style.left = `${pointer.x + 15}px`;
+            this.npcTooltip.style.top = `${pointer.y - 30}px`;
+          }
+        };
+
+        this.input.on('pointermove', updateTooltipPosition);
+        this.input.once('pointerout', () => {
+          this.input.off('pointermove', updateTooltipPosition);
+        });
+      }
+    } else {
+      // Remove hover effect
+      if (this.selectedNpcId !== npcId) {
+        sprite.setScale(1);
+      }
+
+      // Hide tooltip
+      if (this.npcTooltip) {
+        this.npcTooltip.style.display = 'none';
+      }
+    }
+  }
+
+  private setupZoomControls() {
+    const camera = this.cameras.main;
+
+    // Mouse wheel zoom
+    this.input.on('wheel', (_pointer: any, _gameObjects: any, _deltaX: number, deltaY: number) => {
+      const zoomAmount = deltaY > 0 ? -0.1 : 0.1;
+      const newZoom = Phaser.Math.Clamp(camera.zoom + zoomAmount, 0.5, 2.0);
+      camera.setZoom(newZoom);
+    });
+
+    // Create zoom control buttons
+    const zoomControls = document.createElement('div');
+    zoomControls.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 500;
+    `;
+
+    const buttonStyle = `
+      width: 40px;
+      height: 40px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid #4a90e2;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    `;
+
+    // Zoom in button
+    const zoomInBtn = document.createElement('button');
+    zoomInBtn.textContent = '+';
+    zoomInBtn.style.cssText = buttonStyle;
+    zoomInBtn.addEventListener('mouseenter', () => {
+      zoomInBtn.style.background = 'rgba(74, 144, 226, 0.3)';
+    });
+    zoomInBtn.addEventListener('mouseleave', () => {
+      zoomInBtn.style.background = 'rgba(0, 0, 0, 0.7)';
+    });
+    zoomInBtn.addEventListener('click', () => {
+      const newZoom = Phaser.Math.Clamp(camera.zoom + 0.2, 0.5, 2.0);
+      camera.setZoom(newZoom);
+    });
+
+    // Zoom out button
+    const zoomOutBtn = document.createElement('button');
+    zoomOutBtn.textContent = '−';
+    zoomOutBtn.style.cssText = buttonStyle;
+    zoomOutBtn.addEventListener('mouseenter', () => {
+      zoomOutBtn.style.background = 'rgba(74, 144, 226, 0.3)';
+    });
+    zoomOutBtn.addEventListener('mouseleave', () => {
+      zoomOutBtn.style.background = 'rgba(0, 0, 0, 0.7)';
+    });
+    zoomOutBtn.addEventListener('click', () => {
+      const newZoom = Phaser.Math.Clamp(camera.zoom - 0.2, 0.5, 2.0);
+      camera.setZoom(newZoom);
+    });
+
+    // Reset zoom button
+    const resetZoomBtn = document.createElement('button');
+    resetZoomBtn.textContent = '⊙';
+    resetZoomBtn.style.cssText = buttonStyle;
+    resetZoomBtn.addEventListener('mouseenter', () => {
+      resetZoomBtn.style.background = 'rgba(74, 144, 226, 0.3)';
+    });
+    resetZoomBtn.addEventListener('mouseleave', () => {
+      resetZoomBtn.style.background = 'rgba(0, 0, 0, 0.7)';
+    });
+    resetZoomBtn.addEventListener('click', () => {
+      camera.setZoom(1.0);
+    });
+
+    zoomControls.appendChild(zoomInBtn);
+    zoomControls.appendChild(resetZoomBtn);
+    zoomControls.appendChild(zoomOutBtn);
+    document.body.appendChild(zoomControls);
+  }
+
+  private createMenuButton() {
+    const menuBtn = document.createElement('button');
+    menuBtn.textContent = '☰ Menu';
+    menuBtn.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 2px solid #4a90e2;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 500;
+      transition: all 0.2s;
+    `;
+
+    menuBtn.addEventListener('mouseenter', () => {
+      menuBtn.style.background = 'rgba(74, 144, 226, 0.3)';
+    });
+
+    menuBtn.addEventListener('mouseleave', () => {
+      menuBtn.style.background = 'rgba(0, 0, 0, 0.7)';
+    });
+
+    menuBtn.addEventListener('click', () => {
+      this.showMenuModal();
+    });
+
+    document.body.appendChild(menuBtn);
+  }
+
+  private showMenuModal() {
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    `;
+
+    // Create modal content
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 2px solid #4a90e2;
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 400px;
+      color: white;
+    `;
+
+    const title = document.createElement('h2');
+    title.textContent = 'Menu';
+    title.style.cssText = `
+      margin: 0 0 20px 0;
+      font-size: 24px;
+      text-align: center;
+    `;
+
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    `;
+
+    const createButton = (text: string, onClick: () => void, isDanger = false) => {
+      const btn = document.createElement('button');
+      btn.textContent = text;
+      btn.style.cssText = `
+        padding: 12px 24px;
+        background: ${isDanger ? '#ef476f' : '#4a90e2'};
+        border: none;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+      `;
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = isDanger ? '#d63354' : '#357abd';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = isDanger ? '#ef476f' : '#4a90e2';
+      });
+      btn.addEventListener('click', onClick);
+      return btn;
+    };
+
+    // Restart button
+    buttonContainer.appendChild(createButton('Restart Game', () => {
+      overlay.remove();
+      this.scene.restart();
+    }, true));
+
+    // Exit Rogue Mode button (only show if in abuse mode)
+    if (this.isAbuseModeActive) {
+      buttonContainer.appendChild(createButton('Exit Rogue Mode', () => {
+        overlay.remove();
+        this.exitAbuseMode();
+      }));
+    }
+
+    // Close button
+    buttonContainer.appendChild(createButton('Close Menu', () => {
+      overlay.remove();
+    }));
+
+    modal.appendChild(title);
+    modal.appendChild(buttonContainer);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Close on overlay click
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.remove();
+      }
+    });
+  }
+
+  private exitAbuseMode() {
+    if (!this.isAbuseModeActive) return;
+
+    this.isAbuseModeActive = false;
+    this.currentSessionId = null;
+
+    // Remove red tint overlay
+    if (this.redTintOverlay && this.redTintOverlay.parentElement) {
+      this.redTintOverlay.parentElement.removeChild(this.redTintOverlay);
+      this.redTintOverlay = null;
+    }
+
+    // Remove audit trail
+    if (this.auditTrailElement && this.auditTrailElement.parentElement) {
+      this.auditTrailElement.parentElement.removeChild(this.auditTrailElement);
+      this.auditTrailElement = null;
+    }
+
+    // Hide abuse mode panel
+    if (this.abuseModePanel) {
+      this.abuseModePanel.destroy();
+      this.abuseModePanel = null;
+    }
+
+    // Clear targeted NPCs list and reset their visuals
+    for (const npcId of this.targetedNpcIds) {
+      const sprite = this.npcSprites.get(npcId);
+      if (sprite) {
+        sprite.clearTint();
+        sprite.setAlpha(1);
+        this.tweens.killTweensOf(sprite);
+      }
+    }
+    this.targetedNpcIds.clear();
+    this.actionsThisSession = [];
+
+    // Show the enter abuse mode button again
+    const abuseModeBtn = document.querySelector('.btn-enter-abuse-mode') as HTMLElement;
+    if (abuseModeBtn) {
+      abuseModeBtn.style.display = 'block';
+    }
+
+    console.log('Exited abuse mode');
   }
 
   shutdown() {
@@ -442,8 +828,14 @@ export class WorldScene extends Phaser.Scene {
       this.auditTrailElement.parentElement.removeChild(this.auditTrailElement);
     }
 
+    // Clean up NPC tooltip
+    if (this.npcTooltip && this.npcTooltip.parentElement) {
+      this.npcTooltip.parentElement.removeChild(this.npcTooltip);
+    }
+
     // Remove event listeners
     this.events.off('npc-clicked');
     this.events.off('abuse-mode-activated');
+    this.scale.off('resize', this.handleResize, this);
   }
 }

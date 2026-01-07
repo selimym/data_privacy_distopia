@@ -26,6 +26,14 @@ class InferenceRuleRead(BaseModel):
     updated_at: datetime
 
 
+class VictimStatement(BaseModel):
+    """A first-person account showing the human impact of a privacy violation."""
+
+    text: str = Field(description="The victim's statement")
+    context: str = Field(description="Context about the victim (age, situation, etc.)")
+    severity: int = Field(ge=1, le=5, description="Impact severity 1-5")
+
+
 class InferenceResult(BaseModel):
     """
     A computed inference result from analyzing NPC data.
@@ -36,6 +44,7 @@ class InferenceResult(BaseModel):
 
     rule_key: str
     rule_name: str
+    category: str = Field(description="Rule category (e.g., vulnerability_exploitation)")
     confidence: float = Field(ge=0.0, le=1.0, description="Confidence score 0-1")
     inference_text: str = Field(description="The main conclusion or insight")
     supporting_evidence: list[str] = Field(
@@ -47,6 +56,15 @@ class InferenceResult(BaseModel):
     domains_used: list[DomainType] = Field(description="Which domains contributed to this inference")
     scariness_level: int = Field(ge=1, le=5, description="How concerning this inference is")
     content_rating: ContentRating
+    educational_note: str | None = Field(
+        default=None, description="Educational context about this privacy violation"
+    )
+    real_world_example: str | None = Field(
+        default=None, description="Real-world example of this type of privacy violation"
+    )
+    victim_statements: list[VictimStatement] = Field(
+        default_factory=list, description="First-person accounts from victims"
+    )
 
 
 class UnlockableInference(BaseModel):
