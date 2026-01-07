@@ -611,6 +611,68 @@ async def get_operator_history(
     return summaries
 
 
+# === Ending Endpoints ===
+
+
+@router.get("/ending")
+async def get_ending(
+    operator_id: UUID = Query(...), db: AsyncSession = Depends(get_db)
+):
+    """
+    Calculate and return the ending based on operator's behavior.
+
+    Determines ending type and generates personalized ending content
+    with statistics, citizen outcomes, and real-world parallels.
+    """
+    from datafusion.schemas.ending import EndingResult
+    from datafusion.services.ending_calculator import EndingCalculator
+
+    await _get_operator(operator_id, db)
+
+    calculator = EndingCalculator(db)
+
+    # Calculate ending type
+    ending_type = await calculator.calculate_ending(operator_id)
+
+    # Generate full ending content
+    ending_result = await calculator.generate_ending_content(ending_type, operator_id)
+
+    return ending_result
+
+
+@router.post("/ending/acknowledge")
+async def acknowledge_ending(
+    operator_id: UUID = Query(...),
+    feedback: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Acknowledge the ending and complete the session.
+
+    Marks session as complete and unlocks educational debrief.
+    """
+    from datafusion.schemas.ending import EndingAcknowledgeResponse
+
+    operator = await _get_operator(operator_id, db)
+
+    # Mark operator as terminated (session complete)
+    operator.status = OperatorStatus.TERMINATED
+
+    # Calculate approximate play time (from shift_start)
+    play_time_minutes = None
+    if operator.shift_start:
+        delta = datetime.utcnow() - operator.shift_start
+        play_time_minutes = int(delta.total_seconds() / 60)
+
+    await db.flush()
+
+    return EndingAcknowledgeResponse(
+        session_complete=True,
+        debrief_unlocked=True,
+        total_play_time_minutes=play_time_minutes,
+    )
+
+
 # === Helper Functions ===
 
 
