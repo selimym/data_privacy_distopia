@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
+import { MainMenuScene } from './scenes/MainMenuScene';
 import { WorldScene } from './scenes/WorldScene';
 import { SystemDashboardScene } from './scenes/SystemDashboardScene';
+import { SystemEndingScene } from './scenes/SystemEndingScene';
 import { GAME_WIDTH, GAME_HEIGHT } from './config';
 import './styles/panel.css';
 import './styles/abuse.css';
@@ -15,7 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
   parent: 'game-container',
   backgroundColor: '#1a1a2e',
   pixelArt: true,
-  scene: [BootScene, PreloadScene, WorldScene, SystemDashboardScene],
+  scene: [BootScene, PreloadScene, MainMenuScene, WorldScene, SystemDashboardScene, SystemEndingScene],
   physics: {
     default: 'arcade',
     arcade: {

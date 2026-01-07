@@ -14,7 +14,7 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('WorldScene');
+    this.scene.start('MainMenuScene');
   }
 
   private createPlaceholderAssets() {
