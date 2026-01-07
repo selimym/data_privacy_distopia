@@ -25,13 +25,7 @@ from datafusion.models.health import (
     HealthVisit,
     Severity,
 )
-from datafusion.models.inference import (
-    ContentRating,
-    InferenceRule,
-    InferenceUnlock,
-    RuleCategory,
-    VictimImpactStatement,
-)
+from datafusion.models.inference import ContentRating, RuleCategory
 from datafusion.models.judicial import (
     CaseDisposition,
     CivilCase,
@@ -96,10 +90,7 @@ __all__ = [
     "PrivateInference",
     "Platform",
     "InferenceCategory",
-    # Inference models
-    "InferenceRule",
-    "VictimImpactStatement",
-    "InferenceUnlock",
+    # Inference enums
     "ContentRating",
     "RuleCategory",
     # Abuse models

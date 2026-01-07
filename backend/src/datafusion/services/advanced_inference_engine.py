@@ -3,6 +3,8 @@
 This module implements the core logic for detecting privacy-invasive insights
 that emerge from combining data across multiple domains. Each inference rule
 has specific conditions and generates detailed, contextualized output.
+
+All rules are loaded from inference_rules.py config file for easy maintenance.
 """
 
 from decimal import Decimal
@@ -14,12 +16,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from datafusion.models.finance import FinanceRecord
 from datafusion.models.health import HealthRecord
-from datafusion.models.inference import InferenceRule, VictimImpactStatement
 from datafusion.models.judicial import JudicialRecord
 from datafusion.models.location import LocationRecord
 from datafusion.models.npc import NPC
 from datafusion.models.social import SocialMediaRecord
 from datafusion.schemas.domains import DomainType
+from datafusion.services.inference_rules import INFERENCE_RULES
 
 
 class InferenceContext:
@@ -81,18 +83,19 @@ class AdvancedInferenceEngine:
         # Load domain data based on what's enabled
         context = await self._build_context(npc, enabled_domains)
 
-        # Load all active inference rules
-        rules = await self._load_active_rules()
+        # Load all active inference rules from config
+        rules = self._load_active_rules()
 
         # Evaluate each rule
         results = []
         for rule in rules:
             # Check if we have required domains
-            if not context.has_domains(rule.required_domains):
+            required_domain_values = [d.value for d in rule["required_domains"]]
+            if not context.has_domains(required_domain_values):
                 continue
 
             # Evaluate condition
-            condition_func = getattr(self, rule.condition_function, None)
+            condition_func = getattr(self, rule["condition_function"], None)
             if not condition_func:
                 continue
 
@@ -150,31 +153,30 @@ class AdvancedInferenceEngine:
 
         return InferenceContext(npc, health, finance, judicial, location, social)
 
-    async def _load_active_rules(self) -> list[InferenceRule]:
-        """Load all active inference rules from database."""
-        query = select(InferenceRule).where(InferenceRule.is_active == True)
-        result = await self.db.execute(query)
-        return list(result.scalars().all())
+    def _load_active_rules(self) -> list[dict[str, Any]]:
+        """Load all active inference rules from config."""
+        return INFERENCE_RULES
 
-    def _render_inference(self, rule: InferenceRule, variables: dict[str, Any]) -> dict[str, Any]:
+    def _render_inference(self, rule: dict[str, Any], variables: dict[str, Any]) -> dict[str, Any]:
         """Render inference templates with provided variables."""
         return {
-            "rule_key": rule.rule_key,
-            "rule_name": rule.name,
-            "category": rule.category,
-            "scariness_level": rule.scariness_level,
-            "content_rating": rule.content_rating,
+            "rule_key": rule["rule_key"],
+            "rule_name": rule["name"],
+            "category": rule["category"].value,  # Enum to string
+            "scariness_level": rule["scariness_level"],
+            "content_rating": rule["content_rating"].value,  # Enum to string
             "confidence": variables.get("confidence", 0.95),  # Default high confidence
-            "inference_text": rule.inference_template.format(**variables),
+            "inference_text": rule["inference_template"].format(**variables),
             "supporting_evidence": [
-                template.format(**variables) for template in rule.evidence_templates
+                template.format(**variables) for template in rule["evidence_templates"]
             ],
             "implications": [
-                template.format(**variables) for template in rule.implications_templates
+                template.format(**variables) for template in rule["implications_templates"]
             ],
-            "domains_used": rule.required_domains,
-            "educational_note": rule.educational_note,
-            "real_world_example": rule.real_world_example,
+            "domains_used": [d.value for d in rule["required_domains"]],  # Enums to strings
+            "educational_note": rule.get("educational_note"),
+            "real_world_example": rule.get("real_world_example"),
+            "victim_statements": rule.get("victim_statements", []),
         }
 
     # ==================== CONDITION EVALUATOR FUNCTIONS ====================
