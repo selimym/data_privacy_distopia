@@ -8,6 +8,7 @@
 
 import type { OperatorRiskAssessment } from '../../types/system';
 import * as api from '../../api/system';
+import { getSystemAudioManager } from '../../audio/SystemAudioManager';
 
 export interface OperatorReviewConfig {
   operatorId: string;
@@ -25,6 +26,9 @@ export class OperatorReviewScreen {
     this.config = config;
     this.overlay = this.createScreen();
     document.body.appendChild(this.overlay);
+
+    // Play ominous review sound
+    getSystemAudioManager().play('review_initiated');
 
     requestAnimationFrame(() => {
       this.overlay.classList.add('visible');

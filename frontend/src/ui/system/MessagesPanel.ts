@@ -7,6 +7,7 @@
  */
 
 import type { MessageRead } from '../../types/system';
+import { getSystemAudioManager } from '../../audio/SystemAudioManager';
 
 export interface MessagesPanelConfig {
   citizenName: string;
@@ -23,6 +24,9 @@ export class MessagesPanel {
   constructor(config: MessagesPanelConfig) {
     this.config = config;
     this.container = this.createPanel();
+
+    // Play invasive message open sound
+    getSystemAudioManager().play('message_open');
   }
 
   private createPanel(): HTMLDivElement {

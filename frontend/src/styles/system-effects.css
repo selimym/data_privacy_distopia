@@ -1,0 +1,846 @@
+/**
+ * System Mode Visual Effects
+ *
+ * CRT effects, animations, color progression, and data visualizations
+ * that reinforce the oppressive surveillance atmosphere.
+ */
+
+/* =========================================
+   CSS Custom Properties for Week Progression
+   ========================================= */
+
+/* Week 1-2: Legitimate feeling (cyan/blue) */
+.system-week-1,
+.system-week-2 {
+  --system-accent: #00d4ff;
+  --system-accent-dim: #006680;
+  --system-warning: #ffaa00;
+  --system-danger: #ff4444;
+  --system-text-primary: #e0e0e0;
+  --system-glow: rgba(0, 212, 255, 0.3);
+}
+
+/* Week 3-4: More amber warnings */
+.system-week-3,
+.system-week-4 {
+  --system-accent: #00aacc;
+  --system-accent-dim: #005566;
+  --system-warning: #ff8800;
+  --system-danger: #ff3333;
+  --system-text-primary: #d0d0d0;
+  --system-glow: rgba(255, 136, 0, 0.2);
+}
+
+/* Week 5-6: Red/oppressive */
+.system-week-5,
+.system-week-6 {
+  --system-accent: #cc6600;
+  --system-accent-dim: #663300;
+  --system-warning: #ff4400;
+  --system-danger: #ff0000;
+  --system-text-primary: #c0c0c0;
+  --system-glow: rgba(255, 68, 0, 0.3);
+}
+
+/* =========================================
+   CRT / Scanline Effect
+   ========================================= */
+
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.crt-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1) 0px,
+    rgba(0, 0, 0, 0.1) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  animation: scanlines 0.1s linear infinite;
+  opacity: 0.15;
+}
+
+.crt-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 80%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+}
+
+@keyframes scanlines {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(2px);
+  }
+}
+
+/* Reduced intensity mode */
+.crt-overlay.reduced {
+  opacity: 0.5;
+}
+
+.crt-overlay.reduced::before {
+  opacity: 0.08;
+}
+
+/* =========================================
+   Screen Flicker Effect (subtle)
+   ========================================= */
+
+@keyframes screen-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.98;
+  }
+  75% {
+    opacity: 0.995;
+  }
+}
+
+.system-dashboard-scene {
+  animation: screen-flicker 4s infinite;
+}
+
+/* =========================================
+   Risk Score Bar Animation
+   ========================================= */
+
+.risk-bar-fill {
+  transition: width 1s ease-out, background-color 0.5s ease;
+}
+
+.risk-bar-fill.animating {
+  animation: risk-fill-pulse 0.5s ease-out;
+}
+
+@keyframes risk-fill-pulse {
+  0% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.5);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+/* Risk level color classes */
+.risk-bar-fill.risk-low {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
+.risk-bar-fill.risk-moderate {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.risk-bar-fill.risk-elevated {
+  background: linear-gradient(90deg, #f97316, #fb923c);
+}
+
+.risk-bar-fill.risk-high {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.risk-bar-fill.risk-critical {
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+  animation: risk-critical-pulse 1s infinite;
+}
+
+@keyframes risk-critical-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
+  }
+}
+
+/* =========================================
+   Citizen Dot Pulse Animation
+   ========================================= */
+
+.citizen-dot {
+  transition: all 0.3s ease;
+}
+
+.citizen-dot.pulse-low {
+  animation: dot-pulse-low 3s infinite;
+}
+
+.citizen-dot.pulse-moderate {
+  animation: dot-pulse-moderate 2s infinite;
+}
+
+.citizen-dot.pulse-high {
+  animation: dot-pulse-high 1s infinite;
+}
+
+@keyframes dot-pulse-low {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes dot-pulse-moderate {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes dot-pulse-high {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 5px var(--system-danger);
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px var(--system-danger);
+  }
+}
+
+/* =========================================
+   Alert Panel Slide Animation
+   ========================================= */
+
+.alert-panel {
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.alert-panel.visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.alert-panel.slide-out {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Shake effect for urgent alerts */
+.alert-panel.urgent {
+  animation: alert-shake 0.5s ease-in-out;
+}
+
+@keyframes alert-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+/* =========================================
+   Decision Timer Animation
+   ========================================= */
+
+.decision-timer {
+  transition: all 0.3s ease;
+}
+
+.decision-timer.warning {
+  color: var(--system-warning);
+  animation: timer-warning 1s infinite;
+}
+
+.decision-timer.critical {
+  color: var(--system-danger);
+  animation: timer-critical 0.5s infinite;
+}
+
+@keyframes timer-warning {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes timer-critical {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+/* Timer progress bar */
+.timer-progress {
+  height: 3px;
+  background: var(--system-border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.timer-progress-bar {
+  height: 100%;
+  background: var(--system-accent);
+  transition: width 1s linear, background-color 0.3s ease;
+}
+
+.timer-progress-bar.warning {
+  background: var(--system-warning);
+}
+
+.timer-progress-bar.critical {
+  background: var(--system-danger);
+  animation: timer-bar-pulse 0.5s infinite;
+}
+
+@keyframes timer-bar-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* =========================================
+   Data Flow Background Animation
+   ========================================= */
+
+.data-flow-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0.05;
+  z-index: 0;
+}
+
+.data-flow-bg::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 200%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 20px,
+    rgba(0, 212, 255, 0.1) 20px,
+    rgba(0, 212, 255, 0.1) 21px
+  );
+  animation: data-flow-vertical 20s linear infinite;
+}
+
+.data-flow-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 30px,
+    rgba(0, 212, 255, 0.05) 30px,
+    rgba(0, 212, 255, 0.05) 31px
+  );
+  animation: data-flow-horizontal 30s linear infinite;
+}
+
+@keyframes data-flow-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(50%);
+  }
+}
+
+@keyframes data-flow-horizontal {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(50%);
+  }
+}
+
+/* =========================================
+   Network Graph Visualization
+   ========================================= */
+
+.network-graph {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.network-node {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--system-accent);
+  box-shadow: 0 0 8px var(--system-glow);
+  transition: all 0.3s ease;
+}
+
+.network-node:hover {
+  transform: scale(1.5);
+  box-shadow: 0 0 15px var(--system-accent);
+}
+
+.network-node.flagged {
+  background: var(--system-danger);
+  box-shadow: 0 0 8px rgba(255, 68, 68, 0.5);
+  animation: node-flagged 1s infinite;
+}
+
+@keyframes node-flagged {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(255, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 68, 68, 0.8);
+  }
+}
+
+.network-edge {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(90deg, var(--system-accent-dim), transparent);
+  transform-origin: left center;
+  opacity: 0.4;
+}
+
+.network-edge.active {
+  opacity: 0.8;
+  animation: edge-pulse 2s infinite;
+}
+
+@keyframes edge-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* =========================================
+   Heat Map Overlay
+   ========================================= */
+
+.heat-map-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.6;
+  mix-blend-mode: multiply;
+}
+
+.heat-spot {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(30px);
+  transition: all 0.5s ease;
+}
+
+.heat-spot.low {
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.5), transparent 70%);
+}
+
+.heat-spot.moderate {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.5), transparent 70%);
+}
+
+.heat-spot.high {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.5), transparent 70%);
+}
+
+/* =========================================
+   Typography
+   ========================================= */
+
+/* Monospace for data/technical elements */
+.data-text,
+.code-text,
+.id-text,
+.timestamp-text {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+  letter-spacing: 0.02em;
+}
+
+/* Sans-serif for interface text */
+.ui-text,
+.label-text {
+  font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.01em;
+}
+
+/* Redacted text effect */
+.redacted {
+  position: relative;
+  color: transparent;
+  user-select: none;
+}
+
+.redacted::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    #333 0px,
+    #333 2px,
+    #222 2px,
+    #222 4px
+  );
+}
+
+/* Classified text styling */
+.classified {
+  color: var(--system-danger);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: classified-blink 2s infinite;
+}
+
+@keyframes classified-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* =========================================
+   Glitch Effect (for errors/warnings)
+   ========================================= */
+
+.glitch {
+  animation: glitch 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+}
+
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+  }
+  20% {
+    transform: translate(-2px, 2px);
+  }
+  40% {
+    transform: translate(-2px, -2px);
+  }
+  60% {
+    transform: translate(2px, 2px);
+  }
+  80% {
+    transform: translate(2px, -2px);
+  }
+  100% {
+    transform: translate(0);
+  }
+}
+
+.glitch-text {
+  position: relative;
+}
+
+.glitch-text::before,
+.glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.glitch-text::before {
+  left: 2px;
+  text-shadow: -2px 0 #ff0000;
+  clip: rect(24px, 550px, 90px, 0);
+  animation: glitch-anim-1 2s infinite linear alternate-reverse;
+}
+
+.glitch-text::after {
+  left: -2px;
+  text-shadow: -2px 0 #00ff00;
+  clip: rect(85px, 550px, 140px, 0);
+  animation: glitch-anim-2 2s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim-1 {
+  0% {
+    clip: rect(132px, 350px, 101px, 30px);
+  }
+  25% {
+    clip: rect(17px, 350px, 94px, 30px);
+  }
+  50% {
+    clip: rect(40px, 350px, 66px, 30px);
+  }
+  75% {
+    clip: rect(110px, 350px, 140px, 30px);
+  }
+  100% {
+    clip: rect(70px, 350px, 89px, 30px);
+  }
+}
+
+@keyframes glitch-anim-2 {
+  0% {
+    clip: rect(129px, 350px, 36px, 30px);
+  }
+  25% {
+    clip: rect(36px, 350px, 4px, 30px);
+  }
+  50% {
+    clip: rect(85px, 350px, 66px, 30px);
+  }
+  75% {
+    clip: rect(67px, 350px, 98px, 30px);
+  }
+  100% {
+    clip: rect(14px, 350px, 46px, 30px);
+  }
+}
+
+/* =========================================
+   Loading States
+   ========================================= */
+
+.loading-bar {
+  height: 4px;
+  background: var(--system-bg-secondary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loading-bar-progress {
+  height: 100%;
+  background: linear-gradient(90deg, var(--system-accent), var(--system-accent-dim));
+  animation: loading-progress 2s ease-in-out infinite;
+}
+
+@keyframes loading-progress {
+  0% {
+    width: 0%;
+    margin-left: 0%;
+  }
+  50% {
+    width: 40%;
+    margin-left: 30%;
+  }
+  100% {
+    width: 0%;
+    margin-left: 100%;
+  }
+}
+
+.loading-dots::after {
+  content: '';
+  animation: loading-dots 1.5s infinite;
+}
+
+@keyframes loading-dots {
+  0% {
+    content: '';
+  }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75% {
+    content: '...';
+  }
+  100% {
+    content: '';
+  }
+}
+
+/* =========================================
+   Transition Effects
+   ========================================= */
+
+.fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.fade-out {
+  animation: fade-out 0.3s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.slide-up {
+  animation: slide-up 0.3s ease-out forwards;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.scale-in {
+  animation: scale-in 0.2s ease-out forwards;
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* =========================================
+   Focus States for Keyboard Navigation
+   ========================================= */
+
+.system-focus:focus {
+  outline: 2px solid var(--system-accent);
+  outline-offset: 2px;
+}
+
+.system-focus:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* =========================================
+   Hover Effects
+   ========================================= */
+
+.hover-glow:hover {
+  box-shadow: 0 0 15px var(--system-glow);
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* =========================================
+   Accessibility: Reduced Motion
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .crt-overlay::before {
+    animation: none;
+  }
+
+  .system-dashboard-scene {
+    animation: none;
+  }
+}

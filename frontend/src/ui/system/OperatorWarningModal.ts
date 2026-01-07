@@ -6,6 +6,8 @@
  * The bureaucratic language masks the horror of being watched.
  */
 
+import { getSystemAudioManager } from '../../audio/SystemAudioManager';
+
 export interface WarningMetrics {
   quotaCompletionRate: number;
   expectedRate: number;
@@ -32,6 +34,14 @@ export class OperatorWarningModal {
     this.config = config;
     this.overlay = this.createModal();
     document.body.appendChild(this.overlay);
+
+    // Play warning sound based on severity
+    const audioManager = getSystemAudioManager();
+    if (config.warningType === 'final_notice') {
+      audioManager.play('review_initiated');
+    } else {
+      audioManager.play('compliance_warning');
+    }
 
     requestAnimationFrame(() => {
       this.overlay.classList.add('visible');

@@ -8,6 +8,8 @@
 import Phaser from 'phaser';
 import * as api from '../api/system';
 import type { EndingResult, CitizenOutcomeSummary } from '../types/system';
+import { getSystemAudioManager } from '../audio/SystemAudioManager';
+import { getSystemVisualEffects } from '../ui/system/SystemVisualEffects';
 
 export class SystemEndingScene extends Phaser.Scene {
   private container!: HTMLDivElement;
@@ -73,20 +75,32 @@ export class SystemEndingScene extends Phaser.Scene {
   private startEnding() {
     if (!this.endingData) return;
 
+    // Stop ambient and play ending audio
+    const audioManager = getSystemAudioManager();
+    audioManager.stopAmbient();
+
+    // Clean up visual effects
+    getSystemVisualEffects().cleanup();
+
     switch (this.endingData.ending_type) {
       case 'compliant_operator':
+        audioManager.play('ending_compliant');
         this.playCompliantEnding();
         break;
       case 'suspended_operator':
+        audioManager.play('ending_suspended');
         this.playSuspendedEnding();
         break;
       case 'reluctant_operator':
+        audioManager.play('ending_revelation');
         this.playReluctantEnding();
         break;
       case 'resistance_path':
+        audioManager.play('ending_revelation');
         this.playResistanceEnding();
         break;
       default:
+        audioManager.play('ending_compliant');
         this.playCompliantEnding();
     }
   }

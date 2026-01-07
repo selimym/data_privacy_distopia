@@ -4,6 +4,8 @@ import type { CaseOverview, FlagResult, RiskLevel } from '../types/system';
 import { MessagesPanel } from '../ui/system/MessagesPanel';
 import { DecisionResultModal } from '../ui/system/DecisionResultModal';
 import { OutcomeViewer } from '../ui/system/OutcomeViewer';
+import { getSystemAudioManager } from '../audio/SystemAudioManager';
+import { getSystemVisualEffects } from '../ui/system/SystemVisualEffects';
 
 /**
  * SystemDashboardScene - Main surveillance operator interface.
@@ -26,8 +28,19 @@ export class SystemDashboardScene extends Phaser.Scene {
   }
 
   async create() {
+    // Initialize audio and visual effects
+    const audioManager = getSystemAudioManager();
+    audioManager.init();
+    audioManager.startAmbient();
+
+    const visualEffects = getSystemVisualEffects();
+    visualEffects.init({ crtEnabled: true, weekNumber: 1 });
+
     this.createDashboardUI();
     this.setupStateSubscription();
+
+    // Add data flow background
+    visualEffects.addDataFlowBackground(this.container);
 
     if (this.sessionId) {
       await systemState.initialize(this.sessionId);
@@ -616,6 +629,7 @@ export class SystemDashboardScene extends Phaser.Scene {
       const justification = flagJustification.value.trim();
 
       if (flagType && justification) {
+        getSystemAudioManager().play('flag_submit');
         const result = await systemState.submitFlag(flagType, justification);
         if (result) {
           this.showFlagResult(result);
@@ -694,6 +708,7 @@ export class SystemDashboardScene extends Phaser.Scene {
   }
 
   private async selectCase(npcId: string) {
+    getSystemAudioManager().play('select_citizen');
     await systemState.selectCitizen(npcId);
   }
 
@@ -760,6 +775,11 @@ export class SystemDashboardScene extends Phaser.Scene {
     if (this.container) {
       this.container.remove();
     }
+
+    // Cleanup audio and visual effects
+    getSystemAudioManager().stopAmbient();
+    getSystemVisualEffects().cleanup();
+
     systemState.reset();
   }
 

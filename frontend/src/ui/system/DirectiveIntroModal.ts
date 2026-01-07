@@ -7,6 +7,7 @@
  */
 
 import type { DirectiveRead } from '../../types/system';
+import { getSystemAudioManager } from '../../audio/SystemAudioManager';
 
 export interface DirectiveIntroConfig {
   directive: DirectiveRead;
@@ -34,6 +35,9 @@ export class DirectiveIntroModal {
     this.config = config;
     this.overlay = this.createModal();
     document.body.appendChild(this.overlay);
+
+    // Play directive notification sound
+    getSystemAudioManager().play('directive_new');
 
     requestAnimationFrame(() => {
       this.overlay.classList.add('visible');
