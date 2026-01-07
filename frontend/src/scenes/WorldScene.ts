@@ -49,7 +49,7 @@ export class WorldScene extends Phaser.Scene {
   private isAbuseModeActive: boolean = false;
   private currentSessionId: string | null = null;
   private abuseModePanel: AbuseModePanel | null = null;
-  private redTintOverlay: Phaser.GameObjects.Rectangle | null = null;
+  private redTintOverlay: HTMLDivElement | null = null;
   private auditTrailElement: HTMLDivElement | null = null;
   // TODO: Track actions for audit trail
   // private actionsThisSession: Array<{ action: string; target: string }> = [];
@@ -358,17 +358,20 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private createRedTintOverlay() {
-    // Create semi-transparent red overlay over the entire camera view
-    this.redTintOverlay = this.add.rectangle(
-      0,
-      0,
-      MAP_WIDTH * TILE_SIZE,
-      MAP_HEIGHT * TILE_SIZE,
-      0xff0000,
-      0.1 // 10% opacity
-    );
-    this.redTintOverlay.setOrigin(0, 0);
-    this.redTintOverlay.setDepth(5); // Above ground and NPCs, below UI
+    // Create CSS overlay instead of Phaser object for better performance
+    this.redTintOverlay = document.createElement('div');
+    this.redTintOverlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 0, 0, 0.1);
+      pointer-events: none;
+      z-index: 10;
+      transition: opacity 0.5s ease-in;
+    `;
+    document.body.appendChild(this.redTintOverlay);
   }
 
   private createAuditTrail() {
@@ -432,6 +435,11 @@ export class WorldScene extends Phaser.Scene {
     // Clean up abuse mode panel
     if (this.abuseModePanel) {
       this.abuseModePanel.destroy();
+    }
+
+    // Clean up red tint overlay
+    if (this.redTintOverlay && this.redTintOverlay.parentElement) {
+      this.redTintOverlay.parentElement.removeChild(this.redTintOverlay);
     }
 
     // Clean up audit trail

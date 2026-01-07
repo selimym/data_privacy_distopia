@@ -70,6 +70,11 @@
   margin-bottom: 8px;
 }
 
+.educational-purpose p {
+  color: #e6e6e6;
+  margin: 0;
+}
+
 .warnings-list h4 {
   color: #ffd166;
   margin-bottom: 16px;
