@@ -1177,3 +1177,1026 @@
 .btn-dismiss:hover {
   background: #dc2626;
 }
+
+/* ============================================
+   MESSAGES PANEL - Private Communications
+   ============================================ */
+
+.messages-panel {
+  background: var(--system-panel);
+  border: 1px solid var(--system-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.messages-header {
+  padding: 16px;
+  background: linear-gradient(135deg, #1a0a0a 0%, #2a1515 100%);
+  border-bottom: 1px solid var(--system-danger);
+}
+
+.messages-header .header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.messages-header .classification-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  background: var(--system-danger);
+  color: white;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+
+.messages-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--system-text);
+  letter-spacing: 1px;
+}
+
+.messages-header .subject-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--system-danger);
+}
+
+.messages-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--system-border);
+}
+
+.messages-stats .stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.messages-stats .stat-label {
+  font-size: 10px;
+  color: var(--system-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.messages-stats .stat-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--system-text);
+}
+
+.messages-stats .stat-value.sentiment-very-negative,
+.messages-stats .stat-value.sentiment-negative {
+  color: var(--system-danger);
+}
+
+.messages-stats .stat-value.sentiment-neutral {
+  color: var(--system-text-dim);
+}
+
+.messages-stats .stat-value.sentiment-positive,
+.messages-stats .stat-value.sentiment-very-positive {
+  color: var(--system-success);
+}
+
+.messages-stats .flagged-count {
+  color: var(--system-warning);
+}
+
+.messages-list {
+  padding: 16px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.messages-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-list::-webkit-scrollbar-thumb {
+  background: var(--system-border);
+  border-radius: 3px;
+}
+
+.no-messages {
+  text-align: center;
+  padding: 40px;
+  color: var(--system-text-dim);
+  font-style: italic;
+}
+
+/* Individual Message Card */
+.messages-panel .message-card {
+  background: var(--system-bg);
+  border: 1px solid var(--system-border);
+  border-left: 4px solid var(--system-border);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+.messages-panel .message-card:hover {
+  background: var(--system-panel-hover);
+}
+
+.messages-panel .message-card.flagged {
+  border-left-color: var(--system-danger);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.messages-panel .message-card.flagged:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.message-recipient-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.recipient-label {
+  font-size: 12px;
+  color: var(--system-text-dim);
+}
+
+.recipient-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--system-accent);
+}
+
+.recipient-relationship {
+  font-size: 12px;
+  color: var(--system-text-dim);
+  font-style: italic;
+}
+
+.recipient-flagged {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--system-danger);
+  border-radius: 3px;
+  margin-left: 4px;
+}
+
+.message-timestamp {
+  font-size: 11px;
+  color: var(--system-text-dim);
+  margin-top: 4px;
+}
+
+.message-divider {
+  height: 1px;
+  background: var(--system-border);
+  margin: 12px 0;
+}
+
+.message-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--system-text);
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  font-style: italic;
+}
+
+.quote-mark {
+  color: var(--system-text-dim);
+  font-size: 18px;
+}
+
+.keyword-highlight {
+  background: rgba(245, 158, 11, 0.3);
+  color: var(--system-warning);
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.message-flags {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid var(--system-warning);
+  border-radius: 4px;
+}
+
+.message-flags .flag-icon {
+  color: var(--system-warning);
+  font-size: 14px;
+}
+
+.message-flags .flag-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--system-warning);
+  margin-right: 4px;
+}
+
+.message-flags .flag-reason {
+  font-size: 12px;
+  color: var(--system-text-dim);
+  font-family: 'Consolas', monospace;
+}
+
+.message-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.btn-flag-message {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--system-danger);
+  color: var(--system-danger);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-flag-message:hover {
+  background: var(--system-danger);
+  color: white;
+}
+
+.already-flagged {
+  font-size: 11px;
+  color: var(--system-danger);
+  font-weight: 600;
+}
+
+.sentiment-warning {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--system-warning);
+  font-style: italic;
+}
+
+.btn-load-more {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 0 16px 16px;
+  padding: 12px;
+  background: var(--system-panel);
+  border: 1px solid var(--system-border);
+  color: var(--system-text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-load-more:hover {
+  background: var(--system-panel-hover);
+  border-color: var(--system-accent);
+  color: var(--system-accent);
+}
+
+.surveillance-notice {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.05);
+  border-top: 1px solid var(--system-border);
+  font-size: 11px;
+  color: var(--system-text-dim);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.surveillance-notice .notice-icon {
+  color: var(--system-warning);
+}
+
+/* ============================================
+   DECISION RESULT MODAL
+   ============================================ */
+
+.decision-result-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.decision-result-overlay.visible {
+  opacity: 1;
+}
+
+.decision-result-modal {
+  background: var(--system-panel);
+  border: 2px solid var(--system-accent);
+  border-radius: 12px;
+  width: 500px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 60px rgba(79, 209, 197, 0.2);
+}
+
+.decision-result-modal .modal-header {
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(79, 209, 197, 0.1) 0%, transparent 100%);
+  border-bottom: 1px solid var(--system-border);
+  text-align: center;
+}
+
+.decision-result-modal .header-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  background: var(--system-success);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+}
+
+.decision-result-modal h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--system-text);
+  letter-spacing: 2px;
+}
+
+.decision-result-modal .modal-body {
+  padding: 24px;
+}
+
+.decision-result-modal .citizen-info {
+  margin-bottom: 24px;
+}
+
+.decision-result-modal .info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--system-border);
+}
+
+.decision-result-modal .info-row:last-child {
+  border-bottom: none;
+}
+
+.decision-result-modal .info-row .label {
+  color: var(--system-text-dim);
+  font-size: 13px;
+}
+
+.decision-result-modal .info-row .value {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.decision-result-modal .citizen-name {
+  color: var(--system-text);
+}
+
+.decision-result-modal .flag-type {
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.decision-result-modal .flag-type.flag-monitoring {
+  background: rgba(79, 209, 197, 0.2);
+  color: var(--system-accent);
+}
+
+.decision-result-modal .flag-type.flag-restriction {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--system-warning);
+}
+
+.decision-result-modal .flag-type.flag-intervention {
+  background: rgba(249, 115, 22, 0.2);
+  color: var(--risk-high);
+}
+
+.decision-result-modal .flag-type.flag-detention {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--system-danger);
+}
+
+.decision-result-modal .decision-time.slow {
+  color: var(--system-warning);
+}
+
+.decision-result-modal .outcome-section h3,
+.decision-result-modal .metrics-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--system-accent);
+  letter-spacing: 1px;
+}
+
+.decision-result-modal .outcome-box {
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--system-border);
+  border-radius: 6px;
+}
+
+.decision-result-modal .outcome-box p {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--system-text-dim);
+  line-height: 1.5;
+}
+
+.decision-result-modal .outcome-box p:last-child {
+  margin-bottom: 0;
+}
+
+.decision-result-modal .warnings-section {
+  margin: 16px 0;
+}
+
+.decision-result-modal .warning-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 3px solid var(--system-warning);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--system-warning);
+}
+
+.decision-result-modal .warning-icon {
+  flex-shrink: 0;
+}
+
+.decision-result-modal .metrics-section {
+  margin-top: 24px;
+}
+
+.decision-result-modal .metrics-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.decision-result-modal .metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.decision-result-modal .metric-label {
+  font-size: 13px;
+  color: var(--system-text-dim);
+}
+
+.decision-result-modal .metric-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.decision-result-modal .progress-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--system-text);
+  font-family: 'Consolas', monospace;
+}
+
+.decision-result-modal .progress-bar {
+  width: 120px;
+  height: 8px;
+  background: var(--system-bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.decision-result-modal .progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--system-accent), var(--system-success));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.decision-result-modal .metric-value.compliance {
+  font-size: 16px;
+  font-weight: 600;
+  font-family: 'Consolas', monospace;
+}
+
+.decision-result-modal .metric-value.compliance.excellent {
+  color: var(--system-success);
+}
+
+.decision-result-modal .metric-value.compliance.good {
+  color: var(--system-accent);
+}
+
+.decision-result-modal .metric-value.compliance.warning {
+  color: var(--system-warning);
+}
+
+.decision-result-modal .metric-value.compliance.critical {
+  color: var(--system-danger);
+}
+
+.decision-result-modal .change {
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.decision-result-modal .change.positive {
+  color: var(--system-success);
+}
+
+.decision-result-modal .change.negative {
+  color: var(--system-danger);
+}
+
+.decision-result-modal .hesitation-warning {
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--system-danger);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--system-danger);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.decision-result-modal .modal-divider {
+  height: 1px;
+  background: var(--system-border);
+  margin: 0 24px;
+}
+
+.decision-result-modal .modal-actions {
+  padding: 20px 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.decision-result-modal .btn-view-outcome,
+.decision-result-modal .btn-return {
+  flex: 1;
+  padding: 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.decision-result-modal .btn-view-outcome {
+  background: var(--system-accent);
+  border: none;
+  color: var(--system-bg);
+}
+
+.decision-result-modal .btn-view-outcome:hover {
+  background: #3bc4b8;
+  transform: translateY(-2px);
+}
+
+.decision-result-modal .btn-return {
+  background: transparent;
+  border: 1px solid var(--system-border);
+  color: var(--system-text-dim);
+}
+
+.decision-result-modal .btn-return:hover {
+  border-color: var(--system-text);
+  color: var(--system-text);
+}
+
+/* ============================================
+   OUTCOME VIEWER - Consequence Timeline
+   ============================================ */
+
+.outcome-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.outcome-viewer-overlay.visible {
+  opacity: 1;
+}
+
+.outcome-viewer-modal {
+  background: var(--system-panel);
+  border: 2px solid var(--system-border);
+  border-radius: 12px;
+  width: 700px;
+  max-width: 95%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 80px rgba(0, 0, 0, 0.5);
+}
+
+.outcome-viewer-modal .viewer-header {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #0f1419 0%, var(--system-panel) 100%);
+  border-bottom: 1px solid var(--system-border);
+  text-align: center;
+}
+
+.outcome-viewer-modal h2 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--system-accent);
+  letter-spacing: 2px;
+}
+
+.outcome-viewer-modal .subject-name {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--system-text);
+}
+
+.timeline-section {
+  padding: 20px 24px;
+  background: var(--system-bg);
+  border-bottom: 1px solid var(--system-border);
+}
+
+.timeline-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--system-text-dim);
+  letter-spacing: 1px;
+}
+
+.timeline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.timeline-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+.timeline-point:hover .point-marker {
+  transform: scale(1.2);
+  box-shadow: 0 0 12px var(--system-accent);
+}
+
+.point-marker {
+  width: 16px;
+  height: 16px;
+  background: var(--system-border);
+  border: 2px solid var(--system-border);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.timeline-point.visited .point-marker {
+  background: var(--system-text-dim);
+  border-color: var(--system-text-dim);
+}
+
+.timeline-point.active .point-marker {
+  background: var(--system-accent);
+  border-color: var(--system-accent);
+  box-shadow: 0 0 16px var(--system-accent);
+}
+
+.point-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--system-text-dim);
+  letter-spacing: 0.5px;
+}
+
+.timeline-point.active .point-label {
+  color: var(--system-accent);
+}
+
+.timeline-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--system-border);
+  margin-bottom: 20px;
+}
+
+.outcome-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  min-height: 300px;
+}
+
+.outcome-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.outcome-content::-webkit-scrollbar-thumb {
+  background: var(--system-border);
+  border-radius: 3px;
+}
+
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  color: var(--system-text-dim);
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--system-border);
+  border-top-color: var(--system-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.error-state .btn-retry {
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: var(--system-accent);
+  border: none;
+  border-radius: 4px;
+  color: var(--system-bg);
+  cursor: pointer;
+}
+
+.outcome-details {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.outcome-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--system-border);
+}
+
+.time-label {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--system-text);
+}
+
+.status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.status-active-monitoring {
+  background: rgba(79, 209, 197, 0.2);
+  color: var(--system-accent);
+}
+
+.status-badge.status-restricted,
+.status-badge.status-under-review {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--system-warning);
+}
+
+.status-badge.status-unemployed,
+.status-badge.status-displaced {
+  background: rgba(249, 115, 22, 0.2);
+  color: var(--risk-high);
+}
+
+.status-badge.status-detained,
+.status-badge.status-terminated {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--system-danger);
+}
+
+.outcome-narrative {
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+.outcome-narrative p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--system-text);
+}
+
+.outcome-narrative .negative-highlight {
+  color: var(--system-danger);
+  font-weight: 600;
+}
+
+.outcome-narrative .warning-highlight {
+  color: var(--system-warning);
+}
+
+.outcome-narrative .emotional-highlight {
+  color: #a78bfa;
+  font-style: italic;
+}
+
+.outcome-narrative .stat-highlight {
+  color: var(--system-accent);
+  font-weight: 600;
+}
+
+.outcome-narrative .danger-highlight {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--system-danger);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.outcome-statistics {
+  margin-top: 24px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.outcome-statistics h4 {
+  margin: 0 0 12px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--system-text-dim);
+  letter-spacing: 1px;
+}
+
+.outcome-statistics .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.outcome-statistics .stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.outcome-statistics .stat-label {
+  font-size: 11px;
+  color: var(--system-text-dim);
+}
+
+.outcome-statistics .stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--system-text);
+}
+
+/* Final Quote Frame - The Emotional Impact */
+.final-quote-frame {
+  margin-top: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(239, 68, 68, 0.05) 100%);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.final-quote-frame .quote-content {
+  font-size: 16px;
+  font-style: italic;
+  color: var(--system-text);
+  line-height: 1.8;
+}
+
+.final-quote-frame .quote-content p {
+  margin: 0 0 12px 0;
+}
+
+.final-quote-frame .quote-content p:last-child {
+  margin-bottom: 0;
+}
+
+.final-quote-frame .quote-attribution {
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--system-text-dim);
+}
+
+.viewer-footer {
+  padding: 16px 24px;
+  background: var(--system-bg);
+  border-top: 1px solid var(--system-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-hint {
+  font-size: 12px;
+  color: var(--system-text-dim);
+  margin: 0;
+}
+
+.btn-close-viewer {
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid var(--system-border);
+  border-radius: 4px;
+  color: var(--system-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-close-viewer:hover {
+  background: var(--system-panel);
+  border-color: var(--system-accent);
+}
+
+/* Outcome time-specific styling */
+.outcome-details.immediate {
+  /* Neutral, clinical */
+}
+
+.outcome-details.\31_month {
+  /* Starting to show concern */
+}
+
+.outcome-details.\36_months {
+  /* Clear damage visible */
+}
+
+.outcome-details.\31_year {
+  /* Full devastation */
+}
+
+.outcome-details.\31_year .outcome-narrative {
+  color: var(--system-text-dim);
+}
+
+.outcome-details.\31_year .status-badge {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--system-danger);
+}

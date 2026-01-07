@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { systemState } from '../state/SystemState';
-import type { CaseOverview, RiskLevel } from '../types/system';
+import type { CaseOverview, FlagResult, RiskLevel } from '../types/system';
+import { MessagesPanel } from '../ui/system/MessagesPanel';
+import { DecisionResultModal } from '../ui/system/DecisionResultModal';
+import { OutcomeViewer } from '../ui/system/OutcomeViewer';
 
 /**
  * SystemDashboardScene - Main surveillance operator interface.
@@ -12,6 +15,7 @@ export class SystemDashboardScene extends Phaser.Scene {
   private unsubscribe: (() => void) | null = null;
   private sessionId: string | null = null;
   private decisionTimerInterval: number | null = null;
+  private messagesPanel: MessagesPanel | null = null;
 
   constructor() {
     super({ key: 'SystemDashboardScene' });
@@ -357,6 +361,7 @@ export class SystemDashboardScene extends Phaser.Scene {
     panel.style.display = 'block';
     panel.innerHTML = this.getCitizenFileHTML(file);
     this.setupCitizenFilePanelListeners(panel);
+    this.initializeMessagesPanel(panel, file);
     this.startDecisionTimer();
   }
 
@@ -492,35 +497,38 @@ export class SystemDashboardScene extends Phaser.Scene {
 
   private renderMessagesTab(file: typeof systemState.selectedCitizenFile): string {
     if (!file) return '';
-    const messages = file.messages;
 
+    // Return a container that will hold the MessagesPanel
     return `
       <div class="tab-panel" data-tab="messages" style="display:none;">
-        <h4>Intercepted Communications</h4>
-        ${messages.length === 0 ? '<p class="no-data">No intercepted messages</p>' : ''}
-        <div class="messages-list">
-          ${messages.map(msg => `
-            <div class="message-card ${msg.is_flagged ? 'flagged' : ''}">
-              <div class="message-header">
-                <span class="message-recipient">To: ${msg.recipient_name}</span>
-                <span class="message-time">${msg.timestamp}</span>
-              </div>
-              <p class="message-content">${msg.content}</p>
-              ${msg.is_flagged ? `
-                <div class="message-flags">
-                  ${msg.flag_reasons.map(r => `<span class="flag-reason">${r}</span>`).join('')}
-                </div>
-              ` : ''}
-              ${msg.detected_keywords.length > 0 ? `
-                <div class="message-keywords">
-                  Keywords: ${msg.detected_keywords.join(', ')}
-                </div>
-              ` : ''}
-            </div>
-          `).join('')}
-        </div>
+        <div class="messages-panel-container"></div>
       </div>
     `;
+  }
+
+  private initializeMessagesPanel(panel: HTMLElement, file: typeof systemState.selectedCitizenFile) {
+    if (!file) return;
+
+    const container = panel.querySelector('.messages-panel-container');
+    if (!container) return;
+
+    // Destroy existing panel if any
+    if (this.messagesPanel) {
+      this.messagesPanel.destroy();
+    }
+
+    // Create new messages panel
+    this.messagesPanel = new MessagesPanel({
+      citizenName: `${file.identity.first_name} ${file.identity.last_name}`,
+      messages: file.messages,
+      onFlagMessage: (messageId) => {
+        console.log('Flag individual message:', messageId);
+        // Could implement individual message flagging here
+      },
+      hasMore: false,
+    });
+
+    container.appendChild(this.messagesPanel.getElement());
   }
 
   private renderDomainsTab(file: typeof systemState.selectedCitizenFile): string {
@@ -608,7 +616,10 @@ export class SystemDashboardScene extends Phaser.Scene {
       const justification = flagJustification.value.trim();
 
       if (flagType && justification) {
-        await systemState.submitFlag(flagType, justification);
+        const result = await systemState.submitFlag(flagType, justification);
+        if (result) {
+          this.showFlagResult(result);
+        }
       }
     });
 
@@ -714,11 +725,37 @@ export class SystemDashboardScene extends Phaser.Scene {
     });
   }
 
+  private showFlagResult(result: FlagResult) {
+    new DecisionResultModal({
+      result,
+      onViewOutcome: () => {
+        this.showOutcomeViewer(result.flag_id, result.citizen_name);
+      },
+      onClose: () => {
+        // Return to dashboard - already handled by modal close
+      },
+    });
+  }
+
+  private showOutcomeViewer(flagId: string, citizenName: string) {
+    new OutcomeViewer({
+      flagId,
+      citizenName,
+      onClose: () => {
+        // Return to dashboard
+      },
+    });
+  }
+
   private cleanup() {
     this.stopDecisionTimer();
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
+    }
+    if (this.messagesPanel) {
+      this.messagesPanel.destroy();
+      this.messagesPanel = null;
     }
     if (this.container) {
       this.container.remove();
