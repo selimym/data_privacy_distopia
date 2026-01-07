@@ -5,8 +5,12 @@ from typing import Annotated, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from datafusion.schemas.finance import FinanceRecordFiltered
 from datafusion.schemas.health import HealthRecordFiltered
+from datafusion.schemas.judicial import JudicialRecordFiltered
+from datafusion.schemas.location import LocationRecordFiltered
 from datafusion.schemas.npc import NPCRead
+from datafusion.schemas.social import SocialMediaRecordFiltered
 
 
 class DomainType(enum.Enum):
@@ -20,7 +24,13 @@ class DomainType(enum.Enum):
 
 
 DomainData = Annotated[
-    Union[HealthRecordFiltered],
+    Union[
+        HealthRecordFiltered,
+        FinanceRecordFiltered,
+        JudicialRecordFiltered,
+        LocationRecordFiltered,
+        SocialMediaRecordFiltered,
+    ],
     Field(discriminator=None),
 ]
 
