@@ -158,16 +158,63 @@
   cursor: not-allowed;
 }
 
-/* Domain Content */
-.domain-content {
+/* Tabs */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(15, 52, 96, 0.2);
+  border: 1px solid #0f3460;
+  border-radius: 8px;
+}
+
+.tab-btn {
+  flex: 1;
+  min-width: fit-content;
+  padding: 8px 12px;
+  background: rgba(26, 26, 46, 0.4);
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  color: #a0a0a0;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  background: rgba(26, 26, 46, 0.6);
+  border-color: #06ffa5;
+  color: #06ffa5;
+  transform: translateY(-2px);
+}
+
+.tab-btn.active {
+  background: rgba(6, 255, 165, 0.15);
+  border-color: #06ffa5;
+  color: #06ffa5;
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(6, 255, 165, 0.3);
+}
+
+/* Tab Content */
+.tab-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* Basic Info & Health Domain Sections */
+/* Basic Info & Domain Sections */
 .basic-info,
-.health-domain {
+.health-domain,
+.finance-domain,
+.judicial-domain,
+.location-domain,
+.social-domain {
   background: rgba(15, 52, 96, 0.2);
   border: 1px solid #0f3460;
   border-radius: 8px;
@@ -175,7 +222,11 @@
 }
 
 .basic-info h3,
-.health-domain h3 {
+.health-domain h3,
+.finance-domain h3,
+.judicial-domain h3,
+.location-domain h3,
+.social-domain h3 {
   margin: 0 0 12px 0;
   font-size: 16px;
   font-weight: 600;
@@ -184,7 +235,11 @@
   padding-bottom: 8px;
 }
 
-.health-domain h4 {
+.health-domain h4,
+.finance-domain h4,
+.judicial-domain h4,
+.location-domain h4,
+.social-domain h4 {
   margin: 16px 0 8px 0;
   font-size: 14px;
   font-weight: 600;
@@ -280,18 +335,30 @@
   border: 1px solid #ef476f;
 }
 
-/* Health Sections */
-.health-section {
+/* Domain Sections & Lists */
+.health-section,
+.finance-section,
+.judicial-section,
+.location-section,
+.social-section {
   margin-top: 12px;
 }
 
-.health-list {
+.health-list,
+.finance-list,
+.judicial-list,
+.location-list,
+.social-list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.health-list li {
+.health-list li,
+.finance-list li,
+.judicial-list li,
+.location-list li,
+.social-list li {
   background: rgba(26, 26, 46, 0.4);
   border-left: 3px solid #0f3460;
   padding: 12px;
@@ -300,19 +367,50 @@
   transition: all 0.2s ease;
 }
 
-.health-list li:hover {
+.health-list li:hover,
+.finance-list li:hover,
+.judicial-list li:hover,
+.location-list li:hover,
+.social-list li:hover {
   background: rgba(26, 26, 46, 0.6);
   border-left-color: #06ffa5;
 }
 
-.health-list li.sensitive {
+.health-list li.sensitive,
+.finance-list li.sensitive,
+.judicial-list li.sensitive,
+.location-list li.sensitive,
+.social-list li.sensitive {
   border-left-color: #ef476f;
   background: rgba(239, 71, 111, 0.05);
 }
 
-.health-list li strong {
+.health-list li strong,
+.finance-list li strong,
+.judicial-list li strong,
+.location-list li strong,
+.social-list li strong {
   color: #06ffa5;
   font-weight: 600;
+}
+
+/* Privacy warnings */
+.privacy-note {
+  color: #ffd166 !important;
+  font-style: italic;
+}
+
+.warning {
+  display: block;
+  margin: 8px 0;
+  padding: 10px;
+  background: rgba(239, 71, 111, 0.15);
+  border: 1px solid #ef476f;
+  border-radius: 6px;
+  color: #ef476f;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
 }
 
 /* Severity Indicators */
