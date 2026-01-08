@@ -368,17 +368,18 @@ class RiskScorer:
 
         # Check for financial stress
         total_debt = sum(d.current_balance for d in finance_record.debts)
-        monthly_income = finance_record.monthly_income or 0
+        annual_income = float(finance_record.annual_income or 0)
+        monthly_income = annual_income / 12
 
-        if total_debt > 0 and monthly_income > 0:
-            debt_to_income = total_debt / (monthly_income * 12)
-            if debt_to_income > 0.5:  # Debt exceeds 6 months of income
+        if total_debt > 0 and annual_income > 0:
+            debt_to_income = float(total_debt) / annual_income
+            if debt_to_income > 0.5:  # Debt exceeds 50% of annual income
                 factors.append(
                     ContributingFactor(
                         factor_key="financial_stress",
                         factor_name=self.RISK_FACTORS["financial_stress"]["description"],
                         weight=self.RISK_FACTORS["financial_stress"]["weight"],
-                        evidence=f"Debt-to-income ratio: {debt_to_income:.1f}x (${total_debt:,.0f} debt vs ${monthly_income:,.0f}/mo income)",
+                        evidence=f"Debt-to-income ratio: {debt_to_income:.1%} (${total_debt:,.0f} debt vs ${annual_income:,.0f}/yr income)",
                         domain_source=DomainType.FINANCE,
                     )
                 )

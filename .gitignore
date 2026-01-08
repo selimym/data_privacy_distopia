@@ -69,3 +69,6 @@ build/
 # Compiled files
 *.pyc
 *.pyo
+
+# Archived documentation
+docs_archive/

@@ -844,7 +844,7 @@ async def _get_domain_data(
         finance = finance_result.scalar_one_or_none()
         if finance:
             domains["finance"] = {
-                "monthly_income": finance.monthly_income,
+                "annual_income": float(finance.annual_income) if finance.annual_income else None,
                 "credit_score": finance.credit_score,
                 "employment_status": finance.employment_status.value if finance.employment_status else None,
             }

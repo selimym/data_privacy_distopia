@@ -321,6 +321,254 @@ CREATE INDEX ix_npcs_scenario_key ON npcs(scenario_key);
 
 ---
 
+### 7. System Mode - No Citizens in Review Queue (Phase S4)
+
+**Issue:** After launching System mode, no citizens appeared in the review queue despite successful API calls
+
+**Root Cause:** Field name mismatch between model and service
+```python
+# risk_scoring.py line 371 - WRONG:
+monthly_income = finance_record.monthly_income or 0  # AttributeError!
+
+# FinanceRecord model only has:
+annual_income: Mapped[Decimal]  # No monthly_income field
+```
+
+**Impact:**
+- Exception raised for every NPC when calculating financial risk factors
+- Exception silently caught with `continue` in `system.py:281`, skipping all NPCs
+- Review queue always empty despite NPCs existing in database
+
+**Resolution:**
+```python
+# Fixed: Calculate monthly from annual
+annual_income = float(finance_record.annual_income or 0)
+monthly_income = annual_income / 12
+```
+
+Also fixed:
+- `system.py:847` - Changed `finance.monthly_income` to `finance.annual_income`
+- Test fixtures in `test_risk_scoring.py` - Removed non-existent `monthly_income` field
+
+**Commit:** `[pending]`
+**Status:** ✅ Fixed
+
+---
+
+### 8. Vite Proxy Configuration Missing (Phase S4)
+
+**Issue:** `POST http://localhost:5173/api/system/start 404 (Not Found)`
+
+**Root Cause:** Vite development server wasn't configured to proxy API requests to backend
+
+**Impact:** Frontend couldn't communicate with backend during development
+
+**Resolution:**
+Added proxy configuration to `vite.config.ts`:
+```typescript
+server: {
+  proxy: {
+    '/api': {
+      target: 'http://localhost:8000',
+      changeOrigin: true,
+    },
+  },
+},
+```
+
+**Commit:** `[pending]`
+**Status:** ✅ Fixed
+
+---
+
+### 9. JSON Parse Error on Empty Response (Phase S4)
+
+**Issue:** `Failed to execute 'json' on 'Response': Unexpected end of JSON input`
+
+**Root Cause:** Frontend API tried to parse JSON from empty error responses
+
+**Resolution:**
+Added safe error parsing in `frontend/src/api/system.ts`:
+```typescript
+async function parseErrorResponse(response: Response, fallback: string): Promise<string> {
+  try {
+    const text = await response.text();
+    if (!text) return fallback;
+    const json = JSON.parse(text);
+    return json.detail || fallback;
+  } catch {
+    return fallback;
+  }
+}
+```
+
+**Commit:** `[pending]`
+**Status:** ✅ Fixed
+
+---
+
+## Comprehensive Reviews (January 2026)
+
+### Game Designer Review
+
+#### Critical Issues
+
+1. **Linear Progression Lock**
+   - Players must complete directives in strict order (week 1 → 2 → 3...)
+   - No ability to skip, fail gracefully, or explore alternate paths
+   - Risk: Frustrating for players who want agency
+
+2. **Forced Binary Choices**
+   - Only "Flag" or "Skip" actions available
+   - Missing: Investigate further, request more data, escalate to supervisor
+   - The surveillance system feels artificially constrained
+
+3. **Incomplete Resistance Path**
+   - Game has "resistance" ending but no mechanical support
+   - Players can't take meaningful resistance actions
+   - Missing: Sabotage options, leak data, warn citizens
+
+4. **Hidden Internal Memos**
+   - `internal_memo` field exists but isn't displayed
+   - These reveal the regime's true intentions
+   - Critical for narrative impact and moral weight
+
+5. **Unimplemented Ending Transition**
+   - Multiple endings defined but no scene transition
+   - Game just stops at week 6
+   - No emotional payoff for player choices
+
+#### Design Recommendations
+
+1. Add branching directive paths based on player behavior
+2. Implement "gray area" actions: delay, partial flag, request review
+3. Create resistance mechanics that accumulate over time
+4. Surface internal memos progressively as trust increases
+5. Implement full ending cinematics/scenes
+
+---
+
+### UX/UI Designer Review
+
+#### Accessibility Issues (WCAG 2.1 Violations)
+
+1. **Color-Only Information Encoding**
+   - Risk levels use only color (red/yellow/green)
+   - No text labels, icons, or patterns for colorblind users
+   - Violation: WCAG 1.4.1 Use of Color
+
+2. **Missing ARIA Labels**
+   - Interactive elements lack screen reader labels
+   - Action buttons need `aria-label` attributes
+   - Risk indicators need `role="status"`
+
+3. **No Keyboard Navigation**
+   - System mode requires mouse for all interactions
+   - Tab order not defined
+   - No visible focus indicators
+
+4. **Insufficient Contrast**
+   - Some text/background combinations below 4.5:1 ratio
+   - Particularly in dark-themed panels
+
+#### Responsive Design Failures
+
+1. **Fixed Panel Widths**
+   - Data panels don't adapt to screen size
+   - Overflow on screens < 1200px
+   - Mobile unusable
+
+2. **No Touch Targets**
+   - Buttons too small for touch (< 44px)
+   - No tap-friendly alternatives
+
+#### Incomplete UI States
+
+1. **Loading States Missing**
+   - No skeleton screens during data fetch
+   - UI appears broken during network delays
+
+2. **Error State Gaps**
+   - Generic error messages
+   - No recovery suggestions
+   - No retry buttons
+
+3. **Empty States Undefined**
+   - No citizen available → blank panel
+   - Should show: "All citizens reviewed" or similar
+
+#### Recommendations
+
+1. Add text/icon indicators alongside colors
+2. Implement keyboard navigation with visible focus
+3. Create responsive breakpoints (mobile/tablet/desktop)
+4. Add loading skeletons and error recovery flows
+
+---
+
+### Senior Engineer Code Review
+
+#### Security Concerns
+
+1. **No Authentication/Authorization**
+   - All API endpoints publicly accessible
+   - No user sessions or tokens
+   - Any client can access any data
+
+2. **Debug Mode as Default**
+   - `DEBUG = True` in production config
+   - SQLAlchemy echoing all queries
+   - Exposes internal state
+
+3. **Missing Input Validation**
+   - Some endpoints accept unvalidated input
+   - Potential for injection attacks
+
+#### Error Handling Gaps
+
+1. **Silent Exception Swallowing**
+   ```python
+   except Exception:
+       continue  # NPCs silently skipped
+   ```
+   - Bugs hide behind silent failures
+   - Should log and surface errors
+
+2. **No Structured Logging**
+   - Print statements instead of proper logging
+   - No log levels, no correlation IDs
+   - Debugging production issues impossible
+
+#### Type Safety Issues
+
+1. **Inconsistent Decimal Handling**
+   - Some fields use Decimal, others float
+   - Risk of precision errors in financial calculations
+
+2. **Optional Field Access**
+   - Code accesses optional fields without null checks
+   - Runtime errors when data incomplete
+
+#### Database Design
+
+1. **Missing Database Migrations**
+   - Alembic configured but migrations incomplete
+   - Manual schema changes not tracked
+
+2. **No Data Validation Layer**
+   - Business rules not enforced at DB level
+   - E.g., risk_score should be 0-100 but no CHECK constraint
+
+#### Recommendations
+
+1. Add authentication (even basic API key for demo)
+2. Implement proper logging with structured format
+3. Add CHECK constraints for business rules
+4. Complete Alembic migration history
+5. Add try/except with logging, not silent continue
+
+---
+
 ## Lessons Learned
 
 ### 1. UX Testing is Critical
@@ -383,6 +631,15 @@ CREATE INDEX ix_npcs_scenario_key ON npcs(scenario_key);
 ---
 
 ## Update History
+
+- **2026-01-08:** System Mode Fixes & Comprehensive Reviews
+  - ✅ Fixed: No citizens in review queue (monthly_income vs annual_income bug)
+  - ✅ Fixed: Vite proxy configuration for API requests
+  - ✅ Fixed: JSON parse error on empty responses
+  - Added: Game Designer review findings
+  - Added: UX/UI Designer review findings
+  - Added: Senior Engineer code review findings
+  - Consolidated all tracking into this single document
 
 - **2026-01-06 (Evening):** Technical debt cleanup
   - ✅ Resolved: Schema type consistency (datetime vs date)
