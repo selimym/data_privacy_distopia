@@ -407,6 +407,167 @@ async function parseErrorResponse(response: Response, fallback: string): Promise
 
 ---
 
+### 10. Multiple Field Name Mismatches in Risk Scoring (Phase S4)
+
+**Issue:** All citizens skipped during risk scoring with silent AttributeErrors
+
+**Root Causes:** Multiple field name mismatches between models and services:
+1. `HealthCondition.name` → should be `condition_name`
+2. `HealthCondition.category` → field doesn't exist
+3. `HealthMedication.name` → should be `medication_name`
+4. `InferredLocation.place_name` → should be `location_name`
+5. `InferredLocation.place_type` → should be `location_type`
+6. `CriminalRecord.crime` → should be `charge_description`
+7. `TransactionCategory.CASH_WITHDRAWAL` → enum value doesn't exist
+
+**Impact:**
+- Every NPC raised AttributeError during risk calculation
+- All errors silently caught with `continue`, skipping all NPCs
+- Empty citizen review queue made System Mode unplayable
+
+**Resolution:**
+```python
+# Fixed field references throughout risk_scoring.py
+- c.name → c.condition_name
+- m.name → m.medication_name
+- loc.place_name → loc.location_name
+- c.crime → c.charge_description
+- TransactionCategory.CASH_WITHDRAWAL → TransactionCategory.OTHER
+```
+
+**Commit:** `89fba23` - Fix field name mismatches in risk scoring service
+**Status:** ✅ Fixed
+
+---
+
+### 11. HealthCondition Field Mismatch in Citizen Outcomes (Phase S4)
+
+**Issue:** Flag submission failed with 500 error when generating outcomes
+
+**Root Cause:** `CitizenOutcomeGenerator` accessed `HealthCondition.name` but field is `condition_name`
+
+**Impact:**
+- Any flag submission crashed when generating outcomes
+- Made it impossible to flag citizens in System Mode
+
+**Resolution:**
+```python
+# citizen_outcomes.py line 354
+- health_record.conditions[0].name
++ health_record.conditions[0].condition_name
+```
+
+**Commit:** `3f38860` - Fix: HealthCondition field name in citizen outcomes
+**Status:** ✅ Fixed
+
+---
+
+### 12. Citizen File Panel Scrollbar Missing (Phase S4)
+
+**Issue:** "Flag Citizen" buttons hidden off-screen with no way to scroll to them
+
+**Root Cause:** Flexbox layout with `overflow: hidden` instead of scroll
+
+**Impact:**
+- Users couldn't access action buttons when citizen data was long
+- Made System Mode unusable for citizens with extensive records
+
+**Resolution:**
+Changed `.citizen-file-panel` from flexbox container to scrollable container:
+```css
+.citizen-file-panel {
+  overflow-y: auto;  /* Changed from: display: flex; overflow: hidden */
+  overflow-x: hidden;
+  max-height: 100%;
+}
+```
+
+**Commits:**
+- `dcdbc61` - Fix: Add scrollbar to citizen file panel
+- `1ee4fa3` - Fix: Ensure citizen file panel scrollbar works properly
+- `82940eb` - Fix: Make entire citizen file panel scrollable
+
+**Status:** ✅ Fixed
+
+---
+
+### 13. Silent Exception Swallowing in System API (Phase S4)
+
+**Issue:** Exceptions caught without logging, hiding bugs
+
+**Root Cause:** No logging infrastructure, bare except blocks
+
+**Resolution:**
+```python
+import logging
+logger = logging.getLogger(__name__)
+
+# Before:
+except Exception:
+    continue
+
+# After:
+except Exception as e:
+    logger.warning(f"Failed to calculate risk score for NPC {npc.id}: {e}")
+    continue
+```
+
+**Impact:** Bugs now logged instead of silently swallowed
+
+**Commit:** `94eaab4` - Address review low-hanging fruit and critical issues
+**Status:** ✅ Fixed
+
+---
+
+### 14. Internal Memos Never Displayed (Phase S4)
+
+**Issue:** `internal_memo` field always hidden from operators
+
+**Root Cause:** `show_memo` parameter always `False`
+
+**Impact:**
+- Players never saw regime's true intentions
+- Reduced moral weight of later directives
+- Missing narrative escalation
+
+**Resolution:**
+```python
+# Reveal memos from week 3+ onwards
+reveal_memo = show_memo or directive.week_number >= 3
+```
+
+**Commit:** `94eaab4` - Address review low-hanging fruit and critical issues
+**Status:** ✅ Fixed
+
+---
+
+### 15. Missing Test Coverage for Flag Submission (Phase S4)
+
+**Issue:** No integration tests for flag submission flow
+
+**Impact:**
+- Field name mismatches not caught before runtime
+- No end-to-end testing of System Mode core functionality
+
+**Resolution:**
+Created `test_flag_submission_integration.py` with 9 comprehensive tests:
+- Complete flag submission workflow
+- Multiple flag types
+- Hesitation tracking
+- Operator metrics updates
+- Outcome personalization
+- Multiple time horizons
+- Quota progress tracking
+- Edge cases (minimal/no data)
+
+Also added shared test fixtures to `conftest.py`:
+- `test_directive`, `test_operator`, `test_npc`, `test_npc_with_data`
+
+**Commit:** `db501e1` - Add comprehensive integration tests for flag submission
+**Status:** ✅ Fixed
+
+---
+
 ## Comprehensive Reviews (January 2026)
 
 ### Game Designer Review
@@ -632,7 +793,17 @@ async function parseErrorResponse(response: Response, fallback: string): Promise
 
 ## Update History
 
-- **2026-01-08:** System Mode Fixes & Comprehensive Reviews
+- **2026-01-08 (Afternoon):** System Mode Critical Bug Fixes
+  - ✅ Fixed: Multiple field name mismatches in risk scoring (7 different field errors)
+  - ✅ Fixed: HealthCondition field mismatch in citizen outcomes (flag submission 500 error)
+  - ✅ Fixed: Citizen file panel scrollbar (3 iterations to get right)
+  - ✅ Fixed: Silent exception swallowing (added logging)
+  - ✅ Fixed: Internal memos never displayed (progressive reveal from week 3)
+  - ✅ Added: Comprehensive integration tests for flag submission (9 tests)
+  - ✅ Added: Shared test fixtures (directive, operator, NPCs with data)
+  - System Mode now fully playable end-to-end
+
+- **2026-01-08 (Morning):** System Mode Fixes & Comprehensive Reviews
   - ✅ Fixed: No citizens in review queue (monthly_income vs annual_income bug)
   - ✅ Fixed: Vite proxy configuration for API requests
   - ✅ Fixed: JSON parse error on empty responses
