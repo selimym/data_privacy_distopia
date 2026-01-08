@@ -351,7 +351,7 @@ class CitizenOutcomeGenerator:
 
         if health_record and health_record.conditions:
             personalization["has_health_issues"] = True
-            personalization["health_condition"] = health_record.conditions[0].name
+            personalization["health_condition"] = health_record.conditions[0].condition_name
 
         # Check social record for family/connections
         social_result = await self.db.execute(
