@@ -538,6 +538,7 @@
   padding: 16px;
   background: rgba(0, 0, 0, 0.2);
   border-bottom: 1px solid var(--system-border);
+  flex-shrink: 0;
 }
 
 .citizen-header h2 {
@@ -588,6 +589,7 @@
   padding: 8px;
   background: var(--system-bg);
   border-bottom: 1px solid var(--system-border);
+  flex-shrink: 0;
 }
 
 .timer-label {
@@ -622,6 +624,7 @@
   background: var(--system-bg);
   border-bottom: 1px solid var(--system-border);
   overflow-x: auto;
+  flex-shrink: 0;
 }
 
 .citizen-tab {
@@ -653,6 +656,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 16px;
+  min-height: 0;
 }
 
 .citizen-tab-content::-webkit-scrollbar {
@@ -962,6 +966,7 @@
   padding: 16px;
   background: var(--system-bg);
   border-top: 1px solid var(--system-border);
+  flex-shrink: 0;
 }
 
 .action-section {
