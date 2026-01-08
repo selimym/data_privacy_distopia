@@ -505,6 +505,8 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  max-height: 100%;
+  min-height: 0;
 }
 
 .close-citizen-file {
