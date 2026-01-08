@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,16 +9,26 @@ from fastapi.middleware.cors import CORSMiddleware
 from datafusion.api import router as api_router
 from datafusion.config import settings
 from datafusion.database import Base, engine
+from datafusion.logging_config import setup_logging
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan context manager."""
+    # Setup structured logging
+    setup_logging()
+    logger.info("Application starting", extra={"app_name": settings.app_name})
+
+    # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database tables created/verified")
 
     yield
 
+    logger.info("Application shutting down")
     await engine.dispose()
 
 
