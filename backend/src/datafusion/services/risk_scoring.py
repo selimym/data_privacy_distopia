@@ -301,14 +301,14 @@ class RiskScorer:
 
         # Check for mental health treatment
         if health_record.conditions:
+            mental_health_keywords = ["mental", "psychological", "psychiatric", "anxiety", "depression", "ptsd", "bipolar", "schizophrenia"]
             mental_health_conditions = [
                 c
                 for c in health_record.conditions
-                if c.category.lower()
-                in ["mental_health", "psychological", "psychiatric", "anxiety", "depression"]
+                if any(keyword in c.condition_name.lower() for keyword in mental_health_keywords)
             ]
             if mental_health_conditions:
-                condition_names = ", ".join(c.name for c in mental_health_conditions[:2])
+                condition_names = ", ".join(c.condition_name for c in mental_health_conditions[:2])
                 factors.append(
                     ContributingFactor(
                         factor_key="mental_health_treatment",
@@ -324,10 +324,10 @@ class RiskScorer:
             substance_meds = [
                 m
                 for m in health_record.medications
-                if "substance" in m.name.lower()
-                or "addiction" in m.name.lower()
-                or "methadone" in m.name.lower()
-                or "suboxone" in m.name.lower()
+                if "substance" in m.medication_name.lower()
+                or "addiction" in m.medication_name.lower()
+                or "methadone" in m.medication_name.lower()
+                or "suboxone" in m.medication_name.lower()
             ]
             if substance_meds:
                 factors.append(
@@ -335,7 +335,7 @@ class RiskScorer:
                         factor_key="substance_treatment",
                         factor_name=self.RISK_FACTORS["substance_treatment"]["description"],
                         weight=self.RISK_FACTORS["substance_treatment"]["weight"],
-                        evidence=f"Medication history indicates substance treatment: {substance_meds[0].name}",
+                        evidence=f"Medication history indicates substance treatment: {substance_meds[0].medication_name}",
                         domain_source=DomainType.HEALTH,
                     )
                 )
@@ -408,23 +408,25 @@ class RiskScorer:
                         )
                     )
 
-        # Check for cash-heavy behavior
+        # Check for cash-heavy behavior (using OTHER category as proxy for cash)
         if transactions:
+            # TransactionCategory doesn't have CASH_WITHDRAWAL, use OTHER as proxy
             cash_transactions = [
-                t for t in transactions if t.category == TransactionCategory.CASH_WITHDRAWAL
+                t for t in transactions if t.category == TransactionCategory.OTHER
             ]
-            cash_ratio = len(cash_transactions) / len(transactions)
+            if cash_transactions:
+                cash_ratio = len(cash_transactions) / len(transactions)
 
-            if cash_ratio > 0.3:  # More than 30% cash transactions
-                factors.append(
-                    ContributingFactor(
-                        factor_key="cash_heavy",
-                        factor_name=self.RISK_FACTORS["cash_heavy"]["description"],
-                        weight=self.RISK_FACTORS["cash_heavy"]["weight"],
-                        evidence=f"{cash_ratio*100:.0f}% of transactions are cash withdrawals",
-                        domain_source=DomainType.FINANCE,
+                if cash_ratio > 0.3:  # More than 30% unclassified transactions
+                    factors.append(
+                        ContributingFactor(
+                            factor_key="cash_heavy",
+                            factor_name=self.RISK_FACTORS["cash_heavy"]["description"],
+                            weight=self.RISK_FACTORS["cash_heavy"]["weight"],
+                            evidence=f"{cash_ratio*100:.0f}% of transactions are unclassified (OTHER category)",
+                            domain_source=DomainType.FINANCE,
+                        )
                     )
-                )
 
         return factors
 
@@ -444,7 +446,7 @@ class RiskScorer:
         if judicial_record.criminal_records:
             total_convictions = len(judicial_record.criminal_records)
             recent_crimes = [
-                c.crime for c in judicial_record.criminal_records[:2]
+                c.charge_description for c in judicial_record.criminal_records[:2]
             ]  # Most recent
             crimes_text = ", ".join(recent_crimes)
 
@@ -489,9 +491,9 @@ class RiskScorer:
             protest_locations = [
                 loc
                 for loc in location_record.inferred_locations
-                if "protest" in loc.place_name.lower()
-                or "rally" in loc.place_name.lower()
-                or "demonstration" in loc.place_name.lower()
+                if "protest" in loc.location_name.lower()
+                or "rally" in loc.location_name.lower()
+                or "demonstration" in loc.location_name.lower()
             ]
             if protest_locations:
                 factors.append(
@@ -507,11 +509,17 @@ class RiskScorer:
         # Check for flagged location visits (placeholder - would need flagged location database)
         if location_record.inferred_locations:
             # For now, flag "suspicious" location types
+            # Check for location types that may indicate political involvement
+            # Note: LocationType enum has: WORKPLACE, HOME, FREQUENT_VISIT, ROMANTIC_INTEREST,
+            # FAMILY, MEDICAL_FACILITY, PLACE_OF_WORSHIP, ENTERTAINMENT, OTHER
+            # Using OTHER and FREQUENT_VISIT as proxies for political/government locations
             flagged_types = [
                 loc
                 for loc in location_record.inferred_locations
-                if loc.place_type
-                in ["political_office", "government_building", "embassy", "community_center"]
+                if "government" in loc.location_name.lower()
+                or "political" in loc.location_name.lower()
+                or "embassy" in loc.location_name.lower()
+                or "community center" in loc.location_name.lower()
             ]
             if len(flagged_types) >= 3:
                 factors.append(
@@ -528,7 +536,7 @@ class RiskScorer:
 
         # Check for irregular patterns (high visit diversity)
         if location_record.inferred_locations and len(location_record.inferred_locations) >= 10:
-            unique_places = len(set(loc.place_name for loc in location_record.inferred_locations))
+            unique_places = len(set(loc.location_name for loc in location_record.inferred_locations))
             if unique_places >= 8:  # High variety of locations
                 factors.append(
                     ContributingFactor(
