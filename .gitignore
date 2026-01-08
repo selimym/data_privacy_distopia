@@ -40,10 +40,16 @@ pnpm-debug.log*
 *~
 .DS_Store
 
-# Environment
+# Environment & Secrets (API keys, credentials for deployment)
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+*.secrets
+secrets.json
+credentials.json
+service-account*.json
 
 # Database
 *.db

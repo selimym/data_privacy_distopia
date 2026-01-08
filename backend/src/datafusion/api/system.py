@@ -4,7 +4,10 @@ System Mode API endpoints.
 Endpoints for the surveillance operator dashboard, case management,
 and decision submission in System Mode.
 """
+import logging
 import random
+
+logger = logging.getLogger(__name__)
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -278,7 +281,8 @@ async def get_cases(
         # Calculate risk score
         try:
             risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to calculate risk score for NPC {npc.id}: {e}")
             continue
 
         # Get flagged message count
@@ -594,7 +598,8 @@ async def get_operator_history(
         try:
             summary = await outcome_gen.generate_outcome_summary(flag)
             one_line = summary.one_line_summary
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to generate outcome summary for flag {flag.id}: {e}")
             one_line = "Outcome pending"
 
         summaries.append(
@@ -686,14 +691,20 @@ async def _get_operator(operator_id: UUID, db: AsyncSession) -> Operator:
 
 
 def _directive_to_read(directive: Directive, show_memo: bool = False) -> DirectiveRead:
-    """Convert Directive model to DirectiveRead schema."""
+    """Convert Directive model to DirectiveRead schema.
+
+    Internal memos are revealed from week 3 onwards, showing the regime's
+    true intentions as the operator proves their compliance.
+    """
+    # Show internal memos from week 3+ to reveal regime's true intentions
+    reveal_memo = show_memo or directive.week_number >= 3
     return DirectiveRead(
         id=directive.id,
         directive_key=directive.directive_key,
         week_number=directive.week_number,
         title=directive.title,
         description=directive.description,
-        internal_memo=directive.internal_memo if show_memo else None,
+        internal_memo=directive.internal_memo if reveal_memo else None,
         required_domains=directive.required_domains,
         flag_quota=directive.flag_quota,
         time_limit_hours=directive.time_limit_hours,
