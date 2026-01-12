@@ -1,0 +1,127 @@
+/* Cinematic Text Box Styles */
+
+.cinematic-text-box {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  max-width: 800px;
+  background: rgba(0, 0, 0, 0.95);
+  border: 2px solid #00ff00;
+  border-radius: 8px;
+  padding: 24px;
+  padding-top: 40px; /* Make room for skip button */
+  font-family: 'Courier New', monospace;
+  color: #00ff00;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 255, 0, 0.3);
+  animation: fadeIn 0.3s ease-in;
+}
+
+.cinematic-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.cinematic-citizen-name {
+  font-weight: bold;
+}
+
+.cinematic-time-period {
+  opacity: 0.6;
+}
+
+.cinematic-status {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ff3333;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.cinematic-narrative {
+  font-size: 16px;
+  line-height: 1.8;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.cinematic-skip-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid #00ff00;
+  color: #00ff00;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.cinematic-skip-button:hover {
+  background: rgba(0, 255, 0, 0.2);
+  border-color: #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.cinematic-skip-button:active {
+  transform: scale(0.95);
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Fade out animation */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+}
+
+.cinematic-text-box.fadeOut {
+  animation: fadeOut 0.3s ease-out forwards;
+}
+
+/* Time period badges */
+.cinematic-time-period.immediate {
+  color: #ffff00;
+}
+
+.cinematic-time-period.month {
+  color: #ff9900;
+}
+
+.cinematic-time-period.six-months {
+  color: #ff6600;
+}
+
+.cinematic-time-period.year {
+  color: #ff3333;
+}

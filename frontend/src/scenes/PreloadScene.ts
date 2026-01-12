@@ -7,71 +7,104 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
-    this.createPlaceholderAssets();
+    // Load tileset images for the map
+    this.load.image('hospital_interior', '/assets/tilesets/hospital_interior.png');
+    this.load.image('office_interior', '/assets/tilesets/office_interior.png');
+    this.load.image('residential_interior', '/assets/tilesets/residential_interior.png');
+    this.load.image('commercial_interior', '/assets/tilesets/commercial_interior.png');
+    this.load.image('outdoor_ground', '/assets/tilesets/outdoor_ground.png');
+    this.load.image('outdoor_nature', '/assets/tilesets/outdoor_nature.png');
+    this.load.image('walls_doors', '/assets/tilesets/walls_doors.png');
+    this.load.image('furniture_objects', '/assets/tilesets/furniture_objects.png');
+
+    // Load character sprite sheets (32x32 per frame, 4x4 grid = 128x128 total)
+    const spriteKeys = [
+      'citizen_male_01',
+      'citizen_male_02',
+      'citizen_male_03',
+      'citizen_female_01',
+      'citizen_female_02',
+      'citizen_female_03',
+      'doctor_male_01',
+      'doctor_female_01',
+      'nurse_female_01',
+      'office_worker_male_01',
+      'office_worker_female_01',
+      'employee_01',
+      'official_01',
+      'analyst_01',
+    ];
+
+    spriteKeys.forEach((key) => {
+      this.load.spritesheet(key, `/assets/characters/${key}.png`, {
+        frameWidth: TILE_SIZE,
+        frameHeight: TILE_SIZE,
+      });
+    });
+
+    // Load player sprite sheet
+    this.load.spritesheet('player', '/assets/characters/player.png', {
+      frameWidth: TILE_SIZE,
+      frameHeight: TILE_SIZE,
+    });
 
     // Load the tilemap JSON
     this.load.tilemapTiledJSON('town', '/assets/maps/town.json');
   }
 
   create() {
+    // Create animations for all character sprites
+    this.createCharacterAnimations();
+
     this.scene.start('MainMenuScene');
   }
 
-  private createPlaceholderAssets() {
-    const graphics = this.add.graphics();
-
-    // Player texture (blue square with border)
-    graphics.fillStyle(0x4a90e2, 1);
-    graphics.fillRect(2, 2, TILE_SIZE - 4, TILE_SIZE - 4);
-    graphics.lineStyle(2, 0x2a5a8a);
-    graphics.strokeRect(2, 2, TILE_SIZE - 4, TILE_SIZE - 4);
-    graphics.generateTexture('player', TILE_SIZE, TILE_SIZE);
-    graphics.clear();
-
-    // NPC texture (green circle)
-    graphics.fillStyle(0x50c878, 1);
-    graphics.fillCircle(TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2 - 4);
-    graphics.lineStyle(2, 0x2a6a3a);
-    graphics.strokeCircle(TILE_SIZE / 2, TILE_SIZE / 2, TILE_SIZE / 2 - 4);
-    graphics.generateTexture('npc', TILE_SIZE, TILE_SIZE);
-    graphics.clear();
-
-    // Create tileset with different tiles for buildings/zones
-    this.createTilesetTexture(graphics);
-
-    graphics.destroy();
-  }
-
-  private createTilesetTexture(graphics: Phaser.GameObjects.Graphics) {
-    // Create a tileset image with 8 tiles (1 row, 8 columns)
-    const tilesetWidth = TILE_SIZE * 8;
-    const tilesetHeight = TILE_SIZE;
-
-    const tiles = [
-      { color: 0x6b8e23, borderColor: 0x4a6018, name: 'Grass' },        // Tile 0: Grass/Ground
-      { color: 0x4a4a4a, borderColor: 0x2a2a2a, name: 'Road' },         // Tile 1: Road
-      { color: 0xffc0cb, borderColor: 0xff6b7a, name: 'Hospital' },     // Tile 2: Hospital (pink/red)
-      { color: 0x87ceeb, borderColor: 0x4682b4, name: 'Residential' },  // Tile 3: Residential (blue)
-      { color: 0xd3d3d3, borderColor: 0x8b8b8b, name: 'Town Square' },  // Tile 4: Town Square
-      { color: 0x228b22, borderColor: 0x145214, name: 'Park' },         // Tile 5: Park (dark green)
-      { color: 0xf5f5dc, borderColor: 0xc0c0aa, name: 'Government' },   // Tile 6: Government (beige/marble)
-      { color: 0x4169e1, borderColor: 0x1e3a8a, name: 'Water' },        // Tile 7: Water/Pond
+  private createCharacterAnimations() {
+    // List of all character sprite keys including player
+    const spriteKeys = [
+      'citizen_male_01',
+      'citizen_male_02',
+      'citizen_male_03',
+      'citizen_female_01',
+      'citizen_female_02',
+      'citizen_female_03',
+      'doctor_male_01',
+      'doctor_female_01',
+      'nurse_female_01',
+      'office_worker_male_01',
+      'office_worker_female_01',
+      'employee_01',
+      'official_01',
+      'analyst_01',
+      'player',
     ];
 
-    for (let i = 0; i < tiles.length; i++) {
-      const tile = tiles[i];
-      const x = i * TILE_SIZE;
+    spriteKeys.forEach((key) => {
+      // Create walk animations for all 4 directions
+      // Sprite sheet layout: 4 rows (down, left, right, up) x 4 frames per row
+      const directions = ['down', 'left', 'right', 'up'];
 
-      // Fill tile
-      graphics.fillStyle(tile.color, 1);
-      graphics.fillRect(x + 1, 1, TILE_SIZE - 2, TILE_SIZE - 2);
+      directions.forEach((dir, rowIndex) => {
+        // Walk animation (4 frames per direction)
+        this.anims.create({
+          key: `${key}_walk_${dir}`,
+          frames: this.anims.generateFrameNumbers(key, {
+            start: rowIndex * 4,
+            end: rowIndex * 4 + 3,
+          }),
+          frameRate: 8,
+          repeat: -1,
+        });
 
-      // Add border for definition
-      graphics.lineStyle(1, tile.borderColor, 0.5);
-      graphics.strokeRect(x + 1, 1, TILE_SIZE - 2, TILE_SIZE - 2);
-    }
+        // Idle animation (single frame - middle of walk cycle)
+        this.anims.create({
+          key: `${key}_idle_${dir}`,
+          frames: [{ key: key, frame: rowIndex * 4 + 1 }],
+          frameRate: 1,
+        });
+      });
+    });
 
-    graphics.generateTexture('tileset', tilesetWidth, tilesetHeight);
-    graphics.clear();
+    console.log('Created animations for all character sprites');
   }
 }

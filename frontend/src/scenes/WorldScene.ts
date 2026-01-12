@@ -38,7 +38,12 @@ export class WorldScene extends Phaser.Scene {
 
   // Map rendering
   private map!: Phaser.Tilemaps.Tilemap;
-  private groundLayer!: Phaser.Tilemaps.TilemapLayer;
+  private floorLayer!: Phaser.Tilemaps.TilemapLayer;
+  private wallsLayer!: Phaser.Tilemaps.TilemapLayer;
+  private furnitureLowLayer!: Phaser.Tilemaps.TilemapLayer;
+  private furnitureMidLayer!: Phaser.Tilemaps.TilemapLayer;
+  private furnitureHighLayer!: Phaser.Tilemaps.TilemapLayer;
+  private objectsLayer!: Phaser.Tilemaps.TilemapLayer;
 
   // NPC rendering
   private npcs: NPCBasic[] = [];
@@ -243,7 +248,17 @@ export class WorldScene extends Phaser.Scene {
       const x = npc.map_x * TILE_SIZE + TILE_SIZE / 2;
       const y = npc.map_y * TILE_SIZE + TILE_SIZE / 2;
 
-      const sprite = this.add.sprite(x, y, 'npc');
+      // Use the sprite_key from the database for NPC appearance
+      const sprite = this.add.sprite(x, y, npc.sprite_key);
+
+      // Set depth so NPCs appear at the same level as player
+      sprite.setDepth(100);
+
+      // Play idle animation facing down by default
+      const idleAnimKey = `${npc.sprite_key}_idle_down`;
+      if (this.anims.exists(idleAnimKey)) {
+        sprite.play(idleAnimKey);
+      }
 
       // Make sprite interactive
       sprite.setInteractive({ useHandCursor: true });
@@ -266,7 +281,7 @@ export class WorldScene extends Phaser.Scene {
       this.npcSprites.set(npc.id, sprite);
     }
 
-    console.log(`Created ${this.npcSprites.size} NPC sprites`);
+    console.log(`Created ${this.npcSprites.size} NPC sprites with animations`);
   }
 
   private handleNpcClick(npcId: string) {
@@ -321,23 +336,57 @@ export class WorldScene extends Phaser.Scene {
     // Create the tilemap from the loaded JSON
     this.map = this.make.tilemap({ key: 'town' });
 
-    // Add the tileset image to the map
-    const tileset = this.map.addTilesetImage('tileset', 'tileset', TILE_SIZE, TILE_SIZE, 0, 0);
+    // Add all tilesets to the map
+    const hospitalTileset = this.map.addTilesetImage('hospital_interior', 'hospital_interior');
+    const officeTileset = this.map.addTilesetImage('office_interior', 'office_interior');
+    const residentialTileset = this.map.addTilesetImage('residential_interior', 'residential_interior');
+    const commercialTileset = this.map.addTilesetImage('commercial_interior', 'commercial_interior');
+    const groundTileset = this.map.addTilesetImage('outdoor_ground', 'outdoor_ground');
+    const natureTileset = this.map.addTilesetImage('outdoor_nature', 'outdoor_nature');
+    const wallsTileset = this.map.addTilesetImage('walls_doors', 'walls_doors');
+    const furnitureTileset = this.map.addTilesetImage('furniture_objects', 'furniture_objects');
 
-    if (!tileset) {
-      console.error('Failed to load tileset');
-      return;
+    // Collect all tilesets
+    const tilesets = [
+      hospitalTileset,
+      officeTileset,
+      residentialTileset,
+      commercialTileset,
+      groundTileset,
+      natureTileset,
+      wallsTileset,
+      furnitureTileset,
+    ];
+
+    // Check if any tilesets failed to load
+    const missingTilesets = tilesets.filter(t => !t);
+    if (missingTilesets.length > 0) {
+      console.warn(`Some tilesets failed to load (${missingTilesets.length}/${tilesets.length}). This is expected if assets haven't been added yet.`);
     }
 
-    // Create the ground layer
-    this.groundLayer = this.map.createLayer('Ground', tileset, 0, 0)!;
+    // Create all tile layers (must match layer names in Tiled map)
+    // Note: If layers don't exist in the map, createLayer will return null
+    this.floorLayer = this.map.createLayer('1_Floor', tilesets, 0, 0)!;
+    this.wallsLayer = this.map.createLayer('2_Walls_Base', tilesets, 0, 0)!;
+    this.furnitureLowLayer = this.map.createLayer('3_Furniture_Low', tilesets, 0, 0)!;
+    this.furnitureMidLayer = this.map.createLayer('4_Furniture_Mid', tilesets, 0, 0)!;
+    this.furnitureHighLayer = this.map.createLayer('5_Furniture_High', tilesets, 0, 0)!;
+    this.objectsLayer = this.map.createLayer('6_Objects', tilesets, 0, 0)!;
 
-    if (!this.groundLayer) {
-      console.error('Failed to create ground layer');
-      return;
-    }
+    // Set depth for proper rendering order
+    // Floor and walls below player
+    if (this.floorLayer) this.floorLayer.setDepth(0);
+    if (this.wallsLayer) this.wallsLayer.setDepth(10);
+    if (this.furnitureLowLayer) this.furnitureLowLayer.setDepth(50);
 
-    console.log('Tilemap loaded successfully');
+    // Player and NPCs will be at depth 100 (set in createPlayer and createNPCSprites)
+
+    // High furniture and objects above player
+    if (this.furnitureMidLayer) this.furnitureMidLayer.setDepth(150);
+    if (this.furnitureHighLayer) this.furnitureHighLayer.setDepth(200);
+    if (this.objectsLayer) this.objectsLayer.setDepth(250);
+
+    console.log('Tilemap loaded with multi-layer support');
   }
 
   private createPlayer() {
@@ -349,6 +398,14 @@ export class WorldScene extends Phaser.Scene {
       this.playerGridY * TILE_SIZE + TILE_SIZE / 2,
       'player'
     );
+
+    // Set depth so player appears above low furniture but below high objects
+    this.player.setDepth(100);
+
+    // Play initial idle animation facing down
+    if (this.anims.exists('player_idle_down')) {
+      this.player.play('player_idle_down');
+    }
   }
 
   private setupInput() {
@@ -403,6 +460,19 @@ export class WorldScene extends Phaser.Scene {
     const newX = this.playerGridX * TILE_SIZE + TILE_SIZE / 2;
     const newY = this.playerGridY * TILE_SIZE + TILE_SIZE / 2;
 
+    // Determine movement direction for animation
+    let direction = 'down';
+    if (dx < 0) direction = 'left';
+    else if (dx > 0) direction = 'right';
+    else if (dy < 0) direction = 'up';
+    else if (dy > 0) direction = 'down';
+
+    // Play walk animation for the movement direction
+    const walkAnimKey = `player_walk_${direction}`;
+    if (this.anims.exists(walkAnimKey)) {
+      this.player.play(walkAnimKey, true);
+    }
+
     this.isMoving = true;
 
     this.tweens.add({
@@ -413,6 +483,12 @@ export class WorldScene extends Phaser.Scene {
       ease: MOVEMENT_EASING,
       onComplete: () => {
         this.isMoving = false;
+
+        // Switch to idle animation after movement completes
+        const idleAnimKey = `player_idle_${direction}`;
+        if (this.anims.exists(idleAnimKey)) {
+          this.player.play(idleAnimKey);
+        }
       },
     });
   }

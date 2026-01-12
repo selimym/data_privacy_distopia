@@ -8,18 +8,20 @@ from faker import Faker
 from datafusion.models.npc import Role
 
 SPRITE_KEYS = [
-    "citizen_m1",
-    "citizen_m2",
-    "citizen_m3",
-    "citizen_f1",
-    "citizen_f2",
-    "citizen_f3",
-    "employee_1",
-    "employee_2",
-    "official_1",
-    "official_2",
-    "analyst_1",
-    "hacker_1",
+    "citizen_male_01",
+    "citizen_male_02",
+    "citizen_male_03",
+    "citizen_female_01",
+    "citizen_female_02",
+    "citizen_female_03",
+    "doctor_male_01",
+    "doctor_female_01",
+    "nurse_female_01",
+    "office_worker_male_01",
+    "office_worker_female_01",
+    "employee_01",
+    "official_01",
+    "analyst_01",
 ]
 
 ROLE_DISTRIBUTION = {
