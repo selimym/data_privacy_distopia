@@ -173,6 +173,7 @@ export interface MetricsDelta {
 
 export interface FlagResult {
   flag_id: string;
+  citizen_id: string;  // Added for cinematic transitions
   citizen_name: string;
   flag_type: FlagType;
   immediate_outcome: string;
@@ -209,6 +210,7 @@ export interface FlagSummary {
 
 export interface CitizenOutcome {
   flag_id: string;
+  citizen_id: string;  // Added for cinematic transitions
   citizen_name: string;
   time_skip: string;
   status: string;
@@ -294,4 +296,16 @@ export interface SystemStartResponse {
   status: OperatorStatusType;
   compliance_score: number;
   first_directive: DirectiveRead;
+}
+
+// === Cinematic Transitions ===
+
+export interface CinematicData {
+  citizenId: string;
+  citizenName: string;
+  timeSkip: string;  // "immediate", "1_month", "6_months", "1_year"
+  narrative: string;
+  status: string;
+  map_x: number;
+  map_y: number;
 }

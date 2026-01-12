@@ -197,6 +197,7 @@ class FlagResult(BaseModel):
     """Result of submitting a flag."""
 
     flag_id: UUID
+    citizen_id: UUID  # Added for cinematic transitions
     citizen_name: str
     flag_type: str
     immediate_outcome: str

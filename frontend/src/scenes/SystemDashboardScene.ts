@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { systemState } from '../state/SystemState';
-import type { CaseOverview, FlagResult, RiskLevel } from '../types/system';
+import type { CaseOverview, FlagResult, RiskLevel, CinematicData, CitizenOutcome } from '../types/system';
 import { MessagesPanel } from '../ui/system/MessagesPanel';
 import { DecisionResultModal } from '../ui/system/DecisionResultModal';
 import { OutcomeViewer } from '../ui/system/OutcomeViewer';
 import { getSystemAudioManager } from '../audio/SystemAudioManager';
 import { getSystemVisualEffects } from '../ui/system/SystemVisualEffects';
+import * as systemApi from '../api/system';
+import { getNPC } from '../api/npcs';
 
 /**
  * SystemDashboardScene - Main surveillance operator interface.
@@ -44,6 +46,10 @@ export class SystemDashboardScene extends Phaser.Scene {
 
     if (this.sessionId) {
       await systemState.initialize(this.sessionId);
+
+      // Check if directive is completed and time should advance
+      // This happens when returning from cinematics
+      await this.checkAndAdvanceTime();
     }
   }
 
@@ -740,16 +746,120 @@ export class SystemDashboardScene extends Phaser.Scene {
     });
   }
 
-  private showFlagResult(result: FlagResult) {
-    new DecisionResultModal({
-      result,
-      onViewOutcome: () => {
-        this.showOutcomeViewer(result.flag_id, result.citizen_name);
-      },
-      onClose: () => {
-        // Return to dashboard - already handled by modal close
-      },
-    });
+  private async showFlagResult(result: FlagResult) {
+    // Instead of showing modal, trigger cinematic transition
+    await this.showImmediateCinematic(result);
+  }
+
+  private async showImmediateCinematic(result: FlagResult) {
+    try {
+      // Get NPC data (need map position)
+      const npcData = await getNPC(result.citizen_id);
+
+      // Get immediate outcome from the result
+      const cinematicData: CinematicData = {
+        citizenId: result.citizen_id,
+        citizenName: result.citizen_name,
+        timeSkip: 'immediate',
+        narrative: result.immediate_outcome,
+        status: this.getStatusForFlagType(result.flag_type),
+        map_x: npcData.npc.map_x,
+        map_y: npcData.npc.map_y,
+      };
+
+      // Transition to WorldScene in cinematic mode
+      this.cleanup();
+      this.scene.start('WorldScene', {
+        showCinematic: true,
+        cinematicQueue: [cinematicData],
+      });
+    } catch (error) {
+      console.error('Failed to show cinematic:', error);
+      // Fallback to showing modal if cinematic fails
+      new DecisionResultModal({
+        result,
+        onViewOutcome: () => {
+          this.showOutcomeViewer(result.flag_id, result.citizen_name);
+        },
+        onClose: () => {
+          // Return to dashboard - already handled by modal close
+        },
+      });
+    }
+  }
+
+  private getStatusForFlagType(flagType: string): string {
+    const statusMap: Record<string, string> = {
+      'monitoring': 'Under Enhanced Surveillance',
+      'restriction': 'Movement Restricted',
+      'intervention': 'State Contact Initiated',
+      'detention': 'Detained',
+    };
+    return statusMap[flagType] || 'Flagged';
+  }
+
+  /**
+   * Check if directive is completed and advance time if needed.
+   * Called after returning from cinematics.
+   */
+  private async checkAndAdvanceTime() {
+    if (!systemState.operatorId || !systemState.dashboard) {
+      return;
+    }
+
+    const flagsSubmitted = systemState.dashboard.operator.total_flags_submitted;
+    const directive = systemState.currentDirective;
+
+    if (!directive) {
+      return;
+    }
+
+    // Check if quota is met
+    if (flagsSubmitted >= directive.flag_quota) {
+      console.log('Directive quota met! Advancing time...');
+
+      try {
+        // Advance time and get outcomes for all flagged citizens
+        const outcomes: CitizenOutcome[] = await systemApi.advanceTime(systemState.operatorId);
+
+        if (outcomes.length > 0) {
+          console.log(`Time advanced! ${outcomes.length} outcomes to show`);
+
+          // Convert outcomes to cinematic queue
+          const cinematicQueue: CinematicData[] = await Promise.all(
+            outcomes.map(async (outcome) => {
+              const npcData = await getNPC(outcome.citizen_id);
+              return {
+                citizenId: outcome.citizen_id,
+                citizenName: outcome.citizen_name,
+                timeSkip: outcome.time_skip,
+                narrative: outcome.narrative,
+                status: outcome.status,
+                map_x: npcData.npc.map_x,
+                map_y: npcData.npc.map_y,
+              };
+            })
+          );
+
+          // Transition to WorldScene with multiple cinematics
+          this.cleanup();
+          this.scene.start('WorldScene', {
+            showCinematic: true,
+            cinematicQueue,
+          });
+
+          // Advance to next directive after cinematics
+          await systemApi.advanceDirective(systemState.operatorId);
+        } else {
+          console.log('No outcomes to show, just advancing directive');
+          // No time progression needed, just advance directive
+          await systemApi.advanceDirective(systemState.operatorId);
+          await systemState.loadDashboard();
+        }
+      } catch (error) {
+        console.error('Failed to advance time:', error);
+      }
+    }
   }
 
   private showOutcomeViewer(flagId: string, citizenName: string) {

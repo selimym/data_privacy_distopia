@@ -13,6 +13,8 @@ import { AbuseModePanel } from '../ui/AbuseModePanel';
 import { ScenarioIntro } from '../ui/ScenarioIntro';
 import { ScenarioPromptUI } from '../ui/ScenarioPromptUI';
 import { getScenarioPrompt } from '../api/scenarios';
+import { CinematicTextBox } from '../ui/system/CinematicTextBox';
+import type { CinematicData } from '../types/system';
 
 // Simple UUID v4 generator
 function uuidv4(): string {
@@ -63,15 +65,50 @@ export class WorldScene extends Phaser.Scene {
   private actionsThisSession: Array<{ action: string; target: string }> = [];
   private targetedNpcIds: Set<string> = new Set();
 
+  // Cinematic mode state
+  private cinematicMode: boolean = false;
+  private cinematicQueue: CinematicData[] = [];
+  private currentCinematicTextBox: CinematicTextBox | null = null;
+
   constructor() {
     super({ key: 'WorldScene' });
   }
 
-  create() {
+  init(data?: { startInAbuseMode?: boolean; showCinematic?: boolean; cinematicQueue?: CinematicData[] }) {
+    // Handle abuse mode initialization
+    if (data?.startInAbuseMode) {
+      this.isAbuseModeActive = true;
+    }
+
+    // Handle cinematic mode initialization
+    if (data?.showCinematic && data?.cinematicQueue) {
+      this.cinematicMode = true;
+      this.cinematicQueue = data.cinematicQueue;
+    }
+  }
+
+  async create() {
     this.createMap();
     this.createPlayer();
     this.setupInput();
     this.setupCamera();
+
+    // If in cinematic mode, skip UI setup and start cinematic sequence
+    if (this.cinematicMode) {
+      // Disable player input
+      if (this.input.keyboard) {
+        this.input.keyboard.enabled = false;
+      }
+
+      // Load NPCs first
+      await this.loadNPCs();
+
+      // Start cinematic sequence
+      this.startCinematicSequence();
+      return;
+    }
+
+    // Normal mode setup
     this.setupZoomControls();
 
     // Ensure canvas has keyboard focus on load
@@ -99,7 +136,7 @@ export class WorldScene extends Phaser.Scene {
     this.createMenuButton();
 
     // Load and render NPCs
-    this.loadNPCs();
+    await this.loadNPCs();
 
     console.log('WorldScene ready');
   }
@@ -954,6 +991,111 @@ export class WorldScene extends Phaser.Scene {
     console.log('Exited abuse mode');
   }
 
+  // === Cinematic Mode Methods ===
+
+  private async startCinematicSequence() {
+    // Process cinematics sequentially
+    for (const cinematic of this.cinematicQueue) {
+      await this.showCinematic(cinematic);
+    }
+
+    // Return to system mode
+    this.exitCinematicMode();
+  }
+
+  private async showCinematic(data: CinematicData): Promise<void> {
+    return new Promise((resolve) => {
+      // Find NPC
+      const npc = this.npcs.find(n => n.id === data.citizenId);
+      if (!npc) {
+        console.warn(`NPC ${data.citizenId} not found for cinematic`);
+        resolve();
+        return;
+      }
+
+      const targetX = data.map_x * TILE_SIZE + TILE_SIZE / 2;
+      const targetY = data.map_y * TILE_SIZE + TILE_SIZE / 2;
+
+      console.log(`Starting cinematic for ${data.citizenName} at (${targetX}, ${targetY})`);
+
+      // Pan camera to NPC
+      this.cameras.main.pan(
+        targetX,
+        targetY,
+        2000,
+        'Sine.easeInOut',
+        false,
+        (_camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
+          if (progress === 1) {
+            // Zoom in slightly
+            this.cameras.main.zoomTo(
+              1.5,
+              1000,
+              'Sine.easeInOut',
+              false,
+              (_camera2: Phaser.Cameras.Scene2D.Camera, progress2: number) => {
+                if (progress2 === 1) {
+                  // Show text box
+                  this.showCinematicTextBox(data, () => {
+                    // Zoom back out
+                    this.cameras.main.zoomTo(
+                      1.0,
+                      1000,
+                      'Sine.easeOut',
+                      false,
+                      (_camera3: Phaser.Cameras.Scene2D.Camera, progress3: number) => {
+                        if (progress3 === 1) {
+                          resolve();
+                        }
+                      }
+                    );
+                  });
+                }
+              }
+            );
+          }
+        }
+      );
+    });
+  }
+
+  private showCinematicTextBox(data: CinematicData, onComplete: () => void) {
+    this.currentCinematicTextBox = new CinematicTextBox({
+      scene: this,
+      citizenName: data.citizenName,
+      timeSkip: data.timeSkip,
+      narrative: data.narrative,
+      status: data.status,
+      onComplete: () => {
+        this.currentCinematicTextBox = null;
+        onComplete();
+      },
+      onSkip: () => {
+        this.currentCinematicTextBox = null;
+        onComplete();
+      }
+    });
+
+    this.currentCinematicTextBox.show();
+  }
+
+  private exitCinematicMode() {
+    // Clean up any remaining cinematic UI
+    if (this.currentCinematicTextBox) {
+      this.currentCinematicTextBox.skip();
+      this.currentCinematicTextBox = null;
+    }
+
+    // Re-enable input
+    if (this.input.keyboard) {
+      this.input.keyboard.enabled = true;
+    }
+
+    // Return to SystemDashboardScene
+    this.cleanupUI();
+    this.scene.start('SystemDashboardScene', { sessionId: this.currentSessionId });
+  }
+
   shutdown() {
     // Clean up data panel
     if (this.dataPanel) {
@@ -978,6 +1120,12 @@ export class WorldScene extends Phaser.Scene {
     // Clean up NPC tooltip
     if (this.npcTooltip && this.npcTooltip.parentElement) {
       this.npcTooltip.parentElement.removeChild(this.npcTooltip);
+    }
+
+    // Clean up cinematic text box
+    if (this.currentCinematicTextBox) {
+      this.currentCinematicTextBox.skip();
+      this.currentCinematicTextBox = null;
     }
 
     // Remove event listeners

@@ -185,6 +185,7 @@ class CitizenOutcomeGenerator:
 
         return CitizenOutcome(
             flag_id=flag.id,
+            citizen_id=flag.citizen_id,
             citizen_name=citizen_name,
             time_skip=time_skip,
             status=template["status"],

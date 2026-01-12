@@ -58,6 +58,7 @@ from datafusion.schemas.system import (
 from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator
 from datafusion.services.operator_tracker import OperatorTracker
 from datafusion.services.risk_scoring import RiskScorer
+from datafusion.services.time_progression import TimeProgressionService
 
 router = APIRouter(prefix="/system", tags=["system"])
 
@@ -454,6 +455,7 @@ async def submit_flag(
 
     return FlagResult(
         flag_id=flag.id,
+        citizen_id=npc.id,
         citizen_name=f"{npc.first_name} {npc.last_name}",
         flag_type=flag_type.value,
         immediate_outcome=outcome.narrative,
@@ -540,6 +542,30 @@ async def get_flag_outcome(
     outcome = await outcome_gen.generate_outcome(flag, time_skip)
 
     return outcome
+
+
+@router.post("/operator/{operator_id}/advance-time")
+async def advance_time(
+    operator_id: UUID, db: AsyncSession = Depends(get_db)
+):
+    """
+    Advance time for operator and return outcomes for all flagged citizens.
+
+    Called when a directive is completed. This triggers time progression
+    and generates updated outcomes for all previously flagged citizens.
+
+    Returns:
+        List of CitizenOutcome objects with updated consequences
+    """
+    try:
+        time_service = TimeProgressionService(db)
+        outcomes = await time_service.advance_time(operator_id)
+        return outcomes
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error advancing time for operator {operator_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to advance time")
 
 
 @router.get("/operator/{operator_id}/assessment")

@@ -10,6 +10,7 @@ import './styles/panel.css';
 import './styles/abuse.css';
 import './styles/system.css';
 import './styles/system-effects.css';
+import './styles/cinematic.css';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,

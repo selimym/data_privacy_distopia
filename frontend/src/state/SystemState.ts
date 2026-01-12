@@ -27,6 +27,7 @@ export class SystemState {
   public operatorId: string | null = null;
   public operatorStatus: OperatorStatus | null = null;
   public currentDirective: DirectiveRead | null = null;
+  public currentTimePeriod: string = 'immediate';  // Track current time period
 
   // Case selection
   public selectedCitizenId: string | null = null;

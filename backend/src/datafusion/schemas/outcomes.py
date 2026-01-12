@@ -20,6 +20,7 @@ class CitizenOutcome(BaseModel):
     """
 
     flag_id: UUID = Field(description="ID of the flag that caused this outcome")
+    citizen_id: UUID = Field(description="ID of the affected citizen")  # Added for cinematic transitions
     citizen_name: str = Field(description="Name of the affected citizen")
     time_skip: str = Field(
         description="Time period (immediate, 1_month, 6_months, 1_year)"

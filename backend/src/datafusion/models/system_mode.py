@@ -61,6 +61,7 @@ class Operator(Base):
         ForeignKey("directives.id", ondelete="SET NULL"), nullable=True
     )
     status: Mapped[OperatorStatus] = mapped_column(default=OperatorStatus.ACTIVE)
+    current_time_period: Mapped[str] = mapped_column(String(20), default="immediate")
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
 

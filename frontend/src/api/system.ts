@@ -196,6 +196,23 @@ export async function getFlagOutcome(
 }
 
 /**
+ * Advance time for operator and get outcomes for all flagged citizens.
+ * Called when a directive is completed to trigger time progression.
+ */
+export async function advanceTime(operatorId: string): Promise<CitizenOutcome[]> {
+  const response = await fetch(`${API_BASE}/system/operator/${operatorId}/advance-time`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to advance time');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
  * Get the operator's own risk assessment (when compliance drops).
  */
 export async function getOperatorAssessment(
