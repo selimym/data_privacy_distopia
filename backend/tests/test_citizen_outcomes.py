@@ -113,7 +113,7 @@ async def npc_with_family(db_session, test_npc):
     social_record = SocialMediaRecord(
         npc_id=test_npc.id,
         has_public_profile=True,
-        primary_platform="facebook",
+        primary_platform=Platform.FACEBOOK,
         account_created_date=date(2015, 1, 1),
         follower_count=250,
         post_frequency="weekly",
