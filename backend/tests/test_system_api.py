@@ -88,7 +88,7 @@ class TestStartSystemMode:
         assert "operator_id" in data
         assert "operator_code" in data
         assert data["operator_code"].startswith("OP-")
-        assert data["status"] == "ACTIVE"
+        assert data["status"] == "active"
         assert data["compliance_score"] == 85.0
         assert "first_directive" in data
 
@@ -129,7 +129,7 @@ class TestDashboard:
         data = response.json()
         assert "operator" in data
         assert data["operator"]["operator_code"].startswith("OP-")
-        assert data["operator"]["status"] == "ACTIVE"
+        assert data["operator"]["status"] == "active"
 
     @pytest.mark.asyncio
     async def test_dashboard_returns_directive(self, client, started_session):
@@ -278,7 +278,7 @@ class TestFlagSubmission:
             json={
                 "operator_id": full_session["operator_id"],
                 "citizen_id": full_session["npc_id"],
-                "flag_type": "MONITORING",
+                "flag_type": "monitoring",
                 "contributing_factors": ["suspicious_location"],
                 "justification": "Subject observed near school zone",
                 "decision_time_seconds": 15.0,
@@ -288,7 +288,7 @@ class TestFlagSubmission:
         assert response.status_code == 200
         data = response.json()
         assert "flag_id" in data
-        assert data["flag_type"] == "MONITORING"
+        assert data["flag_type"] == "monitoring"
         assert "quota_progress" in data
         assert "1/" in data["quota_progress"]
 
@@ -300,9 +300,9 @@ class TestFlagSubmission:
             json={
                 "operator_id": full_session["operator_id"],
                 "citizen_id": full_session["npc_id"],
-                "flag_type": "MONITORING",
+                "flag_type": "monitoring",
                 "contributing_factors": [],
-                "justification": "Test",
+                "justification": "Test compliance tracking",
                 "decision_time_seconds": 10.0,
             },
         )
@@ -319,9 +319,9 @@ class TestFlagSubmission:
             json={
                 "operator_id": full_session["operator_id"],
                 "citizen_id": full_session["npc_id"],
-                "flag_type": "MONITORING",
+                "flag_type": "monitoring",
                 "contributing_factors": [],
-                "justification": "Test",
+                "justification": "Test hesitation detection",
                 "decision_time_seconds": 45.0,  # Above 30s threshold
             },
         )
@@ -339,14 +339,14 @@ class TestFlagSubmission:
             json={
                 "operator_id": full_session["operator_id"],
                 "citizen_id": full_session["npc_id"],
-                "flag_type": "INVALID_TYPE",
+                "flag_type": "invalid_type",
                 "contributing_factors": [],
-                "justification": "Test",
+                "justification": "Test invalid flag type",
                 "decision_time_seconds": 10.0,
             },
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 400  # API validates and returns 400 for invalid flag type
 
 
 class TestNoAction:
@@ -422,7 +422,7 @@ class TestOperatorEndpoints:
                 json={
                     "operator_id": operator_id,
                     "citizen_id": str(setup_npc.id),
-                    "flag_type": "MONITORING",
+                    "flag_type": "monitoring",
                     "contributing_factors": [],
                     "justification": f"Test flag {i}",
                     "decision_time_seconds": 10.0,
@@ -482,7 +482,7 @@ class TestEndingEndpoints:
                 json={
                     "operator_id": operator_id,
                     "citizen_id": str(setup_npc.id),
-                    "flag_type": "MONITORING",
+                    "flag_type": "monitoring",
                     "contributing_factors": [],
                     "justification": f"Test {i}",
                     "decision_time_seconds": 10.0,

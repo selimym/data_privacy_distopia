@@ -12,11 +12,12 @@ Tests cover:
 import pytest
 from uuid import uuid4
 from datetime import date
+from decimal import Decimal
 
 from datafusion.models.npc import NPC
 from datafusion.models.health import HealthRecord, HealthCondition, Severity
-from datafusion.models.finance import FinanceRecord, Debt
-from datafusion.models.judicial import JudicialRecord, CriminalRecord
+from datafusion.models.finance import FinanceRecord, Debt, EmploymentStatus, DebtType
+from datafusion.models.judicial import JudicialRecord, CriminalRecord, CrimeCategory, CaseDisposition
 from datafusion.models.location import LocationRecord, InferredLocation
 from datafusion.models.social import SocialMediaRecord
 from datafusion.models.system_mode import (
@@ -471,9 +472,9 @@ class TestCrossDomainCorrelation:
         # Add financial stress
         finance = FinanceRecord(
             npc_id=npc.id,
-            employment_status="employed",
+            employment_status=EmploymentStatus.EMPLOYED_FULL_TIME,
             employer_name="TestCorp",
-            annual_income=25000,
+            annual_income=Decimal("25000"),
             credit_score=520,
         )
         db_session.add(finance)
@@ -481,12 +482,14 @@ class TestCrossDomainCorrelation:
 
         debt = Debt(
             finance_record_id=finance.id,
-            debt_type="credit_card",
-            creditor="BigBank",
-            original_amount=60000,
-            current_balance=58000,
-            monthly_payment=400,
-            interest_rate=24.99,
+            debt_type=DebtType.CREDIT_CARD,
+            creditor_name="BigBank",
+            original_amount=Decimal("60000"),
+            current_balance=Decimal("58000"),
+            monthly_payment=Decimal("400"),
+            interest_rate=Decimal("24.99"),
+            opened_date=date(2020, 1, 1),
+            is_delinquent=False,
         )
         db_session.add(debt)
 
@@ -502,10 +505,16 @@ class TestCrossDomainCorrelation:
 
         criminal = CriminalRecord(
             judicial_record_id=judicial.id,
-            crime="Theft",
-            date=date(2019, 8, 1),
-            disposition="Convicted",
-            sentence="12 months probation",
+            case_number="CR-2019-001",
+            crime_category=CrimeCategory.PROPERTY,
+            charge_description="Theft",
+            arrest_date=date(2019, 8, 1),
+            disposition=CaseDisposition.GUILTY,
+            sentence_description="12 months probation",
+            probation_months=12,
+            is_sensitive=False,
+            is_sealed=False,
+            is_expunged=False,
         )
         db_session.add(criminal)
 
@@ -611,7 +620,7 @@ class TestEndingContent:
         result = await calculator.generate_ending_content(ending_type, operator.id)
 
         assert len(result.citizens_flagged) > 0
-        assert result.citizens_flagged[0].flag_type == "DETENTION"
+        assert result.citizens_flagged[0].flag_type == "detention"
 
     @pytest.mark.asyncio
     async def test_ending_includes_real_world_parallels(

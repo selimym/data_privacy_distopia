@@ -6,7 +6,7 @@ from datetime import date, datetime
 
 from datafusion.models.npc import NPC
 from datafusion.models.health import HealthRecord, HealthCondition, Severity
-from datafusion.models.social import SocialMediaRecord, PublicInference
+from datafusion.models.social import SocialMediaRecord, PublicInference, InferenceCategory, Platform
 from datafusion.models.system_mode import (
     Operator,
     Directive,
@@ -125,10 +125,13 @@ async def npc_with_family(db_session, test_npc):
     # Add inference mentioning children
     inference = PublicInference(
         social_media_record_id=social_record.id,
-        inference_type="family_status",
+        category=InferenceCategory.FAMILY,
         inference_text="Subject has posted about picking up children from school",
-        confidence=0.9,
-        source="post_analysis",
+        supporting_evidence="Multiple posts mentioning 'picking up kids from school'",
+        confidence_score=90,
+        source_platform=Platform.FACEBOOK,
+        data_points_analyzed=5,
+        potential_harm="Family structure could be targeted or used for manipulation",
     )
     db_session.add(inference)
     await db_session.flush()

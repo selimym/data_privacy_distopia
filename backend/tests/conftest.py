@@ -4,6 +4,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -16,7 +17,12 @@ from datafusion.models.health import HealthRecord, HealthCondition, Severity
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=True)
+# Create engine without echo to avoid logging issues
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,
+)
 TestSessionLocal = async_sessionmaker(
     test_engine,
     class_=AsyncSession,
@@ -24,20 +30,36 @@ TestSessionLocal = async_sessionmaker(
 )
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(scope="function")
 async def db_session():
-    """Provide a test database session."""
+    """Provide a test database session with proper lifecycle management."""
+    # Create tables
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    # Create session
     async with TestSessionLocal() as session:
-        yield session
+        try:
+            yield session
+            # Commit any pending changes
+            await session.commit()
+        except Exception:
+            # Rollback on error
+            await session.rollback()
+            raise
+        finally:
+            # Ensure session is closed
+            await session.close()
 
+    # Drop tables
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
+    # Dispose of engine connections
+    await test_engine.dispose()
 
-@pytest.fixture
+
+@pytest_asyncio.fixture(scope="function")
 async def client(db_session):
     """Provide a test client with overridden database."""
 
@@ -46,16 +68,18 @@ async def client(db_session):
 
     app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    ) as ac:
-        yield ac
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test",
+        ) as ac:
+            yield ac
+    finally:
+        # Always clear overrides, even on error
+        app.dependency_overrides.clear()
 
-    app.dependency_overrides.clear()
 
-
-@pytest.fixture
+@pytest_asyncio.fixture(scope="function")
 async def test_directive(db_session):
     """Provide a test directive."""
     directive = Directive(
@@ -77,7 +101,7 @@ async def test_directive(db_session):
     return directive
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(scope="function")
 async def test_operator(db_session, test_directive):
     """Provide a test operator."""
     operator = Operator(
@@ -94,7 +118,7 @@ async def test_operator(db_session, test_directive):
     return operator
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(scope="function")
 async def test_npc(db_session):
     """Provide a basic test NPC."""
     npc = NPC(
@@ -115,7 +139,7 @@ async def test_npc(db_session):
     return npc
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(scope="function")
 async def test_npc_with_data(db_session):
     """Provide a test NPC with financial and health data."""
     npc = NPC(

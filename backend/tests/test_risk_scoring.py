@@ -7,7 +7,7 @@ from datetime import datetime, date
 from datafusion.models.npc import NPC
 from datafusion.models.health import HealthRecord, HealthCondition, HealthMedication, Severity
 from datafusion.models.finance import FinanceRecord, Transaction, Debt, TransactionCategory, EmploymentStatus, DebtType
-from datafusion.models.judicial import JudicialRecord, CriminalRecord
+from datafusion.models.judicial import JudicialRecord, CriminalRecord, CrimeCategory, CaseDisposition
 from datafusion.models.location import LocationRecord, InferredLocation
 from datafusion.models.social import SocialMediaRecord, PrivateInference
 from datafusion.services.risk_scoring import RiskScorer
@@ -76,10 +76,16 @@ async def npc_with_criminal_record(db_session, npc_with_data):
 
     criminal = CriminalRecord(
         judicial_record_id=judicial_record.id,
-        crime="Petty Theft",
-        date=date(2018, 3, 15),
-        disposition="Convicted",
-        sentence="6 months probation",
+        case_number="CR-2018-001",
+        crime_category=CrimeCategory.PROPERTY,
+        charge_description="Petty Theft",
+        arrest_date=date(2018, 3, 15),
+        disposition=CaseDisposition.GUILTY,
+        sentence_description="6 months probation",
+        probation_months=6,
+        is_sensitive=False,
+        is_sealed=False,
+        is_expunged=False,
     )
     db_session.add(criminal)
     await db_session.flush()
@@ -219,10 +225,16 @@ class TestRiskScoreCalculation:
         for i in range(5):
             criminal = CriminalRecord(
                 judicial_record_id=judicial_record.id,
-                crime=f"Crime {i}",
-                date=date(2015 + i, 1, 1),
-                disposition="Convicted",
-                sentence="1 year",
+                case_number=f"CR-{2015+i}-{i:03d}",
+                crime_category=CrimeCategory.PROPERTY,
+                charge_description=f"Crime {i}",
+                arrest_date=date(2015 + i, 1, 1),
+                disposition=CaseDisposition.GUILTY,
+                sentence_description="1 year",
+                jail_time_days=365,
+                is_sensitive=False,
+                is_sealed=False,
+                is_expunged=False,
             )
             db_session.add(criminal)
 
@@ -304,10 +316,16 @@ class TestCorrelationAlerts:
 
         criminal = CriminalRecord(
             judicial_record_id=judicial_record.id,
-            crime="Theft",
-            date=date(2018, 1, 1),
-            disposition="Convicted",
-            sentence="Probation",
+            case_number="CR-2018-002",
+            crime_category=CrimeCategory.PROPERTY,
+            charge_description="Theft",
+            arrest_date=date(2018, 1, 1),
+            disposition=CaseDisposition.GUILTY,
+            sentence_description="Probation",
+            probation_months=12,
+            is_sensitive=False,
+            is_sealed=False,
+            is_expunged=False,
         )
         db_session.add(criminal)
         await db_session.flush()
