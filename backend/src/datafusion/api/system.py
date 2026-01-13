@@ -4,6 +4,7 @@ System Mode API endpoints.
 Endpoints for the surveillance operator dashboard, case management,
 and decision submission in System Mode.
 """
+import asyncio
 import logging
 import random
 
@@ -52,6 +53,7 @@ from datafusion.schemas.system import (
     OperatorStatusRead,
     SystemAlert,
     SystemDashboard,
+    SystemDashboardWithCases,
     SystemStartRequest,
     SystemStartResponse,
 )
@@ -163,6 +165,115 @@ async def get_dashboard(
         alerts=alerts,
         pending_cases=pending_cases,
     )
+
+
+@router.get("/dashboard-with-cases", response_model=SystemDashboardWithCases)
+async def get_dashboard_with_cases(
+    operator_id: UUID = Query(...),
+    case_limit: int = Query(20, ge=1, le=100),
+    case_offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+) -> SystemDashboardWithCases:
+    """
+    Get combined dashboard and cases data in a single request.
+
+    This optimized endpoint reduces API calls by combining the dashboard
+    and cases list into one response, improving performance for the
+    System Mode operator interface.
+    """
+    # Get operator
+    operator = await _get_operator(operator_id, db)
+
+    # Get current directive
+    directive = None
+    if operator.current_directive_id:
+        directive_result = await db.execute(
+            select(Directive).where(Directive.id == operator.current_directive_id)
+        )
+        directive = directive_result.scalar_one_or_none()
+
+    # Calculate daily metrics
+    metrics = await _calculate_daily_metrics(operator, db)
+
+    # Generate alerts
+    alerts = _generate_alerts(operator, metrics)
+
+    # Count pending cases
+    pending_cases = await _count_pending_cases(operator, directive, db)
+
+    # Build operator status
+    tracker = OperatorTracker(db)
+    quota_progress = await tracker.get_quota_progress(operator_id)
+
+    operator_status = OperatorStatusRead(
+        operator_id=operator.id,
+        operator_code=operator.operator_code,
+        status=operator.status.value,
+        compliance_score=operator.compliance_score,
+        current_quota_progress=f"{quota_progress.flags_submitted}/{quota_progress.flags_required}",
+        total_flags_submitted=operator.total_flags_submitted,
+        total_reviews_completed=operator.total_reviews_completed,
+        hesitation_incidents=operator.hesitation_incidents,
+    )
+
+    dashboard = SystemDashboard(
+        operator=operator_status,
+        directive=_directive_to_read(directive, show_memo=False) if directive else None,
+        metrics=metrics,
+        alerts=alerts,
+        pending_cases=pending_cases,
+    )
+
+    # Get cases
+    npcs_result = await db.execute(
+        select(NPC).offset(case_offset).limit(case_limit)
+    )
+    npcs = npcs_result.scalars().all()
+
+    cases = []
+    risk_scorer = RiskScorer(db)
+
+    for npc in npcs:
+        # Calculate risk score
+        try:
+            risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
+        except Exception as e:
+            logger.warning(f"Failed to calculate risk score for NPC {npc.id}: {e}")
+            continue
+
+        # Get flagged message count
+        msg_result = await db.execute(
+            select(func.count(Message.id))
+            .join(MessageRecord)
+            .where(MessageRecord.npc_id == npc.id, Message.is_flagged == True)
+        )
+        flagged_messages = msg_result.scalar() or 0
+
+        # Determine primary concern
+        primary_concern = "No significant concerns"
+        if risk_assessment.contributing_factors:
+            primary_concern = risk_assessment.contributing_factors[0].factor_name
+
+        # Calculate age
+        age = _calculate_age(npc.date_of_birth)
+
+        cases.append(
+            CaseOverview(
+                npc_id=npc.id,
+                name=f"{npc.first_name} {npc.last_name}",
+                age=age,
+                risk_score=risk_assessment.risk_score,
+                risk_level=risk_assessment.risk_level.value,
+                primary_concern=primary_concern,
+                flagged_messages=flagged_messages,
+                time_in_queue=_random_queue_time(),
+            )
+        )
+
+    # Sort by risk score descending
+    cases.sort(key=lambda c: c.risk_score, reverse=True)
+
+    return SystemDashboardWithCases(dashboard=dashboard, cases=cases)
 
 
 # === Directive Management ===
@@ -847,7 +958,7 @@ async def _count_pending_cases(
 async def _get_domain_data(
     npc_id: UUID, operator: Operator, db: AsyncSession
 ) -> dict[str, dict]:
-    """Get domain data based on operator's directive access."""
+    """Get domain data based on operator's directive access with parallel query execution."""
     domains: dict[str, dict] = {}
 
     # Get directive to check access
@@ -860,80 +971,92 @@ async def _get_domain_data(
         if directive:
             accessible_domains = directive.required_domains
 
-    # Health
+    # Build parallel query tasks for all accessible domains
+    query_tasks = {}
+
     if "health" in accessible_domains:
-        health_result = await db.execute(
+        query_tasks["health"] = db.execute(
             select(HealthRecord).where(HealthRecord.npc_id == npc_id)
         )
-        health = health_result.scalar_one_or_none()
-        if health:
-            domains["health"] = {
-                "blood_type": health.blood_type,
-                "conditions_count": len(health.conditions) if health.conditions else 0,
-                "medications_count": len(health.medications) if health.medications else 0,
-            }
 
-    # Finance
     if "finance" in accessible_domains:
-        finance_result = await db.execute(
+        query_tasks["finance"] = db.execute(
             select(FinanceRecord).where(FinanceRecord.npc_id == npc_id)
         )
-        finance = finance_result.scalar_one_or_none()
-        if finance:
-            domains["finance"] = {
-                "annual_income": float(finance.annual_income) if finance.annual_income else None,
-                "credit_score": finance.credit_score,
-                "employment_status": finance.employment_status.value if finance.employment_status else None,
-            }
 
-    # Judicial
     if "judicial" in accessible_domains:
-        judicial_result = await db.execute(
+        query_tasks["judicial"] = db.execute(
             select(JudicialRecord).where(JudicialRecord.npc_id == npc_id)
         )
-        judicial = judicial_result.scalar_one_or_none()
-        if judicial:
-            domains["judicial"] = {
-                "criminal_records_count": len(judicial.criminal_records) if judicial.criminal_records else 0,
-                "civil_cases_count": len(judicial.civil_cases) if judicial.civil_cases else 0,
-            }
 
-    # Location
     if "location" in accessible_domains:
-        location_result = await db.execute(
+        query_tasks["location"] = db.execute(
             select(LocationRecord).where(LocationRecord.npc_id == npc_id)
         )
-        location = location_result.scalar_one_or_none()
-        if location:
-            domains["location"] = {
-                "inferred_locations_count": len(location.inferred_locations) if location.inferred_locations else 0,
-            }
 
-    # Social
     if "social" in accessible_domains:
-        social_result = await db.execute(
+        query_tasks["social"] = db.execute(
             select(SocialMediaRecord).where(SocialMediaRecord.npc_id == npc_id)
         )
-        social = social_result.scalar_one_or_none()
-        if social:
-            domains["social"] = {
-                "follower_count": social.follower_count,
-                "platform": social.platform.value if social.platform else None,
-            }
 
-    # Messages
     if "messages" in accessible_domains:
-        msg_record_result = await db.execute(
+        query_tasks["messages"] = db.execute(
             select(MessageRecord).where(MessageRecord.npc_id == npc_id)
         )
-        msg_record = msg_record_result.scalar_one_or_none()
-        if msg_record:
-            domains["messages"] = {
-                "total_messages": msg_record.total_messages_analyzed,
-                "flagged_count": msg_record.flagged_message_count,
-                "sentiment_score": msg_record.sentiment_score,
-                "encryption_attempts": msg_record.encryption_attempts,
-            }
+
+    # Execute all queries in parallel
+    if query_tasks:
+        results = await asyncio.gather(
+            *query_tasks.values(),
+            return_exceptions=True
+        )
+
+        # Map results back to domains and process
+        for (domain_name, _), result in zip(query_tasks.items(), results):
+            # Handle exceptions
+            if isinstance(result, Exception):
+                logger.warning(f"Failed to fetch {domain_name} data for NPC {npc_id}: {result}")
+                continue
+
+            # Extract record from result
+            record = result.scalar_one_or_none()
+            if not record:
+                continue
+
+            # Process each domain's data
+            if domain_name == "health":
+                domains["health"] = {
+                    "blood_type": record.blood_type,
+                    "conditions_count": len(record.conditions) if record.conditions else 0,
+                    "medications_count": len(record.medications) if record.medications else 0,
+                }
+            elif domain_name == "finance":
+                domains["finance"] = {
+                    "annual_income": float(record.annual_income) if record.annual_income else None,
+                    "credit_score": record.credit_score,
+                    "employment_status": record.employment_status.value if record.employment_status else None,
+                }
+            elif domain_name == "judicial":
+                domains["judicial"] = {
+                    "criminal_records_count": len(record.criminal_records) if record.criminal_records else 0,
+                    "civil_cases_count": len(record.civil_cases) if record.civil_cases else 0,
+                }
+            elif domain_name == "location":
+                domains["location"] = {
+                    "inferred_locations_count": len(record.inferred_locations) if record.inferred_locations else 0,
+                }
+            elif domain_name == "social":
+                domains["social"] = {
+                    "follower_count": record.follower_count,
+                    "platform": record.platform.value if record.platform else None,
+                }
+            elif domain_name == "messages":
+                domains["messages"] = {
+                    "total_messages": record.total_messages_analyzed,
+                    "flagged_count": record.flagged_message_count,
+                    "sentiment_score": record.sentiment_score,
+                    "encryption_attempts": record.encryption_attempts,
+                }
 
     return domains
 

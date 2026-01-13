@@ -1,0 +1,41 @@
+{
+  "employers": [
+    "TechCorp Solutions",
+    "Riverside Medical Center",
+    "DataFlow Analytics",
+    "Green Valley School District",
+    "Metro Transit Authority",
+    "Summit Financial Services",
+    "Horizon Manufacturing",
+    "CityView Retail Group"
+  ],
+  "banks": [
+    "First National Bank",
+    "Riverside Credit Union",
+    "Metro Bank & Trust",
+    "Community Savings Bank",
+    "Summit Financial",
+    "Harbor Bank"
+  ],
+  "creditors": [
+    "First Mortgage Co.",
+    "Auto Finance Plus",
+    "Student Loan Services",
+    "Credit Solutions Inc.",
+    "Personal Lending Corp."
+  ],
+  "merchants": {
+    "groceries": ["FreshMart", "Valley Foods", "QuickStop Market"],
+    "dining": ["The Bistro", "Pizza Palace", "Riverside Cafe", "Dragon Wok"],
+    "healthcare": ["Riverside Medical", "Summit Clinic", "Valley Urgent Care"],
+    "pharmacy": ["Metro Pharmacy", "HealthPlus Drugs", "CareRx"],
+    "entertainment": ["Cineplex", "GameZone", "Downtown Theater", "StreamFlix"],
+    "travel": ["SkyHigh Airlines", "Metro Hotel", "RideShare"],
+    "utilities": ["City Power & Light", "Metro Water", "NetSpeed Internet"],
+    "rent": ["Property Management Co.", "Landlord Direct"],
+    "insurance": ["SafeGuard Insurance", "Premier Coverage"],
+    "gambling": ["Lucky Casino", "BetOnline", "Slots Paradise"],
+    "alcohol": ["Liquor Mart", "Wine & Spirits", "Corner Pub"],
+    "other": ["General Store", "Miscellaneous"]
+  }
+}

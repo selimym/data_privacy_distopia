@@ -331,11 +331,15 @@ async def test_list_inference_rules(client):
     assert "content_rating" in first_rule
     assert "is_active" in first_rule
 
-    # Verify we have the expected hardcoded rules
+    # Verify we have the expected rules from configuration
     rule_keys = [rule["rule_key"] for rule in data]
-    assert "sensitive_health_exposure" in rule_keys
-    assert "mental_health_stigma" in rule_keys
-    assert "stalking_vulnerability" in rule_keys
+    # Check for some key rules from inference_rules.json
+    assert "financial_desperation" in rule_keys
+    assert "pregnancy_tracking" in rule_keys
+    assert "depression_suicide_risk" in rule_keys
+
+    # Should have 10 rules (loaded from JSON)
+    assert len(data) == 10
 
 
 @pytest.mark.asyncio

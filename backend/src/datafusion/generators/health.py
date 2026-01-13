@@ -7,73 +7,15 @@ from uuid import UUID
 from faker import Faker
 
 from datafusion.models.health import Severity
+from datafusion.services.content_loader import load_json
 
-COMMON_CONDITIONS = [
-    "Hypertension",
-    "Type 2 Diabetes",
-    "Asthma",
-    "Seasonal Allergies",
-    "Migraine",
-    "Gastroesophageal Reflux Disease (GERD)",
-    "Osteoarthritis",
-    "Hypothyroidism",
-    "High Cholesterol",
-    "Chronic Back Pain",
-]
-
-SENSITIVE_CONDITIONS = [
-    "Depression",
-    "Anxiety Disorder",
-    "Bipolar Disorder",
-    "PTSD",
-    "HIV",
-    "Herpes (HSV-2)",
-    "Substance Use Disorder",
-    "Eating Disorder",
-    "Schizophrenia",
-]
-
-CONDITION_MEDICATIONS = {
-    "Hypertension": ["Lisinopril", "Amlodipine", "Losartan"],
-    "Type 2 Diabetes": ["Metformin", "Glipizide", "Insulin"],
-    "Asthma": ["Albuterol", "Fluticasone", "Montelukast"],
-    "Seasonal Allergies": ["Cetirizine", "Loratadine", "Fluticasone nasal spray"],
-    "Migraine": ["Sumatriptan", "Propranolol", "Topiramate"],
-    "Depression": ["Sertraline", "Escitalopram", "Bupropion"],
-    "Anxiety Disorder": ["Alprazolam", "Buspirone", "Hydroxyzine"],
-    "Bipolar Disorder": ["Lithium", "Valproic Acid", "Quetiapine"],
-    "PTSD": ["Prazosin", "Sertraline", "Paroxetine"],
-    "HIV": ["Biktarvy", "Truvada", "Descovy"],
-    "Herpes (HSV-2)": ["Acyclovir", "Valacyclovir"],
-    "Substance Use Disorder": ["Naltrexone", "Buprenorphine", "Methadone"],
-    "GERD": ["Omeprazole", "Pantoprazole", "Ranitidine"],
-    "Osteoarthritis": ["Ibuprofen", "Naproxen", "Acetaminophen"],
-    "Hypothyroidism": ["Levothyroxine"],
-    "High Cholesterol": ["Atorvastatin", "Simvastatin", "Rosuvastatin"],
-    "Chronic Back Pain": ["Cyclobenzaprine", "Meloxicam", "Gabapentin"],
-    "Eating Disorder": ["Fluoxetine", "Olanzapine"],
-    "Schizophrenia": ["Risperidone", "Olanzapine", "Aripiprazole"],
-}
-
-SENSITIVE_VISIT_REASONS = [
-    "Psychotherapy session",
-    "STD screening",
-    "HIV test",
-    "Substance abuse counseling",
-    "Psychiatric evaluation",
-    "Trauma therapy",
-]
-
-COMMON_VISIT_REASONS = [
-    "Annual physical",
-    "Follow-up appointment",
-    "Sick visit - cold/flu",
-    "Blood pressure check",
-    "Medication refill",
-    "Lab work review",
-    "Preventive care",
-    "Vaccination",
-]
+# Load reference data
+_HEALTH_REF = load_json("reference/health.json")
+COMMON_CONDITIONS = _HEALTH_REF["common_conditions"]
+SENSITIVE_CONDITIONS = _HEALTH_REF["sensitive_conditions"]
+CONDITION_MEDICATIONS = _HEALTH_REF["condition_medications"]
+SENSITIVE_VISIT_REASONS = _HEALTH_REF["sensitive_visit_reasons"]
+COMMON_VISIT_REASONS = _HEALTH_REF["common_visit_reasons"]
 
 
 def generate_health_record(npc_id: UUID, seed: int | None = None) -> dict:
@@ -83,17 +25,8 @@ def generate_health_record(npc_id: UUID, seed: int | None = None) -> dict:
         Faker.seed(seed)
         random.seed(seed)
 
-    # Fictional insurance providers (not real companies)
-    insurance_providers = [
-        "SafeGuard Health Alliance",
-        "Wellness First Insurance Co.",
-        "CityCare Medical Group",
-        "Premier Health Partners",
-        "TotalCare Insurance Network",
-        "Liberty Medical Services",
-        "Horizon Health Solutions",
-        "Summit Care Insurance",
-    ]
+    # Get insurance providers from reference data
+    insurance_providers = _HEALTH_REF["insurance_providers"]
 
     record = {
         "npc_id": npc_id,

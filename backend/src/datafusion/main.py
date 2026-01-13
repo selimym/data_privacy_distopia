@@ -10,6 +10,7 @@ from datafusion.api import router as api_router
 from datafusion.config import settings
 from datafusion.database import Base, engine
 from datafusion.logging_config import setup_logging
+from datafusion.services.content_validator import validate_all_content
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,14 @@ async def lifespan(app: FastAPI):
     # Setup structured logging
     setup_logging()
     logger.info("Application starting", extra={"app_name": settings.app_name})
+
+    # Validate content JSON files
+    try:
+        validation_results = validate_all_content()
+        logger.info("Content validation passed", extra={"results": validation_results})
+    except ValueError as e:
+        logger.error("Content validation failed", extra={"error": str(e)})
+        raise
 
     # Create database tables
     async with engine.begin() as conn:

@@ -12,143 +12,46 @@ from datafusion.models.judicial import (
     CrimeCategory,
     ViolationType,
 )
+from datafusion.services.content_loader import load_json
 
-# Criminal charges by category
+# Load reference data
+_JUDICIAL_REF = load_json("reference/judicial.json")
+
+# Convert string keys to enum keys for criminal charges
 CRIMINAL_CHARGES = {
-    CrimeCategory.VIOLENT: [
-        "Assault and Battery",
-        "Assault with a Deadly Weapon",
-        "Aggravated Assault",
-        "Domestic Violence",
-        "Threatening",
-    ],
-    CrimeCategory.PROPERTY: [
-        "Burglary",
-        "Theft",
-        "Shoplifting",
-        "Vandalism",
-        "Trespassing",
-        "Breaking and Entering",
-    ],
-    CrimeCategory.DRUG: [
-        "Possession of Controlled Substance",
-        "Drug Trafficking",
-        "Possession with Intent to Distribute",
-        "Drug Paraphernalia",
-    ],
-    CrimeCategory.WHITE_COLLAR: [
-        "Fraud",
-        "Identity Theft",
-        "Embezzlement",
-        "Tax Evasion",
-        "Forgery",
-    ],
-    CrimeCategory.TRAFFIC: [
-        "Reckless Driving",
-        "Driving Under the Influence (DUI)",
-        "Driving Without License",
-        "Hit and Run",
-    ],
-    CrimeCategory.DOMESTIC: [
-        "Domestic Assault",
-        "Violation of Restraining Order",
-        "Child Endangerment",
-    ],
-    CrimeCategory.SEX_OFFENSE: [
-        "Sexual Assault",
-        "Indecent Exposure",
-        "Solicitation",
-    ],
-    CrimeCategory.OTHER: [
-        "Disorderly Conduct",
-        "Public Intoxication",
-        "Resisting Arrest",
-    ],
+    CrimeCategory.VIOLENT: _JUDICIAL_REF["criminal_charges"]["VIOLENT"],
+    CrimeCategory.PROPERTY: _JUDICIAL_REF["criminal_charges"]["PROPERTY"],
+    CrimeCategory.DRUG: _JUDICIAL_REF["criminal_charges"]["DRUG"],
+    CrimeCategory.WHITE_COLLAR: _JUDICIAL_REF["criminal_charges"]["WHITE_COLLAR"],
+    CrimeCategory.TRAFFIC: _JUDICIAL_REF["criminal_charges"]["TRAFFIC"],
+    CrimeCategory.DOMESTIC: _JUDICIAL_REF["criminal_charges"]["DOMESTIC"],
+    CrimeCategory.SEX_OFFENSE: _JUDICIAL_REF["criminal_charges"]["SEX_OFFENSE"],
+    CrimeCategory.OTHER: _JUDICIAL_REF["criminal_charges"]["OTHER"],
 }
 
-# Civil case descriptions by type
+# Convert string keys to enum keys for civil case descriptions
 CIVIL_CASE_DESCRIPTIONS = {
-    CivilCaseType.CONTRACT_DISPUTE: [
-        "Breach of contract - failure to deliver services",
-        "Non-payment for services rendered",
-        "Contract dispute over terms and conditions",
-    ],
-    CivilCaseType.PERSONAL_INJURY: [
-        "Slip and fall injury at business premises",
-        "Auto accident personal injury claim",
-        "Medical malpractice claim",
-    ],
-    CivilCaseType.PROPERTY_DISPUTE: [
-        "Boundary dispute with neighbor",
-        "Landlord-tenant property damage claim",
-        "Easement rights dispute",
-    ],
-    CivilCaseType.EMPLOYMENT: [
-        "Wrongful termination",
-        "Discrimination in the workplace",
-        "Unpaid wages claim",
-    ],
-    CivilCaseType.DIVORCE: [
-        "Divorce proceedings",
-        "Dissolution of marriage",
-    ],
-    CivilCaseType.CUSTODY: [
-        "Child custody dispute",
-        "Modification of custody arrangement",
-    ],
-    CivilCaseType.RESTRAINING_ORDER: [
-        "Restraining order against former partner",
-        "Protection from harassment order",
-    ],
-    CivilCaseType.SMALL_CLAIMS: [
-        "Small claims - property damage",
-        "Small claims - unpaid debt",
-        "Small claims - security deposit dispute",
-    ],
-    CivilCaseType.OTHER: [
-        "Civil litigation",
-        "General civil matter",
-    ],
+    CivilCaseType.CONTRACT_DISPUTE: _JUDICIAL_REF["civil_case_descriptions"]["CONTRACT_DISPUTE"],
+    CivilCaseType.PERSONAL_INJURY: _JUDICIAL_REF["civil_case_descriptions"]["PERSONAL_INJURY"],
+    CivilCaseType.PROPERTY_DISPUTE: _JUDICIAL_REF["civil_case_descriptions"]["PROPERTY_DISPUTE"],
+    CivilCaseType.EMPLOYMENT: _JUDICIAL_REF["civil_case_descriptions"]["EMPLOYMENT"],
+    CivilCaseType.DIVORCE: _JUDICIAL_REF["civil_case_descriptions"]["DIVORCE"],
+    CivilCaseType.CUSTODY: _JUDICIAL_REF["civil_case_descriptions"]["CUSTODY"],
+    CivilCaseType.RESTRAINING_ORDER: _JUDICIAL_REF["civil_case_descriptions"]["RESTRAINING_ORDER"],
+    CivilCaseType.SMALL_CLAIMS: _JUDICIAL_REF["civil_case_descriptions"]["SMALL_CLAIMS"],
+    CivilCaseType.OTHER: _JUDICIAL_REF["civil_case_descriptions"]["OTHER"],
 }
 
-# Traffic violation descriptions
+# Convert string keys to enum keys for traffic violation descriptions
 TRAFFIC_VIOLATION_DESCRIPTIONS = {
-    ViolationType.SPEEDING: [
-        "Speeding 15 mph over limit",
-        "Speeding 25 mph over limit",
-        "Speeding in school zone",
-    ],
-    ViolationType.DUI: [
-        "Driving under the influence - alcohol",
-        "DUI - first offense",
-        "DUI - second offense",
-    ],
-    ViolationType.RECKLESS_DRIVING: [
-        "Reckless driving",
-        "Aggressive driving",
-        "Road rage incident",
-    ],
-    ViolationType.RUNNING_RED_LIGHT: [
-        "Ran red light at intersection",
-        "Failure to stop at red light",
-    ],
-    ViolationType.ILLEGAL_PARKING: [
-        "Illegal parking - fire hydrant",
-        "Parking in handicap space without permit",
-    ],
-    ViolationType.DRIVING_WITHOUT_LICENSE: [
-        "Driving without valid license",
-        "Driving with suspended license",
-    ],
-    ViolationType.HIT_AND_RUN: [
-        "Hit and run - property damage",
-        "Leaving scene of accident",
-    ],
-    ViolationType.OTHER: [
-        "Failure to yield",
-        "Improper lane change",
-        "Expired registration",
-    ],
+    ViolationType.SPEEDING: _JUDICIAL_REF["traffic_violation_descriptions"]["SPEEDING"],
+    ViolationType.DUI: _JUDICIAL_REF["traffic_violation_descriptions"]["DUI"],
+    ViolationType.RECKLESS_DRIVING: _JUDICIAL_REF["traffic_violation_descriptions"]["RECKLESS_DRIVING"],
+    ViolationType.RUNNING_RED_LIGHT: _JUDICIAL_REF["traffic_violation_descriptions"]["RUNNING_RED_LIGHT"],
+    ViolationType.ILLEGAL_PARKING: _JUDICIAL_REF["traffic_violation_descriptions"]["ILLEGAL_PARKING"],
+    ViolationType.DRIVING_WITHOUT_LICENSE: _JUDICIAL_REF["traffic_violation_descriptions"]["DRIVING_WITHOUT_LICENSE"],
+    ViolationType.HIT_AND_RUN: _JUDICIAL_REF["traffic_violation_descriptions"]["HIT_AND_RUN"],
+    ViolationType.OTHER: _JUDICIAL_REF["traffic_violation_descriptions"]["OTHER"],
 }
 
 

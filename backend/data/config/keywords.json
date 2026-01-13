@@ -1,0 +1,101 @@
+{
+  "mental_health": {
+    "conditions": [
+      "depression",
+      "anxiety",
+      "bipolar",
+      "schizophrenia",
+      "ptsd",
+      "ocd",
+      "panic",
+      "adhd",
+      "add",
+      "psychosis",
+      "mania"
+    ],
+    "descriptors": [
+      "mental",
+      "psychological",
+      "psychiatric"
+    ],
+    "all": [
+      "depression",
+      "anxiety",
+      "bipolar",
+      "schizophrenia",
+      "ptsd",
+      "ocd",
+      "panic",
+      "adhd",
+      "add",
+      "psychosis",
+      "mania",
+      "mental",
+      "psychological",
+      "psychiatric"
+    ]
+  },
+  "psychiatric_medications": [
+    "sertraline",
+    "prozac",
+    "zoloft",
+    "lexapro",
+    "xanax",
+    "ativan",
+    "lithium",
+    "abilify",
+    "seroquel",
+    "adderall",
+    "ritalin",
+    "wellbutrin",
+    "effexor",
+    "cymbalta"
+  ],
+  "substance_medications": [
+    "methadone",
+    "suboxone",
+    "naltrexone",
+    "vivitrol"
+  ],
+  "trauma_indicators": [
+    "ptsd",
+    "anxiety",
+    "trauma",
+    "abuse"
+  ],
+  "domestic_violence_keywords": [
+    "domestic",
+    "violence",
+    "assault",
+    "injury",
+    "abuse",
+    "restraining order",
+    "protective order"
+  ],
+  "substance_indicators": [
+    "substance",
+    "addiction",
+    "methadone",
+    "suboxone",
+    "rehabilitation",
+    "recovery"
+  ],
+  "female_name_indicators": [
+    "sarah",
+    "emily",
+    "jennifer",
+    "amanda",
+    "jessica",
+    "ashley",
+    "melissa",
+    "rachel",
+    "nicole",
+    "amy"
+  ],
+  "protest_location_keywords": [
+    "protest",
+    "rally",
+    "demonstration",
+    "march"
+  ]
+}

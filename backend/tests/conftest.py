@@ -124,7 +124,7 @@ async def test_npc(db_session):
     npc = NPC(
         first_name="Test",
         last_name="Citizen",
-        date_of_birth="1985-06-15",
+        date_of_birth=date(1985, 6, 15),
         ssn="123-45-6789",
         street_address="123 Test St",
         city="Testville",
@@ -145,7 +145,7 @@ async def test_npc_with_data(db_session):
     npc = NPC(
         first_name="Jane",
         last_name="Smith",
-        date_of_birth="1990-03-20",
+        date_of_birth=date(1990, 3, 20),
         ssn="987-65-4321",
         street_address="456 Data Ave",
         city="Springfield",

@@ -491,3 +491,167 @@ class TestNPCFiltering:
         data = response.json()
         # Both should be returned
         assert data["total"] == 2
+
+
+class TestBatchGetNPCs:
+    """Test POST /api/npcs/batch endpoint."""
+
+    @pytest.mark.asyncio
+    async def test_batch_get_npcs_empty_list(self, client):
+        """Batch request with empty list should return empty list."""
+        response = await client.post(
+            "/api/npcs/batch",
+            json={"npc_ids": [], "domains": None}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data == []
+
+    @pytest.mark.asyncio
+    async def test_batch_get_single_npc(self, client, test_npc):
+        """Batch request with single NPC should return that NPC."""
+        response = await client.post(
+            "/api/npcs/batch",
+            json={"npc_ids": [str(test_npc.id)], "domains": None}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert data[0]["npc"]["first_name"] == "John"
+        assert data[0]["npc"]["last_name"] == "Doe"
+        assert data[0]["npc"]["id"] == str(test_npc.id)
+
+    @pytest.mark.asyncio
+    async def test_batch_get_multiple_npcs(self, client, db_session):
+        """Batch request with multiple NPCs should return all NPCs."""
+        # Create 3 NPCs
+        npcs = []
+        for i in range(3):
+            npc = NPC(
+                id=uuid4(),
+                first_name=f"Citizen{i}",
+                last_name="Test",
+                date_of_birth=date(1990, 1, 1),
+                ssn=f"111-22-33{i:02d}",
+                street_address="123 Test St",
+                city="Test",
+                state="TS",
+                zip_code="12345",
+                sprite_key="citizen_1",
+                map_x=10 + i,
+                map_y=10 + i,
+            )
+            db_session.add(npc)
+            npcs.append(npc)
+        await db_session.flush()
+
+        npc_ids = [str(npc.id) for npc in npcs]
+        response = await client.post(
+            "/api/npcs/batch",
+            json={"npc_ids": npc_ids, "domains": None}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 3
+
+        # Verify all NPCs are returned
+        returned_ids = {item["npc"]["id"] for item in data}
+        assert returned_ids == set(npc_ids)
+
+    @pytest.mark.asyncio
+    async def test_batch_get_npcs_with_domains(self, client, db_session, test_npc):
+        """Batch request with domains should return NPCs with domain data."""
+        # Add health data
+        health_record = HealthRecord(
+            npc_id=test_npc.id,
+            insurance_provider="BatchHealth",
+            primary_care_physician="Dr. Batch",
+        )
+        db_session.add(health_record)
+        await db_session.flush()
+
+        response = await client.post(
+            "/api/npcs/batch",
+            json={"npc_ids": [str(test_npc.id)], "domains": ["health"]}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert "health" in data[0]["domains"]
+        assert data[0]["domains"]["health"]["insurance_provider"] == "BatchHealth"
+
+    @pytest.mark.asyncio
+    async def test_batch_get_npcs_with_multiple_domains(
+        self, client, db_session, test_npc
+    ):
+        """Batch request with multiple domains should return all requested data."""
+        # Add health and finance data
+        health_record = HealthRecord(
+            npc_id=test_npc.id,
+            insurance_provider="BatchHealth",
+            primary_care_physician="Dr. Batch",
+        )
+        db_session.add(health_record)
+
+        finance_record = FinanceRecord(
+            npc_id=test_npc.id,
+            employment_status=EmploymentStatus.EMPLOYED_FULL_TIME,
+            employer_name="BatchCorp",
+            annual_income=Decimal("75000"),
+            credit_score=800,
+        )
+        db_session.add(finance_record)
+        await db_session.flush()
+
+        response = await client.post(
+            "/api/npcs/batch",
+            json={
+                "npc_ids": [str(test_npc.id)],
+                "domains": ["health", "finance"]
+            }
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert "health" in data[0]["domains"]
+        assert "finance" in data[0]["domains"]
+        assert data[0]["domains"]["health"]["insurance_provider"] == "BatchHealth"
+        assert data[0]["domains"]["finance"]["employer_name"] == "BatchCorp"
+
+    @pytest.mark.asyncio
+    async def test_batch_get_npcs_partial_results(self, client, test_npc):
+        """Batch request with some invalid IDs should return only valid NPCs."""
+        fake_id = uuid4()
+        response = await client.post(
+            "/api/npcs/batch",
+            json={
+                "npc_ids": [str(test_npc.id), str(fake_id)],
+                "domains": None
+            }
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # Should only return the valid NPC
+        assert len(data) == 1
+        assert data[0]["npc"]["id"] == str(test_npc.id)
+
+    @pytest.mark.asyncio
+    async def test_batch_get_npcs_no_domains(self, client, test_npc):
+        """Batch request without domains should return only basic NPC info."""
+        response = await client.post(
+            "/api/npcs/batch",
+            json={"npc_ids": [str(test_npc.id)]}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) == 1
+        assert "npc" in data[0]
+        assert "domains" in data[0]
+        assert len(data[0]["domains"]) == 0

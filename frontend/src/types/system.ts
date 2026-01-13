@@ -65,6 +65,11 @@ export interface SystemDashboard {
   pending_cases: number;
 }
 
+export interface SystemDashboardWithCases {
+  dashboard: SystemDashboard;
+  cases: CaseOverview[];
+}
+
 // === Risk Assessment ===
 
 export interface ContributingFactor {

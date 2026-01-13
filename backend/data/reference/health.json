@@ -1,0 +1,74 @@
+{
+  "common_conditions": [
+    "Hypertension",
+    "Type 2 Diabetes",
+    "Asthma",
+    "Seasonal Allergies",
+    "Migraine",
+    "Gastroesophageal Reflux Disease (GERD)",
+    "Osteoarthritis",
+    "Hypothyroidism",
+    "High Cholesterol",
+    "Chronic Back Pain"
+  ],
+  "sensitive_conditions": [
+    "Depression",
+    "Anxiety Disorder",
+    "Bipolar Disorder",
+    "PTSD",
+    "HIV",
+    "Herpes (HSV-2)",
+    "Substance Use Disorder",
+    "Eating Disorder",
+    "Schizophrenia"
+  ],
+  "condition_medications": {
+    "Hypertension": ["Lisinopril", "Amlodipine", "Losartan"],
+    "Type 2 Diabetes": ["Metformin", "Glipizide", "Insulin"],
+    "Asthma": ["Albuterol", "Fluticasone", "Montelukast"],
+    "Seasonal Allergies": ["Cetirizine", "Loratadine", "Fluticasone nasal spray"],
+    "Migraine": ["Sumatriptan", "Propranolol", "Topiramate"],
+    "Depression": ["Sertraline", "Escitalopram", "Bupropion"],
+    "Anxiety Disorder": ["Alprazolam", "Buspirone", "Hydroxyzine"],
+    "Bipolar Disorder": ["Lithium", "Valproic Acid", "Quetiapine"],
+    "PTSD": ["Prazosin", "Sertraline", "Paroxetine"],
+    "HIV": ["Biktarvy", "Truvada", "Descovy"],
+    "Herpes (HSV-2)": ["Acyclovir", "Valacyclovir"],
+    "Substance Use Disorder": ["Naltrexone", "Buprenorphine", "Methadone"],
+    "GERD": ["Omeprazole", "Pantoprazole", "Ranitidine"],
+    "Osteoarthritis": ["Ibuprofen", "Naproxen", "Acetaminophen"],
+    "Hypothyroidism": ["Levothyroxine"],
+    "High Cholesterol": ["Atorvastatin", "Simvastatin", "Rosuvastatin"],
+    "Chronic Back Pain": ["Cyclobenzaprine", "Meloxicam", "Gabapentin"],
+    "Eating Disorder": ["Fluoxetine", "Olanzapine"],
+    "Schizophrenia": ["Risperidone", "Olanzapine", "Aripiprazole"]
+  },
+  "sensitive_visit_reasons": [
+    "Psychotherapy session",
+    "STD screening",
+    "HIV test",
+    "Substance abuse counseling",
+    "Psychiatric evaluation",
+    "Trauma therapy"
+  ],
+  "common_visit_reasons": [
+    "Annual physical",
+    "Follow-up appointment",
+    "Sick visit - cold/flu",
+    "Blood pressure check",
+    "Medication refill",
+    "Lab work review",
+    "Preventive care",
+    "Vaccination"
+  ],
+  "insurance_providers": [
+    "SafeGuard Health Alliance",
+    "Wellness First Insurance Co.",
+    "CityCare Medical Group",
+    "Premier Health Partners",
+    "TotalCare Insurance Network",
+    "Liberty Medical Services",
+    "Horizon Health Solutions",
+    "Summit Care Insurance"
+  ]
+}

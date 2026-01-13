@@ -89,9 +89,8 @@ export class SystemState {
       };
       this.currentDirective = response.first_directive;
 
-      // Load initial data
-      await this.loadDashboard();
-      await this.loadCases();
+      // Load initial data (optimized: single API call)
+      await this.loadDashboardWithCases();
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Failed to initialize';
     } finally {
@@ -127,6 +126,25 @@ export class SystemState {
       this.notify();
     } catch (err) {
       console.error('Failed to load cases:', err);
+    }
+  }
+
+  /**
+   * Load dashboard and cases in a single optimized request.
+   * Reduces API calls by 50% compared to calling loadDashboard() + loadCases().
+   */
+  public async loadDashboardWithCases(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      const result = await api.getDashboardWithCases(this.operatorId, 50);
+      this.dashboard = result.dashboard;
+      this.operatorStatus = result.dashboard.operator;
+      this.currentDirective = result.dashboard.directive;
+      this.pendingCases = result.cases;
+      this.notify();
+    } catch (err) {
+      console.error('Failed to load dashboard and cases:', err);
     }
   }
 
@@ -220,9 +238,8 @@ export class SystemState {
       // Clear selection
       this.clearSelection();
 
-      // Refresh dashboard
-      await this.loadDashboard();
-      await this.loadCases();
+      // Refresh dashboard and cases (optimized: single API call)
+      await this.loadDashboardWithCases();
 
       return result;
     } catch (err) {
@@ -259,9 +276,8 @@ export class SystemState {
       // Clear selection
       this.clearSelection();
 
-      // Refresh dashboard
-      await this.loadDashboard();
-      await this.loadCases();
+      // Refresh dashboard and cases (optimized: single API call)
+      await this.loadDashboardWithCases();
 
       return result;
     } catch (err) {

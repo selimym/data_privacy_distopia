@@ -16,6 +16,7 @@ import type {
   NoActionSubmission,
   OperatorRiskAssessment,
   SystemDashboard,
+  SystemDashboardWithCases,
   SystemStartResponse,
 } from '../types/system';
 
@@ -61,6 +62,30 @@ export async function getDashboard(operatorId: string): Promise<SystemDashboard>
 
   if (!response.ok) {
     const message = await parseErrorResponse(response, 'Failed to load dashboard');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get combined dashboard and cases data in a single request (optimized).
+ */
+export async function getDashboardWithCases(
+  operatorId: string,
+  caseLimit: number = 20,
+  caseOffset: number = 0
+): Promise<SystemDashboardWithCases> {
+  const params = new URLSearchParams({
+    operator_id: operatorId,
+    case_limit: caseLimit.toString(),
+    case_offset: caseOffset.toString(),
+  });
+
+  const response = await fetch(`${API_BASE}/system/dashboard-with-cases?${params}`);
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to load dashboard and cases');
     throw new Error(message);
   }
 
