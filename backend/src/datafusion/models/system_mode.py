@@ -4,7 +4,7 @@ Models for System Mode gameplay.
 System Mode: Player acts as surveillance state operator reviewing citizens.
 """
 import enum
-from datetime import datetime
+from datetime import UTC, datetime
 from datetime import date as date_type
 from uuid import UUID, uuid4
 
@@ -52,7 +52,7 @@ class Operator(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     session_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
     operator_code: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    shift_start: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    shift_start: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
     total_flags_submitted: Mapped[int] = mapped_column(Integer, default=0)
     total_reviews_completed: Mapped[int] = mapped_column(Integer, default=0)
     compliance_score: Mapped[float] = mapped_column(Float, default=85.0)
@@ -62,8 +62,8 @@ class Operator(Base):
     )
     status: Mapped[OperatorStatus] = mapped_column(default=OperatorStatus.ACTIVE)
     current_time_period: Mapped[str] = mapped_column(String(20), default="immediate")
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     # Relationships
     metrics: Mapped[list["OperatorMetrics"]] = relationship(
@@ -119,8 +119,8 @@ class Directive(Base):
     moral_weight: Mapped[int] = mapped_column(Integer)  # 1-10, for ending calculation
     content_rating: Mapped[str] = mapped_column(String(20))  # ContentRating enum value
     unlock_condition: Mapped[dict] = mapped_column(JSON)  # What triggers this directive
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     # Relationships
     flags: Mapped[list["CitizenFlag"]] = relationship(
@@ -147,7 +147,7 @@ class CitizenFlag(Base):
     decision_time_seconds: Mapped[float] = mapped_column(Float)
     was_hesitant: Mapped[bool] = mapped_column(default=False)
     outcome: Mapped[FlagOutcome] = mapped_column(default=FlagOutcome.PENDING)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     # Relationships
     operator: Mapped["Operator"] = relationship(back_populates="flags")

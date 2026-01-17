@@ -7,6 +7,7 @@ from datafusion.models.inference import ContentRating
 from datafusion.schemas.domains import DomainType, NPCWithDomains
 from datafusion.schemas.health import HealthRecordFiltered
 from datafusion.schemas.inference import InferenceResult
+from datafusion.services.content_loader import load_keywords, load_risk_config
 
 
 @dataclass
@@ -32,7 +33,12 @@ class InferenceEngine:
     """
 
     def __init__(self) -> None:
-        """Initialize inference engine with hardcoded rules."""
+        """Initialize inference engine with configuration."""
+        # Load configuration
+        self._keywords = load_keywords()
+        self._risk_config = load_risk_config()
+        self.confidence_threshold = self._risk_config["detection_thresholds"]["confidence_filter"]
+
         self.rules: list[Rule] = [
             Rule(
                 rule_key="sensitive_health_exposure",
@@ -88,7 +94,7 @@ class InferenceEngine:
             confidence, inference_text, supporting_evidence, implications = eval_result
 
             # Filter by confidence threshold
-            if confidence < 0.3:
+            if confidence < self.confidence_threshold:
                 continue
 
             # Create inference result
@@ -220,19 +226,7 @@ class InferenceEngine:
             return None
 
         mental_health_indicators: list[str] = []
-        mental_health_keywords = [
-            "depression",
-            "anxiety",
-            "bipolar",
-            "schizophrenia",
-            "ptsd",
-            "ocd",
-            "panic",
-            "adhd",
-            "add",
-            "psychosis",
-            "mania",
-        ]
+        mental_health_keywords = self._keywords["mental_health"]["all"]
 
         # Check conditions
         for condition in health_data.conditions:
@@ -245,22 +239,7 @@ class InferenceEngine:
                     break
 
         # Check medications (common psychiatric medications)
-        psych_meds = [
-            "sertraline",
-            "prozac",
-            "zoloft",
-            "lexapro",
-            "xanax",
-            "ativan",
-            "lithium",
-            "abilify",
-            "seroquel",
-            "adderall",
-            "ritalin",
-            "wellbutrin",
-            "effexor",
-            "cymbalta",
-        ]
+        psych_meds = self._keywords["psychiatric_medications"]
         for medication in health_data.medications:
             med_lower = medication.medication_name.lower()
             for psych_med in psych_meds:
@@ -324,18 +303,7 @@ class InferenceEngine:
 
         # Check for gender indicators (simplified - uses first name patterns)
         # This is intentionally simplistic for demo purposes
-        female_name_indicators = [
-            "sarah",
-            "emily",
-            "jennifer",
-            "amanda",
-            "jessica",
-            "ashley",
-            "melissa",
-            "rachel",
-            "nicole",
-            "amy",
-        ]
+        female_name_indicators = self._keywords["female_name_indicators"]
         first_name_lower = npc.first_name.lower()
         if any(name in first_name_lower for name in female_name_indicators):
             risk_factors.append(
@@ -344,7 +312,7 @@ class InferenceEngine:
             confidence_score += 0.2
 
         # Check for mental health conditions that might indicate past trauma
-        trauma_keywords = ["ptsd", "anxiety", "trauma", "abuse"]
+        trauma_keywords = self._keywords["trauma_indicators"]
         for condition in health_data.conditions:
             condition_lower = condition.condition_name.lower()
             if any(keyword in condition_lower for keyword in trauma_keywords):
@@ -355,7 +323,7 @@ class InferenceEngine:
                 break
 
         # Check for visits related to domestic violence or assault
-        dv_keywords = ["domestic", "violence", "assault", "injury", "abuse"]
+        dv_keywords = self._keywords["domestic_violence_keywords"]
         for visit in health_data.visits:
             reason_lower = visit.reason.lower()
             if any(keyword in reason_lower for keyword in dv_keywords):

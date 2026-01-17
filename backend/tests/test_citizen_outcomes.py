@@ -1,18 +1,19 @@
 """Tests for the citizen outcomes service."""
 
-import pytest
+from datetime import date
 from uuid import uuid4
-from datetime import date, datetime
 
+import pytest
+
+from datafusion.models.health import HealthCondition, HealthRecord, Severity
 from datafusion.models.npc import NPC
-from datafusion.models.health import HealthRecord, HealthCondition, Severity
-from datafusion.models.social import SocialMediaRecord, PublicInference, InferenceCategory, Platform
+from datafusion.models.social import InferenceCategory, Platform, PublicInference, SocialMediaRecord
 from datafusion.models.system_mode import (
-    Operator,
-    Directive,
     CitizenFlag,
-    FlagType,
+    Directive,
     FlagOutcome,
+    FlagType,
+    Operator,
     OperatorStatus,
 )
 from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator
@@ -373,7 +374,7 @@ class TestOutcomeSummary:
         summary = await generator.generate_outcome_summary(flag)
 
         assert summary.citizen_name == "Jane Doe"
-        assert summary.flag_type == "MONITORING"
+        assert summary.flag_type == "monitoring"
         assert len(summary.one_line_summary) > 0
         assert summary.final_status == "Mobility Restricted"
 
@@ -385,7 +386,7 @@ class TestOutcomeSummary:
 
         summary = await generator.generate_outcome_summary(flag)
 
-        assert summary.flag_type == "DETENTION"
+        assert summary.flag_type == "detention"
         # Detention summaries mention informant/monitors
         assert (
             "informant" in summary.one_line_summary.lower() or
@@ -426,9 +427,9 @@ class TestOperatorImpactSummary:
 
         assert summary.operator_code == "OP-TEST"
         assert summary.total_citizens_flagged == 3
-        assert "MONITORING" in summary.outcomes_by_type
-        assert "RESTRICTION" in summary.outcomes_by_type
-        assert "INTERVENTION" in summary.outcomes_by_type
+        assert "monitoring" in summary.outcomes_by_type
+        assert "restriction" in summary.outcomes_by_type
+        assert "intervention" in summary.outcomes_by_type
         assert len(summary.citizen_summaries) == 3
 
     @pytest.mark.asyncio

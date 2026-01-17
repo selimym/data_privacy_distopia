@@ -1,7 +1,6 @@
 """Financial record data generator for NPCs."""
 
 import random
-from datetime import timedelta
 from decimal import Decimal
 from uuid import UUID
 
@@ -13,70 +12,29 @@ from datafusion.models.finance import (
     EmploymentStatus,
     TransactionCategory,
 )
+from datafusion.services.content_loader import load_json
 
-# Employment data
-EMPLOYERS = [
-    "TechCorp Solutions",
-    "Riverside Medical Center",
-    "DataFlow Analytics",
-    "Green Valley School District",
-    "Metro Transit Authority",
-    "Summit Financial Services",
-    "Horizon Manufacturing",
-    "CityView Retail Group",
-]
+# Load reference data
+_FINANCE_REF = load_json("reference/finance.json")
+EMPLOYERS = _FINANCE_REF["employers"]
+BANKS = _FINANCE_REF["banks"]
+CREDITORS = _FINANCE_REF["creditors"]
 
-# Bank names (fictional)
-BANKS = [
-    "First National Bank",
-    "Riverside Credit Union",
-    "Metro Bank & Trust",
-    "Community Savings Bank",
-    "Summit Financial",
-    "Harbor Bank",
-]
-
-# Creditor names (fictional)
-CREDITORS = [
-    "First Mortgage Co.",
-    "Auto Finance Plus",
-    "Student Loan Services",
-    "Credit Solutions Inc.",
-    "Personal Lending Corp.",
-]
-
-# Transaction merchants by category
+# Transaction merchants by category - convert lowercase keys to enum keys
+_merchants_data = _FINANCE_REF["merchants"]
 MERCHANTS = {
-    TransactionCategory.GROCERIES: ["FreshMart", "Valley Foods", "QuickStop Market"],
-    TransactionCategory.DINING: [
-        "The Bistro",
-        "Pizza Palace",
-        "Riverside Cafe",
-        "Dragon Wok",
-    ],
-    TransactionCategory.HEALTHCARE: [
-        "Riverside Medical",
-        "Summit Clinic",
-        "Valley Urgent Care",
-    ],
-    TransactionCategory.PHARMACY: ["Metro Pharmacy", "HealthPlus Drugs", "CareRx"],
-    TransactionCategory.ENTERTAINMENT: [
-        "Cineplex",
-        "GameZone",
-        "Downtown Theater",
-        "StreamFlix",
-    ],
-    TransactionCategory.TRAVEL: ["SkyHigh Airlines", "Metro Hotel", "RideShare"],
-    TransactionCategory.UTILITIES: [
-        "City Power & Light",
-        "Metro Water",
-        "NetSpeed Internet",
-    ],
-    TransactionCategory.RENT: ["Property Management Co.", "Landlord Direct"],
-    TransactionCategory.INSURANCE: ["SafeGuard Insurance", "Premier Coverage"],
-    TransactionCategory.GAMBLING: ["Lucky Casino", "BetOnline", "Slots Paradise"],
-    TransactionCategory.ALCOHOL: ["Liquor Mart", "Wine & Spirits", "Corner Pub"],
-    TransactionCategory.OTHER: ["General Store", "Miscellaneous"],
+    TransactionCategory.GROCERIES: _merchants_data["groceries"],
+    TransactionCategory.DINING: _merchants_data["dining"],
+    TransactionCategory.HEALTHCARE: _merchants_data["healthcare"],
+    TransactionCategory.PHARMACY: _merchants_data["pharmacy"],
+    TransactionCategory.ENTERTAINMENT: _merchants_data["entertainment"],
+    TransactionCategory.TRAVEL: _merchants_data["travel"],
+    TransactionCategory.UTILITIES: _merchants_data["utilities"],
+    TransactionCategory.RENT: _merchants_data["rent"],
+    TransactionCategory.INSURANCE: _merchants_data["insurance"],
+    TransactionCategory.GAMBLING: _merchants_data["gambling"],
+    TransactionCategory.ALCOHOL: _merchants_data["alcohol"],
+    TransactionCategory.OTHER: _merchants_data["other"],
 }
 
 

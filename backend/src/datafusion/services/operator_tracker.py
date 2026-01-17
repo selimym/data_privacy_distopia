@@ -8,7 +8,7 @@ systems monitor everyone, including those who run them.
 Educational purpose: Shows how authoritarian systems create
 self-perpetuating cycles of fear and compliance.
 """
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -19,7 +19,6 @@ from datafusion.models.system_mode import (
     Directive,
     FlagOutcome,
     Operator,
-    OperatorMetrics,
     OperatorStatus,
 )
 from datafusion.schemas.operator import (
@@ -29,7 +28,6 @@ from datafusion.schemas.operator import (
     OperatorStatusResponse,
     QuotaProgress,
 )
-
 
 # Thresholds for operator evaluation
 HESITATION_THRESHOLD_SECONDS = 30.0  # Taking >30s to decide = hesitation
@@ -226,7 +224,7 @@ class OperatorTracker:
         # Calculate next review date if under review
         next_review = None
         if operator.status == OperatorStatus.UNDER_REVIEW:
-            next_review = datetime.utcnow() + timedelta(days=1)
+            next_review = datetime.now(UTC) + timedelta(days=1)
 
         await self.db.flush()
 
@@ -356,7 +354,7 @@ class OperatorTracker:
             risk_level=risk_level,
             contributing_factors=factors,
             recommended_action=recommended_action,
-            assessment_date=datetime.utcnow(),
+            assessment_date=datetime.now(UTC),
         )
 
     async def get_quota_progress(self, operator_id: UUID) -> QuotaProgress:

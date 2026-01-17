@@ -1,18 +1,27 @@
 """Tests for the risk scoring service."""
 
-import pytest
+from datetime import date
 from uuid import uuid4
-from datetime import datetime, date
 
+import pytest
+
+from datafusion.models.finance import (
+    Debt,
+    DebtType,
+    EmploymentStatus,
+    FinanceRecord,
+)
+from datafusion.models.health import HealthCondition, HealthMedication, HealthRecord, Severity
+from datafusion.models.judicial import (
+    CaseDisposition,
+    CrimeCategory,
+    CriminalRecord,
+    JudicialRecord,
+)
 from datafusion.models.npc import NPC
-from datafusion.models.health import HealthRecord, HealthCondition, HealthMedication, Severity
-from datafusion.models.finance import FinanceRecord, Transaction, Debt, TransactionCategory, EmploymentStatus, DebtType
-from datafusion.models.judicial import JudicialRecord, CriminalRecord, CrimeCategory, CaseDisposition
-from datafusion.models.location import LocationRecord, InferredLocation
-from datafusion.models.social import SocialMediaRecord, PrivateInference
-from datafusion.services.risk_scoring import RiskScorer
-from datafusion.schemas.risk import RiskLevel
 from datafusion.schemas.domains import DomainType
+from datafusion.schemas.risk import RiskLevel
+from datafusion.services.risk_scoring import RiskScorer
 
 
 @pytest.fixture

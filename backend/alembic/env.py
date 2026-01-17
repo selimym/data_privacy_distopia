@@ -8,7 +8,6 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
 from datafusion.config import settings
 from datafusion.database import Base
 from datafusion.models import *  # noqa: F403, F401

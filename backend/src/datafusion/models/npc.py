@@ -1,9 +1,9 @@
 """NPC (Non-Player Character) model representing people in the game world."""
 
 import enum
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, Enum, Index, Integer, String
+from sqlalchemy import Boolean, Date, DateTime, Enum, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from datafusion.database import Base, TimestampMixin, UUIDMixin
@@ -45,6 +45,12 @@ class NPC(Base, UUIDMixin, TimestampMixin):
 
     is_scenario_npc: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     scenario_key: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+
+    # Risk score caching (for System Mode performance)
+    cached_risk_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    risk_score_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Relationships
     message_record: Mapped["MessageRecord | None"] = relationship(  # type: ignore

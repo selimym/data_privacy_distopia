@@ -7,7 +7,6 @@ from sqlalchemy import select
 from datafusion.database import AsyncSessionLocal, Base, engine
 from datafusion.models.system_mode import Directive
 
-
 DIRECTIVES = [
     {
         "directive_key": "week1_clean_streets",

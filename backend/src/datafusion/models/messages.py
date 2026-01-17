@@ -4,7 +4,7 @@ Message surveillance models - the "chat control" dystopia.
 Stores private communications between citizens for algorithmic analysis.
 Educational purpose: Demonstrates the dangers of mass message surveillance.
 """
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, Boolean, Float, ForeignKey, Integer, String, Text
@@ -37,9 +37,9 @@ class MessageRecord(Base):
     foreign_contact_count: Mapped[int] = mapped_column(
         Integer, default=0
     )  # Messages to/from foreign contacts
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.utcnow, onupdate=datetime.utcnow
+        default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
     # Relationships
@@ -82,7 +82,7 @@ class Message(Base):
     detected_keywords: Mapped[list] = mapped_column(
         JSON, default=list
     )  # Array of strings - flagged keywords found
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     # Relationships
     message_record: Mapped["MessageRecord"] = relationship(back_populates="messages")

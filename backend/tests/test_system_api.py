@@ -1,18 +1,14 @@
 """Tests for System Mode API endpoints."""
 
-import pytest
-from uuid import uuid4
 from datetime import date
+from uuid import uuid4
 
+import pytest
+
+from datafusion.models.location import LocationRecord
 from datafusion.models.npc import NPC
-from datafusion.models.location import LocationRecord, InferredLocation
 from datafusion.models.system_mode import (
-    Operator,
     Directive,
-    CitizenFlag,
-    FlagType,
-    FlagOutcome,
-    OperatorStatus,
 )
 
 

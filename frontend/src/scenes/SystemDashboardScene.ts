@@ -7,7 +7,7 @@ import { OutcomeViewer } from '../ui/system/OutcomeViewer';
 import { getSystemAudioManager } from '../audio/SystemAudioManager';
 import { getSystemVisualEffects } from '../ui/system/SystemVisualEffects';
 import * as systemApi from '../api/system';
-import { getNPC } from '../api/npcs';
+import { getNPCsBatch } from '../api/npcs';
 
 /**
  * SystemDashboardScene - Main surveillance operator interface.
@@ -825,21 +825,28 @@ export class SystemDashboardScene extends Phaser.Scene {
         if (outcomes.length > 0) {
           console.log(`Time advanced! ${outcomes.length} outcomes to show`);
 
+          // Get all NPCs in one batch call
+          const npcIds = outcomes.map(o => o.citizen_id);
+          const npcs = await getNPCsBatch(npcIds);
+          const npcMap = new Map(npcs.map(npc => [npc.npc.id, npc]));
+
           // Convert outcomes to cinematic queue
-          const cinematicQueue: CinematicData[] = await Promise.all(
-            outcomes.map(async (outcome) => {
-              const npcData = await getNPC(outcome.citizen_id);
-              return {
-                citizenId: outcome.citizen_id,
-                citizenName: outcome.citizen_name,
-                timeSkip: outcome.time_skip,
-                narrative: outcome.narrative,
-                status: outcome.status,
-                map_x: npcData.npc.map_x,
-                map_y: npcData.npc.map_y,
-              };
-            })
-          );
+          const cinematicQueue: CinematicData[] = outcomes.map(outcome => {
+            const npcData = npcMap.get(outcome.citizen_id);
+            if (!npcData) {
+              console.warn(`NPC data not found for citizen ${outcome.citizen_id}`);
+              return null;
+            }
+            return {
+              citizenId: outcome.citizen_id,
+              citizenName: outcome.citizen_name,
+              timeSkip: outcome.time_skip,
+              narrative: outcome.narrative,
+              status: outcome.status,
+              map_x: npcData.npc.map_x,
+              map_y: npcData.npc.map_y,
+            };
+          }).filter((item): item is CinematicData => item !== null);
 
           // Transition to WorldScene with multiple cinematics
           this.cleanup();

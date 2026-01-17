@@ -9,28 +9,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datafusion.config import settings
 from datafusion.database import get_db
 from datafusion.models.finance import (
-    BankAccount,
-    Debt,
     FinanceRecord,
-    Transaction,
 )
 from datafusion.models.health import (
-    HealthCondition,
-    HealthMedication,
     HealthRecord,
-    HealthVisit,
 )
 from datafusion.models.judicial import (
-    CivilCase,
-    CriminalRecord,
     JudicialRecord,
-    TrafficViolation,
 )
-from datafusion.models.location import InferredLocation, LocationRecord
+from datafusion.models.location import LocationRecord
 from datafusion.models.npc import NPC
 from datafusion.models.social import (
-    PrivateInference,
-    PublicInference,
     SocialMediaRecord,
 )
 from datafusion.schemas.domains import DomainType, NPCWithDomains
@@ -61,7 +50,7 @@ from datafusion.schemas.location import (
     LocationRecordFiltered,
     LocationRecordRead,
 )
-from datafusion.schemas.npc import NPCBasicRead, NPCListResponse, NPCRead
+from datafusion.schemas.npc import NPCBasicRead, NPCBatchRequest, NPCListResponse, NPCRead
 from datafusion.schemas.social import (
     PrivateInferenceRead,
     PublicInferenceRead,
@@ -117,37 +106,38 @@ async def get_npc(
     if not npc:
         raise HTTPException(status_code=404, detail="NPC not found")
 
-    domain_data = {}
+    return await _build_npc_with_domains(npc, domains, db)
 
-    if DomainType.HEALTH in domains:
-        health_data = await _get_health_data(npc_id, db)
-        if health_data:
-            domain_data[DomainType.HEALTH] = health_data
 
-    if DomainType.FINANCE in domains:
-        finance_data = await _get_finance_data(npc_id, db)
-        if finance_data:
-            domain_data[DomainType.FINANCE] = finance_data
+@router.post("/batch", response_model=list[NPCWithDomains])
+async def get_npcs_batch(
+    request: NPCBatchRequest,
+    db: AsyncSession = Depends(get_db),
+) -> list[NPCWithDomains]:
+    """Get multiple NPCs in a single request."""
+    # Handle empty list
+    if not request.npc_ids:
+        return []
 
-    if DomainType.JUDICIAL in domains:
-        judicial_data = await _get_judicial_data(npc_id, db)
-        if judicial_data:
-            domain_data[DomainType.JUDICIAL] = judicial_data
-
-    if DomainType.LOCATION in domains:
-        location_data = await _get_location_data(npc_id, db)
-        if location_data:
-            domain_data[DomainType.LOCATION] = location_data
-
-    if DomainType.SOCIAL in domains:
-        social_data = await _get_social_data(npc_id, db)
-        if social_data:
-            domain_data[DomainType.SOCIAL] = social_data
-
-    return NPCWithDomains(
-        npc=NPCRead.model_validate(npc),
-        domains=domain_data,
+    # Single query with WHERE id IN (...)
+    result = await db.execute(
+        select(NPC).where(NPC.id.in_(request.npc_ids))
     )
+    npcs = result.scalars().all()
+
+    # Convert domains list to set of DomainType enums (empty set if None)
+    domains_set: set[DomainType] = set()
+    if request.domains:
+        try:
+            domains_set = {DomainType(d) for d in request.domains}
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Invalid domain type: {e}")
+
+    # Build response for each NPC
+    return [
+        await _build_npc_with_domains(npc, domains_set, db)
+        for npc in npcs
+    ]
 
 
 @router.get(
@@ -206,6 +196,45 @@ async def get_npc_domain_data(
 
 
 # Helper functions for fetching domain data
+
+
+async def _build_npc_with_domains(
+    npc: NPC,
+    domains: set[DomainType],
+    db: AsyncSession,
+) -> NPCWithDomains:
+    """Build NPCWithDomains response for a single NPC."""
+    domain_data = {}
+
+    if DomainType.HEALTH in domains:
+        health_data = await _get_health_data(npc.id, db)
+        if health_data:
+            domain_data[DomainType.HEALTH] = health_data
+
+    if DomainType.FINANCE in domains:
+        finance_data = await _get_finance_data(npc.id, db)
+        if finance_data:
+            domain_data[DomainType.FINANCE] = finance_data
+
+    if DomainType.JUDICIAL in domains:
+        judicial_data = await _get_judicial_data(npc.id, db)
+        if judicial_data:
+            domain_data[DomainType.JUDICIAL] = judicial_data
+
+    if DomainType.LOCATION in domains:
+        location_data = await _get_location_data(npc.id, db)
+        if location_data:
+            domain_data[DomainType.LOCATION] = location_data
+
+    if DomainType.SOCIAL in domains:
+        social_data = await _get_social_data(npc.id, db)
+        if social_data:
+            domain_data[DomainType.SOCIAL] = social_data
+
+    return NPCWithDomains(
+        npc=NPCRead.model_validate(npc),
+        domains=domain_data,
+    )
 
 
 async def _get_health_data(

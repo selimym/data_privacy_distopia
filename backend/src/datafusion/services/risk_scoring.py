@@ -7,7 +7,7 @@ by analyzing their data across all domains.
 Educational purpose: Shows how real surveillance systems work and why
 they're problematic (bias, lack of transparency, chilling effects).
 """
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy import select
@@ -29,6 +29,11 @@ from datafusion.schemas.risk import (
     RiskAssessment,
     RiskLevel,
 )
+from datafusion.services.content_loader import (
+    load_correlation_alerts,
+    load_keywords,
+    load_risk_config,
+)
 
 
 class RiskScorer:
@@ -39,92 +44,46 @@ class RiskScorer:
     mass surveillance and algorithmic decision-making.
     """
 
-    # Risk factor definitions with weights
-    RISK_FACTORS = {
-        # Health factors - discriminatory surveillance of medical conditions
-        "mental_health_treatment": {
-            "weight": 15,
-            "domain": DomainType.HEALTH,
-            "description": "Mental health treatment history",
-        },
-        "substance_treatment": {
-            "weight": 20,
-            "domain": DomainType.HEALTH,
-            "description": "Substance abuse treatment",
-        },
-        "chronic_condition": {
-            "weight": 5,
-            "domain": DomainType.HEALTH,
-            "description": "Chronic health condition",
-        },
-        # Financial factors - poverty as suspicion
-        "financial_stress": {
-            "weight": 12,
-            "domain": DomainType.FINANCE,
-            "description": "Financial instability indicators",
-        },
-        "unusual_transactions": {
-            "weight": 18,
-            "domain": DomainType.FINANCE,
-            "description": "Anomalous financial patterns",
-        },
-        "cash_heavy": {
-            "weight": 10,
-            "domain": DomainType.FINANCE,
-            "description": "High cash transaction ratio",
-        },
-        # Judicial factors - past punishment predicts future crime
-        "prior_record": {
-            "weight": 25,
-            "domain": DomainType.JUDICIAL,
-            "description": "Prior criminal record",
-        },
-        "civil_disputes": {
-            "weight": 8,
-            "domain": DomainType.JUDICIAL,
-            "description": "Civil court involvement",
-        },
-        # Location factors - movement as evidence
-        "protest_attendance": {
-            "weight": 20,
-            "domain": DomainType.LOCATION,
-            "description": "Presence at protest events",
-        },
-        "flagged_location_visits": {
-            "weight": 15,
-            "domain": DomainType.LOCATION,
-            "description": "Visits to flagged locations",
-        },
-        "irregular_patterns": {
-            "weight": 10,
-            "domain": DomainType.LOCATION,
-            "description": "Deviation from routine",
-        },
-        # Social factors - guilt by association
-        "flagged_connections": {
-            "weight": 18,
-            "domain": DomainType.SOCIAL,
-            "description": "Connections to flagged citizens",
-        },
-        "network_centrality": {
-            "weight": 8,
-            "domain": DomainType.SOCIAL,
-            "description": "High social network influence",
-        },
-        "new_connections_rate": {
-            "weight": 5,
-            "domain": DomainType.SOCIAL,
-            "description": "Rapid network expansion",
-        },
-    }
+    # Cache time-to-live (1 hour)
+    CACHE_TTL_HOURS = 1
 
     def __init__(self, db: AsyncSession):
-        """Initialize with database session."""
+        """Initialize with database session and load configuration."""
         self.db = db
+
+        # Load configuration from JSON files
+        self._risk_config = load_risk_config()
+        self._keywords = load_keywords()
+        self._correlation_config = load_correlation_alerts()
+
+        # Parse risk factors into usable format with domain enum
+        self.RISK_FACTORS = {}
+        for factor_key, factor_data in self._risk_config["risk_factors"].items():
+            domain_str = factor_data["domain"]
+            # Map domain string to DomainType enum
+            domain_map = {
+                "health": DomainType.HEALTH,
+                "finance": DomainType.FINANCE,
+                "judicial": DomainType.JUDICIAL,
+                "location": DomainType.LOCATION,
+                "social": DomainType.SOCIAL,
+            }
+            self.RISK_FACTORS[factor_key] = {
+                "weight": factor_data["weight"],
+                "domain": domain_map[domain_str],
+                "description": factor_data["description"],
+            }
+
+        # Store config data for easy access
+        self.risk_boundaries = self._risk_config["risk_level_boundaries"]
+        self.thresholds = self._risk_config["detection_thresholds"]
 
     async def calculate_risk_score(self, npc_id: UUID) -> RiskAssessment:
         """
         Calculate comprehensive risk score for a citizen.
+
+        Uses cached values when available and fresh (within CACHE_TTL_HOURS).
+        Recalculates and updates cache when stale or missing.
 
         Args:
             npc_id: UUID of the citizen to assess
@@ -132,17 +91,38 @@ class RiskScorer:
         Returns:
             RiskAssessment with score, factors, alerts, and recommendations
         """
-        # Verify NPC exists
+        # Verify NPC exists and get cached values
         npc_result = await self.db.execute(select(NPC).where(NPC.id == npc_id))
         npc = npc_result.scalar_one_or_none()
         if not npc:
             raise ValueError(f"NPC {npc_id} not found")
 
-        # Get contributing factors
-        contributing_factors = await self.get_contributing_factors(npc_id)
+        # Check if cache is valid (exists and not stale)
+        cache_valid = False
+        if npc.cached_risk_score is not None and npc.risk_score_updated_at is not None:
+            now = datetime.now(timezone.utc)
+            cache_age = now - npc.risk_score_updated_at.replace(tzinfo=timezone.utc)
+            cache_valid = cache_age < timedelta(hours=self.CACHE_TTL_HOURS)
 
-        # Calculate total risk score (capped at 100)
-        risk_score = min(sum(f.weight for f in contributing_factors), 100)
+        # If cache is valid, use cached score but still recalculate full assessment
+        # (factors, alerts, recommendations are lightweight compared to score calculation)
+        if cache_valid:
+            # Use cached score
+            risk_score = npc.cached_risk_score
+            # Still need factors for full assessment
+            contributing_factors = await self.get_contributing_factors(npc_id)
+        else:
+            # Cache miss or stale - recalculate everything
+            contributing_factors = await self.get_contributing_factors(npc_id)
+
+            # Calculate total risk score (capped at 100)
+            risk_score = min(sum(f.weight for f in contributing_factors), 100)
+
+            # Update cache in database
+            npc.cached_risk_score = risk_score
+            npc.risk_score_updated_at = datetime.now(timezone.utc)
+            await self.db.commit()
+            await self.db.refresh(npc)
 
         # Determine risk level
         risk_level = self._classify_risk_level(risk_score)
@@ -160,7 +140,7 @@ class RiskScorer:
             contributing_factors=contributing_factors,
             correlation_alerts=correlation_alerts,
             recommended_actions=recommended_actions,
-            last_updated=datetime.utcnow(),
+            last_updated=npc.risk_score_updated_at or datetime.now(timezone.utc),
         )
 
     async def get_contributing_factors(self, npc_id: UUID) -> list[ContributingFactor]:
@@ -215,75 +195,61 @@ class RiskScorer:
         """
         alerts: list[CorrelationAlert] = []
 
-        # Get domains present in factors
+        # Get domains and factors present
         domains_present = {f.domain_source for f in contributing_factors}
+        factor_keys_present = {f.factor_key for f in contributing_factors}
 
-        # Financial stress + judicial record = recidivism risk
-        if DomainType.FINANCE in domains_present and DomainType.JUDICIAL in domains_present:
-            if any(f.factor_key == "financial_stress" for f in contributing_factors):
-                if any(f.factor_key == "prior_record" for f in contributing_factors):
-                    alerts.append(
-                        CorrelationAlert(
-                            alert_type="recidivism_risk",
-                            description="Financial stress combined with prior record suggests elevated recidivism risk",
-                            confidence=0.72,
-                            domains_involved=[DomainType.FINANCE, DomainType.JUDICIAL],
-                        )
-                    )
+        # Map domain strings to DomainType enums
+        domain_map = {
+            "health": DomainType.HEALTH,
+            "finance": DomainType.FINANCE,
+            "judicial": DomainType.JUDICIAL,
+            "location": DomainType.LOCATION,
+            "social": DomainType.SOCIAL,
+        }
 
-        # Health + financial stress = desperation indicator
-        if DomainType.HEALTH in domains_present and DomainType.FINANCE in domains_present:
-            if any(
-                f.factor_key in ["mental_health_treatment", "substance_treatment"]
-                for f in contributing_factors
-            ):
-                if any(f.factor_key == "financial_stress" for f in contributing_factors):
-                    alerts.append(
-                        CorrelationAlert(
-                            alert_type="desperation_indicator",
-                            description="Health issues combined with financial stress indicate potential desperation",
-                            confidence=0.65,
-                            domains_involved=[DomainType.HEALTH, DomainType.FINANCE],
-                        )
-                    )
+        # Process each correlation alert from config
+        for alert_config in self._correlation_config["correlation_alerts"]:
+            # Check if required domains are present
+            required_domains = [domain_map[d] for d in alert_config["required_domains"]]
+            if not all(domain in domains_present for domain in required_domains):
+                continue
 
-        # Social connections + location patterns = organizing activity
-        if DomainType.SOCIAL in domains_present and DomainType.LOCATION in domains_present:
-            if any(
-                f.factor_key in ["network_centrality", "new_connections_rate"]
-                for f in contributing_factors
-            ):
-                if any(
-                    f.factor_key in ["protest_attendance", "irregular_patterns"]
-                    for f in contributing_factors
-                ):
-                    alerts.append(
-                        CorrelationAlert(
-                            alert_type="organizing_activity",
-                            description="Social network activity combined with location patterns suggest organizing/mobilization activity",
-                            confidence=0.78,
-                            domains_involved=[
-                                DomainType.SOCIAL,
-                                DomainType.LOCATION,
-                            ],
-                        )
-                    )
+            # Check if required factors are present
+            factors_match = False
 
-        # Flagged connections + unusual transactions = recruitment vulnerability
-        if DomainType.SOCIAL in domains_present and DomainType.FINANCE in domains_present:
-            if any(f.factor_key == "flagged_connections" for f in contributing_factors):
-                if any(f.factor_key == "unusual_transactions" for f in contributing_factors):
-                    alerts.append(
-                        CorrelationAlert(
-                            alert_type="recruitment_vulnerability",
-                            description="Connections to flagged individuals combined with unusual financial activity suggests recruitment vulnerability or involvement",
-                            confidence=0.68,
-                            domains_involved=[
-                                DomainType.SOCIAL,
-                                DomainType.FINANCE,
-                            ],
-                        )
+            # Simple case: required_factors list (all must be present)
+            if "required_factors" in alert_config and alert_config["required_factors"]:
+                if all(f in factor_keys_present for f in alert_config["required_factors"]):
+                    factors_match = True
+
+            # Complex case: required_factors_any + required_factors_all
+            elif "required_factors_any" in alert_config or "required_factors_all" in alert_config:
+                match_conditions = []
+
+                if "required_factors_any" in alert_config and alert_config["required_factors_any"]:
+                    any_match = any(f in factor_keys_present for f in alert_config["required_factors_any"])
+                    match_conditions.append(any_match)
+
+                if "required_factors_all" in alert_config and alert_config["required_factors_all"]:
+                    all_match = all(f in factor_keys_present for f in alert_config["required_factors_all"])
+                    match_conditions.append(all_match)
+
+                if "required_factors_any_2" in alert_config and alert_config["required_factors_any_2"]:
+                    any_match_2 = any(f in factor_keys_present for f in alert_config["required_factors_any_2"])
+                    match_conditions.append(any_match_2)
+
+                factors_match = all(match_conditions) if match_conditions else False
+
+            if factors_match:
+                alerts.append(
+                    CorrelationAlert(
+                        alert_type=alert_config["name"],
+                        description=alert_config["description"],
+                        confidence=alert_config["confidence"],
+                        domains_involved=required_domains,
                     )
+                )
 
         return alerts
 
@@ -301,7 +267,7 @@ class RiskScorer:
 
         # Check for mental health treatment
         if health_record.conditions:
-            mental_health_keywords = ["mental", "psychological", "psychiatric", "anxiety", "depression", "ptsd", "bipolar", "schizophrenia"]
+            mental_health_keywords = self._keywords["mental_health"]["all"]
             mental_health_conditions = [
                 c
                 for c in health_record.conditions
@@ -321,13 +287,11 @@ class RiskScorer:
 
         # Check for substance treatment
         if health_record.medications:
+            substance_keywords = self._keywords["substance_indicators"]
             substance_meds = [
                 m
                 for m in health_record.medications
-                if "substance" in m.medication_name.lower()
-                or "addiction" in m.medication_name.lower()
-                or "methadone" in m.medication_name.lower()
-                or "suboxone" in m.medication_name.lower()
+                if any(keyword in m.medication_name.lower() for keyword in substance_keywords)
             ]
             if substance_meds:
                 factors.append(
@@ -341,16 +305,19 @@ class RiskScorer:
                 )
 
         # Check for chronic conditions
-        if health_record.conditions and len(health_record.conditions) >= 2:
-            factors.append(
-                ContributingFactor(
-                    factor_key="chronic_condition",
-                    factor_name=self.RISK_FACTORS["chronic_condition"]["description"],
-                    weight=self.RISK_FACTORS["chronic_condition"]["weight"],
-                    evidence=f"Multiple chronic conditions ({len(health_record.conditions)} total)",
-                    domain_source=DomainType.HEALTH,
+        if health_record.conditions:
+            chronic_conditions = [c for c in health_record.conditions if c.is_chronic]
+            if chronic_conditions:
+                condition_names = ", ".join(c.condition_name for c in chronic_conditions[:2])
+                factors.append(
+                    ContributingFactor(
+                        factor_key="chronic_condition",
+                        factor_name=self.RISK_FACTORS["chronic_condition"]["description"],
+                        weight=self.RISK_FACTORS["chronic_condition"]["weight"],
+                        evidence=f"Chronic condition(s): {condition_names}",
+                        domain_source=DomainType.HEALTH,
+                    )
                 )
-            )
 
         return factors
 
@@ -369,11 +336,10 @@ class RiskScorer:
         # Check for financial stress
         total_debt = sum(d.current_balance for d in finance_record.debts)
         annual_income = float(finance_record.annual_income or 0)
-        monthly_income = annual_income / 12
 
         if total_debt > 0 and annual_income > 0:
             debt_to_income = float(total_debt) / annual_income
-            if debt_to_income > 0.5:  # Debt exceeds 50% of annual income
+            if debt_to_income > self.thresholds["debt_to_income_ratio"]:
                 factors.append(
                     ContributingFactor(
                         factor_key="financial_stress",
@@ -395,7 +361,8 @@ class RiskScorer:
             amounts = [abs(t.amount) for t in transactions]
             if amounts:
                 avg_amount = sum(amounts) / len(amounts)
-                large_transactions = [t for t in transactions if abs(t.amount) > avg_amount * 5]
+                multiplier = self.thresholds["transaction_multiplier"]
+                large_transactions = [t for t in transactions if abs(t.amount) > avg_amount * multiplier]
 
                 if large_transactions:
                     factors.append(
@@ -403,7 +370,7 @@ class RiskScorer:
                             factor_key="unusual_transactions",
                             factor_name=self.RISK_FACTORS["unusual_transactions"]["description"],
                             weight=self.RISK_FACTORS["unusual_transactions"]["weight"],
-                            evidence=f"{len(large_transactions)} transactions significantly above average (>5x mean)",
+                            evidence=f"{len(large_transactions)} transactions significantly above average (>{multiplier}x mean)",
                             domain_source=DomainType.FINANCE,
                         )
                     )
@@ -417,7 +384,7 @@ class RiskScorer:
             if cash_transactions:
                 cash_ratio = len(cash_transactions) / len(transactions)
 
-                if cash_ratio > 0.3:  # More than 30% unclassified transactions
+                if cash_ratio > self.thresholds["cash_ratio"]:
                     factors.append(
                         ContributingFactor(
                             factor_key="cash_heavy",
@@ -461,7 +428,7 @@ class RiskScorer:
             )
 
         # Check for civil disputes
-        if judicial_record.civil_cases and len(judicial_record.civil_cases) >= 2:
+        if judicial_record.civil_cases and len(judicial_record.civil_cases) >= self.thresholds["civil_cases_threshold"]:
             factors.append(
                 ContributingFactor(
                     factor_key="civil_disputes",
@@ -488,12 +455,11 @@ class RiskScorer:
 
         # Check for protest attendance (look for inferred locations)
         if location_record.inferred_locations:
+            protest_keywords = self._keywords["protest_location_keywords"]
             protest_locations = [
                 loc
                 for loc in location_record.inferred_locations
-                if "protest" in loc.location_name.lower()
-                or "rally" in loc.location_name.lower()
-                or "demonstration" in loc.location_name.lower()
+                if any(keyword in loc.location_name.lower() for keyword in protest_keywords)
             ]
             if protest_locations:
                 factors.append(
@@ -535,9 +501,11 @@ class RiskScorer:
                 )
 
         # Check for irregular patterns (high visit diversity)
-        if location_record.inferred_locations and len(location_record.inferred_locations) >= 10:
+        min_visits = self.thresholds["flagged_location_visits_min"]
+        min_diversity = self.thresholds["location_diversity_min"]
+        if location_record.inferred_locations and len(location_record.inferred_locations) >= min_visits:
             unique_places = len(set(loc.location_name for loc in location_record.inferred_locations))
-            if unique_places >= 8:  # High variety of locations
+            if unique_places >= min_diversity:
                 factors.append(
                     ContributingFactor(
                         factor_key="irregular_patterns",
@@ -584,7 +552,7 @@ class RiskScorer:
 
         # Check for network centrality (high follower count or engagement)
         follower_count = social_record.follower_count or 0
-        if follower_count > 1000:  # Influential account
+        if follower_count > self.thresholds["follower_count_influential"]:
             factors.append(
                 ContributingFactor(
                     factor_key="network_centrality",
@@ -597,9 +565,9 @@ class RiskScorer:
 
         # Check for rapid connection growth (placeholder - would need historical data)
         # For now, high follower count as proxy
-        if follower_count > 500 and social_record.public_inferences:
+        if follower_count > self.thresholds["network_activity_threshold"] and social_record.public_inferences:
             recent_activity = len(social_record.public_inferences)
-            if recent_activity >= 10:  # Active networker
+            if recent_activity >= self.thresholds["network_inference_threshold"]:
                 factors.append(
                     ContributingFactor(
                         factor_key="new_connections_rate",
@@ -614,13 +582,14 @@ class RiskScorer:
 
     def _classify_risk_level(self, score: int) -> RiskLevel:
         """Classify numeric risk score into risk level."""
-        if score <= 20:
+        boundaries = self.risk_boundaries
+        if score <= boundaries["low"][1]:
             return RiskLevel.LOW
-        elif score <= 40:
+        elif score <= boundaries["moderate"][1]:
             return RiskLevel.MODERATE
-        elif score <= 60:
+        elif score <= boundaries["elevated"][1]:
             return RiskLevel.ELEVATED
-        elif score <= 80:
+        elif score <= boundaries["high"][1]:
             return RiskLevel.HIGH
         else:
             return RiskLevel.SEVERE

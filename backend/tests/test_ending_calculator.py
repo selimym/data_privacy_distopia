@@ -2,21 +2,22 @@
 
 Tests the calculation of game endings based on player behavior throughout System Mode.
 """
-import pytest
-from uuid import uuid4
 from datetime import date
+from uuid import uuid4
+
+import pytest
 
 from datafusion.models.npc import NPC
 from datafusion.models.system_mode import (
-    Operator,
-    Directive,
     CitizenFlag,
-    FlagType,
+    Directive,
     FlagOutcome,
+    FlagType,
+    Operator,
     OperatorStatus,
 )
-from datafusion.services.ending_calculator import EndingCalculator
 from datafusion.schemas.ending import EndingType
+from datafusion.services.ending_calculator import EndingCalculator
 
 
 @pytest.fixture

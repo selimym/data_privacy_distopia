@@ -9,7 +9,7 @@ choices and connects the game experience to real-world surveillance.
 """
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from datafusion.models.npc import NPC
@@ -17,7 +17,6 @@ from datafusion.models.system_mode import (
     CitizenFlag,
     FlagType,
     Operator,
-    OperatorStatus,
 )
 from datafusion.schemas.ending import (
     EducationalLink,
@@ -346,13 +345,9 @@ The cost will be high. But some things are worth any price.
         flags = flags_result.scalars().all()
 
         total_flags = len(flags)
-        detention_flags = sum(1 for f in flags if f.flag_type == FlagType.DETENTION)
 
         # Check if Jessica was flagged
         jessica_flagged = await self._check_jessica_flagged(operator_id)
-
-        # Calculate no-action count (reviews - flags)
-        no_action_count = operator.total_reviews_completed - total_flags
 
         # Check for resistance path (easter egg - would need special flag)
         # For now, this is placeholder for future implementation

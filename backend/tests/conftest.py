@@ -2,18 +2,18 @@
 
 from datetime import date
 from decimal import Decimal
+from uuid import uuid4
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from datafusion.database import Base, get_db
 from datafusion.main import app
+from datafusion.models.finance import Debt, DebtType, EmploymentStatus, FinanceRecord
+from datafusion.models.health import HealthCondition, HealthRecord, Severity
 from datafusion.models.npc import NPC
-from datafusion.models.system_mode import Operator, Directive, OperatorStatus
-from datafusion.models.finance import FinanceRecord, EmploymentStatus, Debt, DebtType
-from datafusion.models.health import HealthRecord, HealthCondition, Severity
+from datafusion.models.system_mode import Directive, Operator, OperatorStatus
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -105,6 +105,7 @@ async def test_directive(db_session):
 async def test_operator(db_session, test_directive):
     """Provide a test operator."""
     operator = Operator(
+        session_id=uuid4(),
         operator_code="OP-TEST",
         current_directive_id=test_directive.id,
         status=OperatorStatus.ACTIVE,
@@ -124,7 +125,7 @@ async def test_npc(db_session):
     npc = NPC(
         first_name="Test",
         last_name="Citizen",
-        date_of_birth="1985-06-15",
+        date_of_birth=date(1985, 6, 15),
         ssn="123-45-6789",
         street_address="123 Test St",
         city="Testville",
@@ -145,7 +146,7 @@ async def test_npc_with_data(db_session):
     npc = NPC(
         first_name="Jane",
         last_name="Smith",
-        date_of_birth="1990-03-20",
+        date_of_birth=date(1990, 3, 20),
         ssn="987-65-4321",
         street_address="456 Data Ave",
         city="Springfield",

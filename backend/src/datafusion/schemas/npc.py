@@ -1,5 +1,7 @@
 """Pydantic schemas for NPC API endpoints."""
 
+from __future__ import annotations
+
 from datetime import date, datetime
 from uuid import UUID
 
@@ -68,3 +70,10 @@ class NPCListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class NPCBatchRequest(BaseModel):
+    """Request schema for batch NPC fetching."""
+
+    npc_ids: list[UUID]
+    domains: list[str] | None = None

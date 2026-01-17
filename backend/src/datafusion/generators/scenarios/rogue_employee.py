@@ -1,7 +1,6 @@
 """Rogue employee scenario NPCs with pre-defined data."""
 
 from datetime import date, timedelta
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

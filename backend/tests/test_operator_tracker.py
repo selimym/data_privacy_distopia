@@ -1,16 +1,17 @@
 """Tests for the operator tracking service."""
 
-import pytest
+from datetime import date
 from uuid import uuid4
-from datetime import datetime, date
+
+import pytest
 
 from datafusion.models.npc import NPC
 from datafusion.models.system_mode import (
-    Operator,
-    Directive,
     CitizenFlag,
-    FlagType,
+    Directive,
     FlagOutcome,
+    FlagType,
+    Operator,
     OperatorStatus,
 )
 from datafusion.services.operator_tracker import OperatorTracker

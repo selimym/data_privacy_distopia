@@ -1,0 +1,162 @@
+{
+  "outcome_templates": {
+    "monitoring": {
+      "immediate": {
+        "status": "Under Enhanced Surveillance",
+        "narrative": "Subject {name} placed under enhanced monitoring. All communications logged. Digital footprint analysis initiated.",
+        "statistics": {
+          "privacy_score": 0,
+          "awareness_level": "unaware"
+        }
+      },
+      "1_month": {
+        "status": "Behavior Modification Observed",
+        "narrative": "Monitoring ongoing. Subject {name} has reduced social media activity by {social_reduction}%. Phone calls to family members decreased. Subject appears to suspect surveillance.",
+        "statistics": {
+          "social_media_reduction": 67,
+          "call_frequency_reduction": 34
+        }
+      },
+      "6_months": {
+        "status": "Social Isolation Progressing",
+        "narrative": "Subject {name}'s social connections have decreased by {connections_lost}%. Employment stable but promotion denied during routine background check. Subject no longer attends community events.",
+        "statistics": {
+          "social_connections_lost": 45,
+          "promotion_denied": true
+        }
+      },
+      "1_year": {
+        "status": "Mobility Restricted",
+        "narrative": "Subject {name}'s relocation application denied. Reason: Risk profile. Subject has withdrawn from public life. Social credit score: Low. {additional_impact}",
+        "statistics": {
+          "relocation_denied": true,
+          "social_credit": "low"
+        }
+      }
+    },
+    "restriction": {
+      "immediate": {
+        "status": "Movement Restricted",
+        "narrative": "Travel restriction implemented for {name}. Subject notified of 'administrative review.' All border crossings flagged. Driving license flagged for additional verification.",
+        "statistics": {
+          "travel_restriction": true,
+          "notification_sent": true
+        }
+      },
+      "1_month": {
+        "status": "Family Separation",
+        "narrative": "Subject {name} missed {family_event} (travel denied). Appeal submitted. Appeal denied. Subject reported emotional distress to employer. HR notified of 'personal issues.'",
+        "statistics": {
+          "appeals_denied": 1,
+          "family_events_missed": 1
+        }
+      },
+      "6_months": {
+        "status": "Economic Devastation",
+        "narrative": "Subject {name} terminated from employment (unable to travel for required business functions). Severance denied due to 'administrative status.' Appeal pending (estimated wait: 18 months). {job_impact}",
+        "statistics": {
+          "employment_terminated": true,
+          "income_reduction_percent": 100
+        }
+      },
+      "1_year": {
+        "status": "Dependent Classification",
+        "narrative": "Subject {name} now classified as 'economically dependent.' Receiving minimal state assistance. Additional monitoring recommended due to 'elevated desperation indicators.' {health_impact}",
+        "statistics": {
+          "dependent_classification": true,
+          "assistance_level": "minimal"
+        }
+      }
+    },
+    "intervention": {
+      "immediate": {
+        "status": "State Contact Initiated",
+        "narrative": "Welfare check conducted on {name}. Subject questioned for 4 hours regarding 'concerning patterns.' Released with mandatory weekly check-ins. Neighbors observed interaction.",
+        "statistics": {
+          "questioning_hours": 4,
+          "mandatory_checkins": true
+        }
+      },
+      "1_month": {
+        "status": "Social Destruction",
+        "narrative": "Subject {name}'s neighbors have been informed of 'safety concerns' (standard community notification protocol). Social isolation increasing rapidly. Subject reports harassment. Report filed under 'paranoid ideation.'",
+        "statistics": {
+          "neighbors_notified": true,
+          "harassment_reports_dismissed": 1
+        }
+      },
+      "6_months": {
+        "status": "Family Destruction",
+        "narrative": "{family_separation_narrative} Subject {name} diagnosed with anxiety and depression. Diagnosis added to permanent health record. Flagged for mental health risk. Employment terminated.",
+        "statistics": {
+          "family_separated": true,
+          "mental_health_diagnosis": true
+        }
+      },
+      "1_year": {
+        "status": "Broken",
+        "narrative": "Subject {name} hospitalized for severe depression following family separation and economic collapse. Treatment provided. Subject now 'cooperative.' Recommended for reduced monitoring. {final_status}",
+        "statistics": {
+          "hospitalized": true,
+          "compliance_achieved": true
+        }
+      }
+    },
+    "detention": {
+      "immediate": {
+        "status": "Detained",
+        "narrative": "Subject {name} detained for questioning. Location: Administrative Processing Center. Duration: Indefinite pending review. Legal representation requested; approval pending. Family notified of 'administrative matter.'",
+        "statistics": {
+          "detained": true,
+          "legal_access": "pending"
+        }
+      },
+      "1_month": {
+        "status": "Indefinite Detention",
+        "narrative": "Subject {name} remains in administrative detention. Day 31. Legal representation request still pending approval. Family visits denied (security protocols). Subject reports {detention_conditions}.",
+        "statistics": {
+          "days_detained": 31,
+          "family_visits": 0,
+          "legal_access": "denied"
+        }
+      },
+      "6_months": {
+        "status": "Confession Obtained",
+        "narrative": "Subject {name} signed confession acknowledging 'antisocial tendencies' and 'thought patterns inconsistent with community harmony.' Released to mandatory re-education program. Duration: 12 months.",
+        "statistics": {
+          "confession_signed": true,
+          "reeducation_months": 12
+        }
+      },
+      "1_year": {
+        "status": "Reformed",
+        "narrative": "Subject {name} successfully completed re-education. Compliance score: 98. Subject now employed as Community Harmony Monitor (entry level). Reports regularly on neighbors. Considered 'model rehabilitation.'",
+        "statistics": {
+          "compliance_score": 98,
+          "now_informant": true,
+          "employment": "community_monitor"
+        }
+      }
+    }
+  },
+  "family_events": [
+    "family funeral",
+    "parent's surgery",
+    "child's graduation",
+    "sibling's wedding",
+    "grandparent's final days"
+  ],
+  "detention_conditions": [
+    "sleep deprivation",
+    "isolation",
+    "repeated questioning",
+    "medical needs unmet",
+    "cold conditions"
+  ],
+  "summaries": {
+    "monitoring": "Isolated. Career stalled. Now lives in fear.",
+    "restriction": "Employment terminated. Family separated. Dependent on state.",
+    "intervention": "Hospitalized. Family destroyed. Broken.",
+    "detention": "Re-educated. Now monitors others. The system perpetuates."
+  }
+}

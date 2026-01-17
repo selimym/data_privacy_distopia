@@ -42,3 +42,23 @@ export async function getNPCDomain(
 ): Promise<DomainData> {
   return fetchJson<DomainData>(`/api/npcs/${id}/domain/${domain}`);
 }
+
+export async function getNPCsBatch(
+  npcIds: string[],
+  domains?: DomainType[]
+): Promise<NPCWithDomains[]> {
+  const response = await fetch('/api/npcs/batch', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      npc_ids: npcIds,
+      domains: domains || null
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to batch load NPCs');
+  }
+
+  return response.json();
+}

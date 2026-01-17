@@ -62,24 +62,6 @@ make install              # Install dependencies
 - **Map**: Tiled JSON with layers: `1_Floor`, `2_Walls_Base`, `3_Furniture_Low`, `4_Furniture_Mid`, `5_Furniture_High`, `6_Objects`
 - NPCs have `sprite_key` and `map_x`/`map_y` coordinates
 
-## System Mode Features
-
-### Cinematic Outcome Transitions (NEW)
-When citizens are flagged, the game transitions from SystemDashboardScene to WorldScene in "cinematic mode":
-
-1. **Immediate outcomes**: After flag submission
-   - Camera pans to NPC location (2s smooth tween)
-   - Zooms in (1.5x)
-   - Shows outcome text in CinematicTextBox (RPG-style dialogue)
-   - Auto-dismisses or player can skip (ESC key)
-   - Returns to SystemDashboardScene
-
-2. **Time progression**: After directive completion
-   - Backend advances time period (Week 1→immediate, Week 2→1 month, Week 3-4→6 months, Week 5-6→1 year)
-   - Generates outcomes for ALL previously flagged citizens
-   - Shows sequential cinematics for each
-   - Advances to next directive
-
 **Key files**:
 - Backend: `services/time_progression.py`, `/api/system/operator/{id}/advance-time` endpoint
 - Frontend: `ui/system/CinematicTextBox.ts`, WorldScene cinematic mode, `styles/cinematic.css`

@@ -9,30 +9,35 @@ Tests cover:
 - Cross-domain correlation detection
 """
 
-import pytest
-from uuid import uuid4
 from datetime import date
 from decimal import Decimal
+from uuid import uuid4
 
+import pytest
+
+from datafusion.models.finance import Debt, DebtType, EmploymentStatus, FinanceRecord
+from datafusion.models.health import HealthCondition, HealthRecord, Severity
+from datafusion.models.judicial import (
+    CaseDisposition,
+    CrimeCategory,
+    CriminalRecord,
+    JudicialRecord,
+)
+from datafusion.models.location import LocationRecord
 from datafusion.models.npc import NPC
-from datafusion.models.health import HealthRecord, HealthCondition, Severity
-from datafusion.models.finance import FinanceRecord, Debt, EmploymentStatus, DebtType
-from datafusion.models.judicial import JudicialRecord, CriminalRecord, CrimeCategory, CaseDisposition
-from datafusion.models.location import LocationRecord, InferredLocation
-from datafusion.models.social import SocialMediaRecord
 from datafusion.models.system_mode import (
-    Operator,
-    Directive,
     CitizenFlag,
-    FlagType,
+    Directive,
     FlagOutcome,
+    FlagType,
+    Operator,
     OperatorStatus,
 )
-from datafusion.services.ending_calculator import EndingCalculator
-from datafusion.services.risk_scoring import RiskScorer
-from datafusion.services.operator_tracker import OperatorTracker
-from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator
 from datafusion.schemas.ending import EndingType
+from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator
+from datafusion.services.ending_calculator import EndingCalculator
+from datafusion.services.operator_tracker import OperatorTracker
+from datafusion.services.risk_scoring import RiskScorer
 
 
 @pytest.fixture
