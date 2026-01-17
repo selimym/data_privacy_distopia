@@ -7,15 +7,21 @@ Verifies that:
 3. Cache is invalidated after TTL expires
 4. Risk scores match between cached and fresh calculations
 """
-import pytest
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+
+import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from datafusion.models.finance import Debt, DebtType, EmploymentStatus, FinanceRecord
+from datafusion.models.judicial import (
+    CaseDisposition,
+    CrimeCategory,
+    CriminalRecord,
+    JudicialRecord,
+)
 from datafusion.models.npc import NPC
-from datafusion.models.finance import FinanceRecord, EmploymentStatus, Debt, DebtType
-from datafusion.models.judicial import JudicialRecord, CriminalRecord, CaseDisposition, CrimeCategory
 from datafusion.services.risk_scoring import RiskScorer
 
 pytestmark = pytest.mark.asyncio

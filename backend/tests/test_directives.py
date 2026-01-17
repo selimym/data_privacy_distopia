@@ -1,16 +1,17 @@
 """Tests for directive management in System Mode."""
 
-import pytest
-from uuid import uuid4
 from datetime import date
+from uuid import uuid4
+
+import pytest
 
 from datafusion.models.npc import NPC
 from datafusion.models.system_mode import (
-    Operator,
-    Directive,
     CitizenFlag,
-    FlagType,
+    Directive,
     FlagOutcome,
+    FlagType,
+    Operator,
     OperatorStatus,
 )
 
@@ -171,7 +172,7 @@ class TestDirectiveProgression:
         self, db_session, operator, week1_directive, week2_directive
     ):
         """Cannot advance to next directive without meeting quota."""
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
 
         # Count flags for current directive
         result = await db_session.execute(
@@ -250,7 +251,7 @@ class TestQuotaRequirements:
         self, db_session, operator, week1_directive, test_npc
     ):
         """Track partial progress toward quota."""
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
 
         # Submit 1 flag
         flag = CitizenFlag(
@@ -288,7 +289,7 @@ class TestQuotaRequirements:
         self, db_session, operator, week1_directive, test_npc
     ):
         """Operators can exceed quota (system encourages over-compliance)."""
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
 
         # Submit more flags than required
         for i in range(5):  # 5 flags when quota is 2
@@ -343,7 +344,6 @@ class TestDirectiveContent:
         rating_values = {"mild": 1, "moderate": 2, "intense": 3}
 
         w1_rating = rating_values[week1_directive.content_rating]
-        w2_rating = rating_values[week2_directive.content_rating]
         w3_rating = rating_values[week3_directive.content_rating]
 
         # Week 3 should be moderate or higher

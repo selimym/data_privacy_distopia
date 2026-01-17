@@ -1,6 +1,6 @@
 """Pydantic schemas for location record API endpoints."""
 
-from datetime import time, datetime
+from datetime import datetime, time
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict

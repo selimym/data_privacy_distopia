@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from datafusion.content.scenario_prompts import determine_phase, get_prompt_for_state
-from datafusion.models.abuse import AbuseAction, AbuseExecution, AbuseRole
+from datafusion.models.abuse import AbuseAction, AbuseExecution
 from datafusion.models.npc import NPC
 from datafusion.schemas.abuse import AbuseActionRead
 from datafusion.schemas.npc import NPCBasicRead

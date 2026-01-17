@@ -1,7 +1,7 @@
 """Tests for content validation."""
 
-import pytest
 
+from datafusion.services.content_loader import load_json
 from datafusion.services.content_validator import (
     Consequences,
     Directives,
@@ -14,7 +14,6 @@ from datafusion.services.content_validator import (
     SocialReference,
     validate_all_content,
 )
-from datafusion.services.content_loader import load_json
 
 
 class TestContentValidation:

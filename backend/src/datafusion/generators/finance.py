@@ -1,7 +1,6 @@
 """Financial record data generator for NPCs."""
 
 import random
-from datetime import timedelta
 from decimal import Decimal
 from uuid import UUID
 

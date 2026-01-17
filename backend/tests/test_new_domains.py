@@ -13,20 +13,15 @@ from datafusion.generators.location import generate_location_record
 from datafusion.generators.social import generate_social_media_record
 from datafusion.models.finance import (
     BankAccount,
-    Debt,
     FinanceRecord,
-    Transaction,
 )
 from datafusion.models.judicial import (
-    CivilCase,
-    CriminalRecord,
     JudicialRecord,
     TrafficViolation,
 )
 from datafusion.models.location import InferredLocation, LocationRecord
 from datafusion.models.npc import NPC, Role
 from datafusion.models.social import (
-    PrivateInference,
     PublicInference,
     SocialMediaRecord,
 )

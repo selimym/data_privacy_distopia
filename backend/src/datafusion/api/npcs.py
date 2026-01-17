@@ -9,28 +9,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datafusion.config import settings
 from datafusion.database import get_db
 from datafusion.models.finance import (
-    BankAccount,
-    Debt,
     FinanceRecord,
-    Transaction,
 )
 from datafusion.models.health import (
-    HealthCondition,
-    HealthMedication,
     HealthRecord,
-    HealthVisit,
 )
 from datafusion.models.judicial import (
-    CivilCase,
-    CriminalRecord,
     JudicialRecord,
-    TrafficViolation,
 )
-from datafusion.models.location import InferredLocation, LocationRecord
+from datafusion.models.location import LocationRecord
 from datafusion.models.npc import NPC
 from datafusion.models.social import (
-    PrivateInference,
-    PublicInference,
     SocialMediaRecord,
 )
 from datafusion.schemas.domains import DomainType, NPCWithDomains

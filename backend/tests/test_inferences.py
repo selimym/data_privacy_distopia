@@ -1,6 +1,6 @@
 """Tests for inference API endpoints."""
 
-from datetime import date, datetime
+from datetime import date
 from uuid import uuid4
 
 import pytest
@@ -284,10 +284,6 @@ async def test_preview_new_inferences(client, test_npc_with_health):
 async def test_preview_inferences_with_current_domains(client, test_npc_with_health):
     """Test preview shows only NEW inferences, not existing ones."""
     npc_id = str(test_npc_with_health.id)
-
-    # Get current inferences with health already enabled
-    current_response = await client.get(f"/api/inferences/{npc_id}?domains=health")
-    current_count = len(current_response.json()["inferences"])
 
     # Preview adding health when it's already enabled
     preview_response = await client.get(

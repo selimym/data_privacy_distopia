@@ -6,11 +6,11 @@ import json
 from uuid import uuid4
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from datafusion.config import settings
-from datafusion.models.abuse import AbuseRole, AbuseAction, TargetType, ConsequenceSeverity
+from datafusion.models.abuse import AbuseAction, AbuseRole, ConsequenceSeverity, TargetType
 from datafusion.models.inference import ContentRating
 
 

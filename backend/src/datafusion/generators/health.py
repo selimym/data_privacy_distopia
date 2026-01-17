@@ -1,7 +1,6 @@
 """Health record data generator for NPCs."""
 
 import random
-from datetime import date, timedelta
 from uuid import UUID
 
 from faker import Faker

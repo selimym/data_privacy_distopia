@@ -336,7 +336,6 @@ class RiskScorer:
         # Check for financial stress
         total_debt = sum(d.current_balance for d in finance_record.debts)
         annual_income = float(finance_record.annual_income or 0)
-        monthly_income = annual_income / 12
 
         if total_debt > 0 and annual_income > 0:
             debt_to_income = float(total_debt) / annual_income

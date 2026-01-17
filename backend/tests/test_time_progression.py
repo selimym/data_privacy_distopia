@@ -3,17 +3,18 @@
 Tests the core System Mode mechanic that advances time and generates
 escalating outcomes for flagged citizens.
 """
-import pytest
-from uuid import uuid4
 from datetime import date
+from uuid import uuid4
+
+import pytest
 
 from datafusion.models.npc import NPC
 from datafusion.models.system_mode import (
-    Operator,
-    Directive,
     CitizenFlag,
-    FlagType,
+    Directive,
     FlagOutcome,
+    FlagType,
+    Operator,
     OperatorStatus,
 )
 from datafusion.services.time_progression import TimeProgressionService

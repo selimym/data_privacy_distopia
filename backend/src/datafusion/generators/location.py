@@ -94,7 +94,7 @@ def generate_location_record(npc_id: UUID, seed: int | None = None) -> dict:
                     hour=random.randint(16, 18), minute=random.choice([0, 15, 30, 45])
                 ),
                 "visit_frequency": "Daily",
-                "inferred_relationship": f"Primary workplace - consistently present during business hours",
+                "inferred_relationship": "Primary workplace - consistently present during business hours",
                 "privacy_implications": "Employer can be identified, work schedule exposed, physical location during work hours known",
                 "is_sensitive": False,
                 "confidence_score": random.randint(90, 98),
@@ -144,7 +144,7 @@ def generate_location_record(npc_id: UUID, seed: int | None = None) -> dict:
                 "visit_frequency": random.choice(
                     ["2-3 times per week", "Weekly", "Multiple times per week"]
                 ),
-                "inferred_relationship": f"Likely romantic partner - regular overnight stays, consistent pattern on weekends",
+                "inferred_relationship": "Likely romantic partner - regular overnight stays, consistent pattern on weekends",
                 "privacy_implications": "Romantic relationships can be exposed, partner's location revealed, intimate schedule patterns known, potential for stalking or harassment of partner",
                 "is_sensitive": True,
                 "confidence_score": random.randint(75, 90),
@@ -173,7 +173,7 @@ def generate_location_record(npc_id: UUID, seed: int | None = None) -> dict:
                 ),
                 "visit_frequency": random.choice(["Weekly", "Bi-weekly", "Monthly"]),
                 "inferred_relationship": f"{relationship} - regular visits suggest close family relationship",
-                "privacy_implications": f"Family members can be identified and located, caregiving responsibilities exposed, potential targets for manipulation or coercion",
+                "privacy_implications": "Family members can be identified and located, caregiving responsibilities exposed, potential targets for manipulation or coercion",
                 "is_sensitive": True,
                 "confidence_score": random.randint(70, 85),
             }

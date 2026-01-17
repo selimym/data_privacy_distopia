@@ -1,18 +1,19 @@
 """Tests for the citizen outcomes service."""
 
-import pytest
+from datetime import date
 from uuid import uuid4
-from datetime import date, datetime
 
+import pytest
+
+from datafusion.models.health import HealthCondition, HealthRecord, Severity
 from datafusion.models.npc import NPC
-from datafusion.models.health import HealthRecord, HealthCondition, Severity
-from datafusion.models.social import SocialMediaRecord, PublicInference, InferenceCategory, Platform
+from datafusion.models.social import InferenceCategory, Platform, PublicInference, SocialMediaRecord
 from datafusion.models.system_mode import (
-    Operator,
-    Directive,
     CitizenFlag,
-    FlagType,
+    Directive,
     FlagOutcome,
+    FlagType,
+    Operator,
     OperatorStatus,
 )
 from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator

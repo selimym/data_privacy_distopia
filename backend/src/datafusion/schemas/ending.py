@@ -5,6 +5,7 @@ Schemas for calculating and displaying the game ending based on
 player behavior throughout the surveillance operator experience.
 """
 import enum
+
 from pydantic import BaseModel, Field
 
 from datafusion.schemas.outcomes import CitizenOutcomeSummary

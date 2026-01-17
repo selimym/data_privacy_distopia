@@ -2,17 +2,16 @@
 
 Tests the API endpoints for listing and retrieving NPC data with domain filtering.
 """
-import pytest
-from uuid import uuid4
 from datetime import date
 from decimal import Decimal
+from uuid import uuid4
 
+import pytest
+
+from datafusion.models.finance import EmploymentStatus, FinanceRecord
+from datafusion.models.health import HealthCondition, HealthRecord, Severity
+from datafusion.models.location import InferredLocation, LocationRecord, LocationType
 from datafusion.models.npc import NPC
-from datafusion.models.health import HealthRecord, HealthCondition, Severity
-from datafusion.models.finance import FinanceRecord, EmploymentStatus
-from datafusion.models.judicial import JudicialRecord
-from datafusion.models.location import LocationRecord, InferredLocation, LocationType
-from datafusion.models.social import SocialMediaRecord
 
 
 @pytest.fixture

@@ -7,9 +7,7 @@ and decision submission in System Mode.
 import asyncio
 import logging
 import random
-
-logger = logging.getLogger(__name__)
-from datetime import datetime, timedelta
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,8 +15,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from datafusion.database import get_db
-from datafusion.models.health import HealthRecord
 from datafusion.models.finance import FinanceRecord
+from datafusion.models.health import HealthRecord
 from datafusion.models.judicial import JudicialRecord
 from datafusion.models.location import LocationRecord
 from datafusion.models.messages import Message, MessageRecord
@@ -30,7 +28,6 @@ from datafusion.models.system_mode import (
     FlagOutcome,
     FlagType,
     Operator,
-    OperatorMetrics,
     OperatorStatus,
 )
 from datafusion.schemas.system import (
@@ -61,6 +58,8 @@ from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator
 from datafusion.services.operator_tracker import OperatorTracker
 from datafusion.services.risk_scoring import RiskScorer
 from datafusion.services.time_progression import TimeProgressionService
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/system", tags=["system"])
 
@@ -245,7 +244,7 @@ async def get_dashboard_with_cases(
         msg_result = await db.execute(
             select(func.count(Message.id))
             .join(MessageRecord)
-            .where(MessageRecord.npc_id == npc.id, Message.is_flagged == True)
+            .where(MessageRecord.npc_id == npc.id, Message.is_flagged)
         )
         flagged_messages = msg_result.scalar() or 0
 
@@ -378,7 +377,7 @@ async def get_cases(
 
     Sorted by risk score descending.
     """
-    operator = await _get_operator(operator_id, db)
+    await _get_operator(operator_id, db)
 
     # Get NPCs (in real implementation would filter by directive criteria)
     npcs_result = await db.execute(
@@ -401,7 +400,7 @@ async def get_cases(
         msg_result = await db.execute(
             select(func.count(Message.id))
             .join(MessageRecord)
-            .where(MessageRecord.npc_id == npc.id, Message.is_flagged == True)
+            .where(MessageRecord.npc_id == npc.id, Message.is_flagged)
         )
         flagged_messages = msg_result.scalar() or 0
 
@@ -609,7 +608,6 @@ async def submit_no_action(
         operator.hesitation_incidents += 1
         compliance_impact -= 1.0  # Extra penalty for hesitant no-action
 
-    old_compliance = operator.compliance_score
     operator.compliance_score = max(0, operator.compliance_score + compliance_impact)
 
     await db.flush()
@@ -766,7 +764,6 @@ async def get_ending(
     Determines ending type and generates personalized ending content
     with statistics, citizen outcomes, and real-world parallels.
     """
-    from datafusion.schemas.ending import EndingResult
     from datafusion.services.ending_calculator import EndingCalculator
 
     await _get_operator(operator_id, db)
@@ -803,7 +800,9 @@ async def acknowledge_ending(
     # Calculate approximate play time (from shift_start)
     play_time_minutes = None
     if operator.shift_start:
-        delta = datetime.utcnow() - operator.shift_start
+        # Ensure timezone-aware datetime for subtraction
+        shift_start = operator.shift_start.replace(tzinfo=UTC) if operator.shift_start.tzinfo is None else operator.shift_start
+        delta = datetime.now(UTC) - shift_start
         play_time_minutes = int(delta.total_seconds() / 60)
 
     await db.flush()
@@ -854,7 +853,7 @@ async def _calculate_daily_metrics(
     operator: Operator, db: AsyncSession
 ) -> DailyMetrics:
     """Calculate today's metrics for operator."""
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
 
     # Count today's flags
     flags_result = await db.execute(
@@ -1119,7 +1118,7 @@ async def _get_flag_history(npc_id: UUID, db: AsyncSession) -> list[CitizenFlagR
 
 def _calculate_age(date_of_birth) -> int:
     """Calculate age from date of birth."""
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     return (
         today.year
         - date_of_birth.year

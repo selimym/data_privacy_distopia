@@ -4,17 +4,16 @@ from datetime import date
 from decimal import Decimal
 from uuid import uuid4
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from datafusion.database import Base, get_db
 from datafusion.main import app
+from datafusion.models.finance import Debt, DebtType, EmploymentStatus, FinanceRecord
+from datafusion.models.health import HealthCondition, HealthRecord, Severity
 from datafusion.models.npc import NPC
-from datafusion.models.system_mode import Operator, Directive, OperatorStatus
-from datafusion.models.finance import FinanceRecord, EmploymentStatus, Debt, DebtType
-from datafusion.models.health import HealthRecord, HealthCondition, Severity
+from datafusion.models.system_mode import Directive, Operator, OperatorStatus
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

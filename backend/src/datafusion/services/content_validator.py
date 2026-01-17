@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, field_validator
 
 from datafusion.services.content_loader import load_json
 
@@ -126,7 +126,7 @@ class Messages(BaseModel):
     def validate_min_messages(cls, v: list[str]) -> list[str]:
         """Ensure minimum number of messages."""
         if len(v) < 5:
-            raise ValueError(f"Each message category must have at least 5 messages")
+            raise ValueError("Each message category must have at least 5 messages")
         return v
 
     @field_validator("scenario_messages")

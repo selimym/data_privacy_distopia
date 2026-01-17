@@ -4,16 +4,16 @@ Integration tests for flag submission flow.
 Tests the complete end-to-end process of flagging a citizen,
 ensuring all services work together correctly.
 """
-import pytest
 from datetime import date
+
+import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from datafusion.models.npc import NPC
-from datafusion.models.system_mode import Operator, CitizenFlag, Directive, FlagType, FlagOutcome
-from datafusion.services.operator_tracker import OperatorTracker
+from datafusion.models.system_mode import CitizenFlag, FlagOutcome, FlagType, Operator
 from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator
-
+from datafusion.services.operator_tracker import OperatorTracker
 
 pytestmark = pytest.mark.asyncio
 

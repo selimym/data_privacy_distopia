@@ -1,7 +1,6 @@
 """Social media data generator for NPCs."""
 
 import random
-from datetime import timedelta
 from uuid import UUID
 
 from faker import Faker

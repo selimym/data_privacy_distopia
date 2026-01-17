@@ -4,7 +4,7 @@ import enum
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from datafusion.database import Base, TimestampMixin, UUIDMixin

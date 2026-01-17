@@ -13,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from datafusion.models.system_mode import Directive
 
-
 # The escalating mission structure of System Mode
 DIRECTIVES = [
     {

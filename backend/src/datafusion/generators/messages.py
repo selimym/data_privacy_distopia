@@ -6,7 +6,7 @@ and sentiment analysis. Educational purpose: Shows how mass message
 surveillance works and why it's dangerous.
 """
 import random
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import select
@@ -16,7 +16,6 @@ from datafusion.models.health import HealthRecord
 from datafusion.models.messages import Message, MessageRecord
 from datafusion.models.npc import NPC
 from datafusion.models.social import SocialMediaRecord
-
 
 # Message templates by category
 MUNDANE_MESSAGES = [
@@ -215,7 +214,7 @@ class MessageGenerator:
         for i in range(num_messages):
             # Timestamp: Random time in past 30 days
             days_ago = random.uniform(0, 30)
-            timestamp = datetime.utcnow() - timedelta(days=days_ago)
+            timestamp = datetime.now(UTC) - timedelta(days=days_ago)
 
             # Choose message category based on profile
             weights = self._get_message_weights(has_mental_health, has_financial_stress, is_activist)
@@ -339,7 +338,7 @@ class MessageGenerator:
 
         messages = []
         for content, sentiment, keywords, days_ago in jessica_messages:
-            timestamp = datetime.utcnow() - timedelta(days=days_ago)
+            timestamp = datetime.now(UTC) - timedelta(days=days_ago)
             is_flagged, flag_reasons = self._check_flags(content, keywords)
 
             message = Message(
@@ -404,7 +403,7 @@ class MessageGenerator:
 
         messages = []
         for content, sentiment, keywords, days_ago in david_messages:
-            timestamp = datetime.utcnow() - timedelta(days=days_ago)
+            timestamp = datetime.now(UTC) - timedelta(days=days_ago)
             is_flagged, flag_reasons = self._check_flags(content, keywords)
 
             message = Message(
@@ -448,7 +447,7 @@ class MessageGenerator:
 
         messages = []
         for content, sentiment, keywords, days_ago in senator_messages:
-            timestamp = datetime.utcnow() - timedelta(days=days_ago)
+            timestamp = datetime.now(UTC) - timedelta(days=days_ago)
             is_flagged, flag_reasons = self._check_flags(content, keywords)
 
             message = Message(

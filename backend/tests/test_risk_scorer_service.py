@@ -3,17 +3,28 @@ Service-level tests for RiskScorer.
 
 Tests the RiskScorer service in isolation with various data scenarios.
 """
-import pytest
 from datetime import date
 from decimal import Decimal
-from sqlalchemy import select
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from datafusion.models.npc import NPC
-from datafusion.models.finance import FinanceRecord, EmploymentStatus, Debt, DebtType, Transaction, TransactionCategory
-from datafusion.models.health import HealthRecord, HealthCondition, Severity
-from datafusion.models.judicial import JudicialRecord, CriminalRecord, CaseDisposition, CrimeCategory
-from datafusion.models.location import LocationRecord, InferredLocation, LocationType
+from datafusion.models.finance import (
+    Debt,
+    DebtType,
+    EmploymentStatus,
+    FinanceRecord,
+    Transaction,
+    TransactionCategory,
+)
+from datafusion.models.health import HealthCondition, HealthRecord, Severity
+from datafusion.models.judicial import (
+    CaseDisposition,
+    CrimeCategory,
+    CriminalRecord,
+    JudicialRecord,
+)
+from datafusion.models.location import InferredLocation, LocationRecord, LocationType
 from datafusion.services.risk_scoring import RiskScorer
 
 pytestmark = pytest.mark.asyncio

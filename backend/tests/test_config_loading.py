@@ -1,6 +1,5 @@
 """Tests for configuration file loading and validation."""
 
-import pytest
 
 from datafusion.services.content_loader import (
     load_correlation_alerts,

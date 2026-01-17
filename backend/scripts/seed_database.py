@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from datafusion.database import AsyncSessionLocal, Base, engine
 from datafusion.generators import generate_full_population
+from datafusion.generators.messages import MessageGenerator
 from datafusion.generators.scenarios import seed_scenario
 from datafusion.models.finance import (
     BankAccount,
@@ -28,6 +29,7 @@ from datafusion.models.judicial import (
     TrafficViolation,
 )
 from datafusion.models.location import InferredLocation, LocationRecord
+from datafusion.models.messages import MessageRecord
 from datafusion.models.npc import NPC
 from datafusion.models.social import (
     PrivateInference,
@@ -35,8 +37,6 @@ from datafusion.models.social import (
     SocialMediaRecord,
 )
 from datafusion.models.system_mode import Directive
-from datafusion.models.messages import Message, MessageRecord
-from datafusion.generators.messages import MessageGenerator
 
 
 async def reset_database():

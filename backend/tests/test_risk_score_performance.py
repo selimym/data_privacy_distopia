@@ -3,18 +3,22 @@ Performance tests for risk score caching.
 
 Demonstrates the performance improvement from caching.
 """
-import pytest
 import time
 from datetime import date
 from decimal import Decimal
+
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from datafusion.models.npc import NPC
-from datafusion.models.finance import FinanceRecord, EmploymentStatus, Debt, DebtType
-from datafusion.models.health import HealthRecord, HealthCondition, Severity
-from datafusion.models.judicial import JudicialRecord, CriminalRecord, CaseDisposition, CrimeCategory
-from datafusion.models.location import LocationRecord, InferredLocation, LocationType
-from datafusion.models.social import SocialMediaRecord
+from datafusion.models.finance import Debt, DebtType, EmploymentStatus, FinanceRecord
+from datafusion.models.health import HealthCondition, HealthRecord, Severity
+from datafusion.models.judicial import (
+    CaseDisposition,
+    CrimeCategory,
+    CriminalRecord,
+    JudicialRecord,
+)
+from datafusion.models.location import InferredLocation, LocationRecord, LocationType
 from datafusion.services.risk_scoring import RiskScorer
 
 pytestmark = pytest.mark.asyncio
