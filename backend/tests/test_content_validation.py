@@ -24,8 +24,8 @@ class TestContentValidation:
         """Test that all content files pass validation."""
         results = validate_all_content()
 
-        # All 9 files should validate successfully
-        assert len(results) == 9
+        # All 13 files should validate successfully
+        assert len(results) == 13
         assert all("✓ Valid" in status for status in results.values())
 
     def test_outcomes_validation(self):

@@ -5,6 +5,7 @@ Tests the complete end-to-end process of flagging a citizen,
 ensuring all services work together correctly.
 """
 import pytest
+from datetime import date
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -73,7 +74,7 @@ class TestFlagSubmissionFlow:
             outcome = await outcome_gen.generate_outcome(flag, "immediate")
 
             assert outcome is not None
-            assert outcome.flag_id == str(flag.id)
+            assert outcome.flag_id == flag.id
 
     async def test_hesitation_tracking(self, db_session: AsyncSession, test_operator, test_npc):
         """Test that hesitation is properly tracked."""
@@ -220,7 +221,7 @@ class TestFlagSubmissionFlow:
 
         assert updated_progress.flags_submitted == initial_count + 1
         assert updated_progress.flags_required > 0
-        assert updated_progress.progress_percentage >= 0
+        assert updated_progress.progress_percent >= 0
 
     async def test_flag_with_no_data(self, db_session: AsyncSession, test_operator):
         """Test flagging a citizen with minimal data doesn't crash."""
@@ -228,7 +229,7 @@ class TestFlagSubmissionFlow:
         minimal_npc = NPC(
             first_name="John",
             last_name="Doe",
-            date_of_birth="1990-01-01",
+            date_of_birth=date(1990, 1, 1),
             ssn="123-45-6789",
             street_address="123 Main St",
             city="Springfield",

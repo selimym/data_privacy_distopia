@@ -2,6 +2,7 @@
 
 from datetime import date
 from decimal import Decimal
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
@@ -105,6 +106,7 @@ async def test_directive(db_session):
 async def test_operator(db_session, test_directive):
     """Provide a test operator."""
     operator = Operator(
+        session_id=uuid4(),
         operator_code="OP-TEST",
         current_directive_id=test_directive.id,
         status=OperatorStatus.ACTIVE,

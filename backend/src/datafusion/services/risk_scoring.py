@@ -305,16 +305,19 @@ class RiskScorer:
                 )
 
         # Check for chronic conditions
-        if health_record.conditions and len(health_record.conditions) >= 2:
-            factors.append(
-                ContributingFactor(
-                    factor_key="chronic_condition",
-                    factor_name=self.RISK_FACTORS["chronic_condition"]["description"],
-                    weight=self.RISK_FACTORS["chronic_condition"]["weight"],
-                    evidence=f"Multiple chronic conditions ({len(health_record.conditions)} total)",
-                    domain_source=DomainType.HEALTH,
+        if health_record.conditions:
+            chronic_conditions = [c for c in health_record.conditions if c.is_chronic]
+            if chronic_conditions:
+                condition_names = ", ".join(c.condition_name for c in chronic_conditions[:2])
+                factors.append(
+                    ContributingFactor(
+                        factor_key="chronic_condition",
+                        factor_name=self.RISK_FACTORS["chronic_condition"]["description"],
+                        weight=self.RISK_FACTORS["chronic_condition"]["weight"],
+                        evidence=f"Chronic condition(s): {condition_names}",
+                        domain_source=DomainType.HEALTH,
+                    )
                 )
-            )
 
         return factors
 

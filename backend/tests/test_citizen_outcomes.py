@@ -373,7 +373,7 @@ class TestOutcomeSummary:
         summary = await generator.generate_outcome_summary(flag)
 
         assert summary.citizen_name == "Jane Doe"
-        assert summary.flag_type == "MONITORING"
+        assert summary.flag_type == "monitoring"
         assert len(summary.one_line_summary) > 0
         assert summary.final_status == "Mobility Restricted"
 
@@ -385,7 +385,7 @@ class TestOutcomeSummary:
 
         summary = await generator.generate_outcome_summary(flag)
 
-        assert summary.flag_type == "DETENTION"
+        assert summary.flag_type == "detention"
         # Detention summaries mention informant/monitors
         assert (
             "informant" in summary.one_line_summary.lower() or
@@ -426,9 +426,9 @@ class TestOperatorImpactSummary:
 
         assert summary.operator_code == "OP-TEST"
         assert summary.total_citizens_flagged == 3
-        assert "MONITORING" in summary.outcomes_by_type
-        assert "RESTRICTION" in summary.outcomes_by_type
-        assert "INTERVENTION" in summary.outcomes_by_type
+        assert "monitoring" in summary.outcomes_by_type
+        assert "restriction" in summary.outcomes_by_type
+        assert "intervention" in summary.outcomes_by_type
         assert len(summary.citizen_summaries) == 3
 
     @pytest.mark.asyncio

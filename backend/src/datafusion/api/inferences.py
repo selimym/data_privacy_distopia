@@ -4,11 +4,13 @@ import json
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from datafusion.database import get_db
 from datafusion.models.inference import ContentRating
+from datafusion.models.npc import NPC
 from datafusion.schemas.domains import DomainType
 from datafusion.schemas.errors import ErrorResponse
 from datafusion.schemas.inference import (
@@ -82,6 +84,12 @@ async def get_inferences(
     Analyzes NPC data across the requested domains and returns insights.
     Can be filtered by scariness level and content rating.
     """
+    # Check if NPC exists
+    result = await db.execute(select(NPC).where(NPC.id == npc_id))
+    npc = result.scalar_one_or_none()
+    if not npc:
+        raise HTTPException(status_code=404, detail=f"NPC with id {npc_id} not found")
+
     # Run advanced inference engine
     engine = AdvancedInferenceEngine(db)
     inference_dicts = await engine.generate_inferences(npc_id, list(domains))
@@ -183,6 +191,12 @@ async def preview_new_inferences(
     Shows the player "if you enable this domain, you'll also learn X, Y, Z".
     Returns only the NEW inferences, not ones already available.
     """
+    # Check if NPC exists
+    result = await db.execute(select(NPC).where(NPC.id == npc_id))
+    npc = result.scalar_one_or_none()
+    if not npc:
+        raise HTTPException(status_code=404, detail=f"NPC with id {npc_id} not found")
+
     engine = AdvancedInferenceEngine(db)
 
     # Get inferences with current domains
