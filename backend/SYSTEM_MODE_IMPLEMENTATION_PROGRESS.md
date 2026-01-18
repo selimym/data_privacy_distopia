@@ -1,9 +1,9 @@
 # System Mode Expansion - Implementation Progress
 
-**Status**: Phase 2 Complete - Core Services Implemented
+**Status**: Phase 4 Complete - All Backend Services Implemented!
 **Date**: 2026-01-18
 
-## ✅ Completed (Phases 1-2)
+## ✅ Completed (Phases 1-4)
 
 ### Phase 1: Database Foundation
 - **All new database models created** (`backend/src/datafusion/models/system_mode.py`):
@@ -51,40 +51,65 @@
   - MONITORING (1) → INCITE_VIOLENCE (9)
   - Functions: `get_severity_score()`, `is_harsh_action()`, `get_action_description()`
 
-## 🚧 In Progress / To Do (Phases 3-8)
+### Phase 3: Event Services
+- **EventGenerationService** (`backend/src/datafusion/services/event_generation.py`):
+  - Orchestrates all triggered and random events
+  - Checks news article triggers (multiple channels can cover same event)
+  - Checks protest triggers (probability-based on severity + anger)
+  - Checks detention injuries (30% chance → enables HOSPITAL_ARREST)
+  - Generates random events (background news 15%, book publications 20%)
+  - Select protest neighborhoods (citizen location or ICE raid target)
+  - Calculate protest size (50-5000, scales with anger + severity)
+  - Functions: `check_triggered_events()`, `generate_random_events()`, `check_detention_injury()`
 
-### Phase 3: Event and Action Services
-**Next step: Implement these services**
+- **NewsSystemService** (`backend/src/datafusion/services/news_system.py`):
+  - Article generation with templates for each action type
+  - Stance-specific headlines (critical/independent/state-friendly)
+  - Triggered articles (action-specific) vs background articles (general coverage)
+  - Exposure articles (3 stages: hints → partial → full)
+  - Suppression with Streisand effect: 60% success, 40% backfire (huge attention)
+  - Functions: `generate_triggered_article()`, `generate_background_article()`, `suppress_news_channel()`
 
-- [ ] **EventGenerationService** - Unified event generation
-  - Roll for triggered events after actions
-  - Generate random events (news, book publications)
-  - Check detention injuries (30% chance)
+- **ProtestSystemService** (`backend/src/datafusion/services/protest_system.py`):
+  - Protest triggers based on anger + severity formula
+  - 30% chance state plants inciting agent (automatic, sets up gamble)
+  - Legal suppression (DECLARE_ILLEGAL): Always succeeds, high awareness cost
+  - Violence suppression (INCITE_VIOLENCE): 60% success, 40% agent discovered = catastrophe
+  - Gamble failure: +25 awareness, +30 anger - revolutionary conditions
+  - Functions: `trigger_protest()`, `suppress_protest_legal()`, `suppress_protest_violence()`
 
-- [ ] **NewsSystemService** - News article generation and suppression
-  - Generate triggered articles (probability-based by channel stance)
-  - Generate background articles (15% per directive advance)
-  - Handle suppression (PRESS_BAN, PRESSURE_FIRING)
-  - Calculate Streisand effect (failed suppression = huge backlash)
-
-- [ ] **ProtestSystemService** - Protest triggers and suppression
-  - Trigger protests based on anger + severity
-  - Handle suppression (DECLARE_ILLEGAL, INCITE_VIOLENCE)
-  - Inciting agent gamble (60% success, 40% discovered = catastrophe)
-
-- [ ] **OperatorDataTracker** - Progressive exposure system
-  - Generate fake operator profile at session start
-  - Track behavioral patterns (searches, hesitations, decisions)
-  - Trigger 3-stage exposure events (hints → partial → full)
+- **OperatorDataTracker** (`backend/src/datafusion/services/operator_data_tracker.py`):
+  - Generates fake operator profile (name, address, family) at session start
+  - Tracks behavioral patterns (search queries, hesitation, decision types)
+  - Progressive exposure triggers (awareness 30 → 60 → 80 OR reluctance 70)
+  - Stage 1 (hints): Vague references in articles
+  - Stage 2 (partial): Search queries, hesitation patterns, family names revealed
+  - Stage 3 (full): Complete profile exposed - name, address, all behavioral data
+  - Creates visceral discomfort by showing player their own surveillance
+  - Functions: `generate_operator_profile()`, `track_decision()`, `trigger_exposure_event()`
 
 ### Phase 4: Unified Action Execution
-- [ ] **ActionExecutionService** - Replace flag submission
-  - Validate action availability (check prerequisites)
-  - Execute all 12 action types
-  - Calculate outcomes
-  - Trigger cascading events
-  - Update all metrics (public, reluctance)
-  - Return comprehensive result
+- **ActionExecutionService** (`backend/src/datafusion/services/action_execution.py`):
+  - Central orchestrator that ties all services together
+  - 10-step execution pipeline:
+    1. Validate action availability (check prerequisites)
+    2. Calculate severity and backlash probability
+    3. Create action record
+    4. Execute action-specific logic (detention injury, press suppression, protest suppression)
+    5. Update public metrics (awareness + anger)
+    6. Roll for triggered events (news, protests)
+    7. Update reluctance metrics
+    8. Check termination threshold
+    9. Track operator behavior
+    10. Check exposure trigger
+  - Returns comprehensive ActionResult with all changes and events
+  - Handles "no action" submission (increases reluctance)
+  - Modular design: each action type has its own handler
+  - Functions: `execute_action()`, `check_action_availability()`, `submit_no_action()`
+
+## 🚧 To Do (Phases 5-8)
+
+**Next Steps**: Schemas → Endpoints → Frontend → Content
 
 ### Phase 5: Pydantic Schemas
 - [ ] Create schemas for all new models:

@@ -6,6 +6,37 @@ DataFusion World is an educational game demonstrating data privacy risks through
 
 The goal is educational: demonstrate why strong privacy protections and oversight are essential.
 
+### System Mode Mechanics
+
+System Mode features an expanded mechanics system that tracks the moral and practical consequences of surveillance:
+
+1. **Reluctance Tracking** - Tracks the operator's unwillingness to comply with directives
+   - Increases when refusing actions or hesitating (+3 to +10 per incident)
+   - Decreases when taking harsh actions (-5 for severity 7+)
+   - Quota shortfalls add penalties (+5 per missed action)
+   - Triggers warnings at thresholds (70, 80, 90)
+   - Can lead to firing (weeks 1-3) or imprisonment (weeks 4+) if too high
+
+2. **Public Metrics** - International awareness and public anger
+   - Awareness increases based on action severity and backlash
+   - Anger increases especially for ICE raids and arbitrary detentions
+   - Both metrics have tier thresholds that trigger events
+   - Awareness accelerates when > 60 (media attention snowballs)
+   - Triggers protests, news articles, and international condemnation
+
+3. **Action System** - Unified severity-based action tracking
+   - 12 action types from Monitoring (severity 1) to Inciting Violence (severity 9)
+   - Citizen-targeted, neighborhood-targeted, press-targeted, and protest-targeted actions
+   - Each action has calculated backlash probability
+   - Actions trigger cinematic outcomes showing consequences
+
+4. **Dynamic World Events**
+   - News channels can publish critical articles
+   - Protests can form and escalate
+   - Neighborhoods can be targeted for ICE raids
+   - Books can be published or banned
+   - All events interconnect with public metrics
+
 ## Architecture
 
 This is a **thin client architecture** where the frontend is purely a display layer:
@@ -99,7 +130,9 @@ backend/src/datafusion/
 │   ├── location.py          # LocationRecord (work, home, check-ins)
 │   ├── social.py            # SocialMediaRecord (posts, relationships)
 │   ├── messages.py          # Message, MessageRecord (encrypted/decrypted messages)
-│   ├── system_mode.py       # Operator, Directive, CitizenFlag, FlagOutcome, OperatorMetrics
+│   ├── system_mode.py       # System mode: Operator, Directive, SystemAction, PublicMetrics,
+│   │                        # ReluctanceMetrics, NewsChannel, Protest, Neighborhood,
+│   │                        # BookPublicationEvent, OperatorData (expanded mechanics)
 │   ├── abuse.py             # AbuseAction, AbuseExecution (rogue employee mode)
 │   ├── consequence.py       # ConsequenceTemplate, TimeSkip
 │   └── inference.py         # ContentRating, RuleCategory
@@ -132,7 +165,11 @@ backend/src/datafusion/
 │   ├── ending_calculator.py         # Game ending logic
 │   ├── abuse_simulator.py           # Simulates abuse actions in Rogue Employee mode
 │   ├── scenario_engine.py           # Scenario configuration and loading
-│   └── content_filter.py            # Content moderation
+│   ├── content_filter.py            # Content moderation
+│   ├── reluctance_tracking.py       # Tracks operator reluctance and termination
+│   ├── public_metrics.py            # International awareness and public anger
+│   ├── severity_scoring.py          # Action severity and categorization
+│   └── time_progression.py          # Directive progression and outcome generation
 │
 ├── generators/              # Synthetic data generation
 │   ├── identity.py          # Name, demographics
@@ -348,6 +385,22 @@ async def test_something(client: AsyncClient, db: AsyncSession):
     # Test using client for API calls or db for direct database access
     response = await client.get("/api/endpoint")
     assert response.status_code == 200
+```
+
+### Test Coverage
+
+The project includes comprehensive test coverage for:
+- **Core Services**: Inference engines, risk scoring, outcome calculation, ending logic
+- **System Mode Services**: Reluctance tracking, public metrics, severity scoring
+- **API Endpoints**: All major endpoints have integration tests
+- **Database Models**: Model creation and relationship tests
+- **Integration Scenarios**: Realistic gameplay scenarios (e.g., operator taking harsh actions, refusing directives)
+
+Run specific test suites:
+```bash
+cd backend && uv run pytest tests/test_system_mode_services.py  # System mode mechanics
+cd backend && uv run pytest tests/test_risk_scoring.py          # Risk scoring
+cd backend && uv run pytest tests/test_ending_calculator.py     # Ending logic
 ```
 
 ## Data Model Relationships
