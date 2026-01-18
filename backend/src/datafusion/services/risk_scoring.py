@@ -118,10 +118,10 @@ class RiskScorer:
             # Calculate total risk score (capped at 100)
             risk_score = min(sum(f.weight for f in contributing_factors), 100)
 
-            # Update cache in database
+            # Update cache in database (flush to persist without committing transaction)
             npc.cached_risk_score = risk_score
             npc.risk_score_updated_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(npc)
 
         # Determine risk level

@@ -30,6 +30,7 @@ from datafusion.models.system_mode import (
     Operator,
     OperatorStatus,
 )
+from datafusion.schemas.risk import RiskAssessment, RiskLevel
 from datafusion.schemas.system import (
     AlertType,
     AlertUrgency,
@@ -233,12 +234,21 @@ async def get_dashboard_with_cases(
     risk_scorer = RiskScorer(db)
 
     for npc in npcs:
-        # Calculate risk score
+        # Calculate risk score with fallback to default if scoring fails
         try:
             risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
         except Exception as e:
-            logger.warning(f"Failed to calculate risk score for NPC {npc.id}: {e}")
-            continue
+            logger.error(f"Failed to calculate risk score for NPC {npc.id}: {e}", exc_info=True)
+            # Use default risk assessment instead of skipping citizen
+            risk_assessment = RiskAssessment(
+                npc_id=npc.id,
+                risk_score=0,
+                risk_level=RiskLevel.LOW,
+                contributing_factors=[],
+                correlation_alerts=[],
+                recommended_actions=[],
+                last_updated=datetime.now(UTC),
+            )
 
         # Get flagged message count
         msg_result = await db.execute(
@@ -389,12 +399,21 @@ async def get_cases(
     risk_scorer = RiskScorer(db)
 
     for npc in npcs:
-        # Calculate risk score
+        # Calculate risk score with fallback to default if scoring fails
         try:
             risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
         except Exception as e:
-            logger.warning(f"Failed to calculate risk score for NPC {npc.id}: {e}")
-            continue
+            logger.error(f"Failed to calculate risk score for NPC {npc.id}: {e}", exc_info=True)
+            # Use default risk assessment instead of skipping citizen
+            risk_assessment = RiskAssessment(
+                npc_id=npc.id,
+                risk_score=0,
+                risk_level=RiskLevel.LOW,
+                contributing_factors=[],
+                correlation_alerts=[],
+                recommended_actions=[],
+                last_updated=datetime.now(UTC),
+            )
 
         # Get flagged message count
         msg_result = await db.execute(

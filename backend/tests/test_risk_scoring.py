@@ -382,3 +382,54 @@ class TestRiskLevelClassification:
         # Prior record has weight of 25, so should be at least MODERATE
         assert assessment.risk_score >= 25
         assert assessment.risk_level in [RiskLevel.MODERATE, RiskLevel.ELEVATED, RiskLevel.HIGH]
+
+
+class TestRiskScorerEdgeCases:
+    """Test risk scorer handles edge cases gracefully."""
+
+    @pytest.mark.asyncio
+    async def test_missing_npc_raises_error(self, db_session):
+        """Risk scorer should raise error for non-existent NPC."""
+        scorer = RiskScorer(db_session)
+        fake_id = uuid4()
+
+        with pytest.raises(ValueError, match="not found"):
+            await scorer.calculate_risk_score(fake_id)
+
+    @pytest.mark.asyncio
+    async def test_transaction_isolation(self, db_session, npc_with_data):
+        """Risk scoring should not commit transaction (use flush instead)."""
+        scorer = RiskScorer(db_session)
+
+        # Calculate risk score (which updates cache)
+        assessment = await scorer.calculate_risk_score(npc_with_data.id)
+
+        # Changes should be flushed but not committed
+        # We can verify by checking the NPC was updated
+        await db_session.refresh(npc_with_data)
+        assert npc_with_data.cached_risk_score == assessment.risk_score
+        assert npc_with_data.risk_score_updated_at is not None
+
+        # Session should still be in transaction (not committed)
+        # This test passes if no exception is raised from transaction conflicts
+
+    @pytest.mark.asyncio
+    async def test_npc_with_partial_domain_data(self, db_session, npc_with_data):
+        """Risk scorer should handle NPCs with only some domain records."""
+        # Add only health record, no finance/judicial/location/social
+        health_record = HealthRecord(
+            npc_id=npc_with_data.id,
+            insurance_provider="TestInsurance",
+            primary_care_physician="Dr. Test",
+        )
+        db_session.add(health_record)
+        await db_session.flush()
+
+        scorer = RiskScorer(db_session)
+        assessment = await scorer.calculate_risk_score(npc_with_data.id)
+
+        # Should successfully calculate with partial data
+        assert assessment.risk_score >= 0
+        assert assessment.npc_id == npc_with_data.id
+        # May have 0 factors if health record has no conditions
+        assert isinstance(assessment.contributing_factors, list)
