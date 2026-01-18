@@ -8,7 +8,7 @@ They can be suppressed via two methods:
 """
 import random
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -134,7 +134,7 @@ async def suppress_protest_legal(
 
     # Update protest status
     protest.status = ProtestStatus.DISPERSED
-    protest.resolved_at = datetime.utcnow()
+    protest.resolved_at = datetime.now(timezone.utc)
 
     # Some arrests during dispersal
     protest.arrests = random.randint(5, 15)
@@ -188,7 +188,7 @@ async def suppress_protest_violence(
     if success:
         # Agent successfully incites violence, blame falls on protesters
         protest.status = ProtestStatus.VIOLENT
-        protest.resolved_at = datetime.utcnow()
+        protest.resolved_at = datetime.now(timezone.utc)
 
         # Violence occurs
         protest.casualties = random.randint(3, 10)
@@ -213,7 +213,7 @@ async def suppress_protest_violence(
         # CATASTROPHE: Inciting agent is discovered
         protest.status = ProtestStatus.SUPPRESSED
         protest.inciting_agent_discovered = True
-        protest.resolved_at = datetime.utcnow()
+        protest.resolved_at = datetime.now(timezone.utc)
 
         # Violence still occurs but narrative is reversed
         protest.casualties = random.randint(5, 15)
@@ -282,7 +282,7 @@ async def advance_protest_status(
         # 30% chance per time period
         if random.random() < 0.30:
             protest.status = ProtestStatus.DISPERSED
-            protest.resolved_at = datetime.utcnow()
+            protest.resolved_at = datetime.now(timezone.utc)
 
     await db.commit()
     await db.refresh(protest)

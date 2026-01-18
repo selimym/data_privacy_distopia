@@ -264,7 +264,7 @@ class SystemAction(Base):
     outcome_6_months: Mapped[str | None] = mapped_column(Text, nullable=True)
     outcome_1_year: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     # Relationships
     operator: Mapped["Operator"] = relationship(back_populates="actions")
@@ -292,7 +292,7 @@ class PublicMetrics(Base):
     awareness_tier: Mapped[int] = mapped_column(Integer, default=0)
     anger_tier: Mapped[int] = mapped_column(Integer, default=0)
 
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     # Relationships
     operator: Mapped["Operator"] = relationship(back_populates="public_metrics")
@@ -322,7 +322,7 @@ class ReluctanceMetrics(Base):
     warnings_received: Mapped[int] = mapped_column(Integer, default=0)
     is_under_review: Mapped[bool] = mapped_column(default=False)
 
-    updated_at: Mapped[datetime] = mapped_column(default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
 
     # Relationships
     operator: Mapped["Operator"] = relationship(back_populates="reluctance_metrics")
@@ -346,7 +346,7 @@ class NewsChannel(Base):
     # Reporters (list of dicts with {name, specialty, fired, targeted})
     reporters: Mapped[list[dict]] = mapped_column(JSON, default=list)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     # Relationships
     articles: Mapped[list["NewsArticle"]] = relationship(
@@ -382,7 +382,7 @@ class NewsArticle(Base):
         ForeignKey("system_actions.id"), nullable=True
     )
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     # Relationships
     operator: Mapped["Operator"] = relationship()
@@ -414,7 +414,7 @@ class Protest(Base):
     casualties: Mapped[int] = mapped_column(Integer, default=0)
     arrests: Mapped[int] = mapped_column(Integer, default=0)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
     resolved_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     # Relationships
@@ -446,7 +446,7 @@ class OperatorData(Base):
     exposure_stage: Mapped[int] = mapped_column(Integer, default=0)  # 0=none, 1=hints, 2=partial, 3=full
     last_exposure_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     # Relationships
     operator: Mapped["Operator"] = relationship(back_populates="operator_data")
@@ -474,7 +474,7 @@ class Neighborhood(Base):
     population_estimate: Mapped[int] = mapped_column(Integer)
     primary_demographics: Mapped[list[str]] = mapped_column(JSON, default=list)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
 
 class BookPublicationEvent(Base):
@@ -501,7 +501,7 @@ class BookPublicationEvent(Base):
     published_at: Mapped[datetime | None] = mapped_column(nullable=True)
     awareness_impact: Mapped[int] = mapped_column(Integer, default=0)
 
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
 
     # Relationships
     operator: Mapped["Operator"] = relationship()

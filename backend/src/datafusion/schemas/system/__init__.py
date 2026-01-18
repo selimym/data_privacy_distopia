@@ -55,6 +55,9 @@ from .operator_data import (
 from .protests import GambleResultRead, ProtestRead, ProtestStatus
 from .session import SystemStartRequest, SystemStartResponse
 
+# Rebuild models with forward references after all imports
+ActionResultRead.model_rebuild()
+
 __all__ = [
     # Enums
     "AlertType",

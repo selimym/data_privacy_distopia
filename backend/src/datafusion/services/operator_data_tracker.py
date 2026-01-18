@@ -12,7 +12,7 @@ The goal is to make the player uncomfortable by showing them their own surveilla
 """
 import random
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -291,7 +291,7 @@ async def trigger_exposure_event(
     # Update exposure stage
     old_stage = operator_data.exposure_stage
     operator_data.exposure_stage = target_stage
-    operator_data.last_exposure_at = datetime.utcnow()
+    operator_data.last_exposure_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(operator_data)
 

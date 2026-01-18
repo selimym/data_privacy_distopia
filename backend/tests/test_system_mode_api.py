@@ -7,7 +7,7 @@ These are integration tests that test the full request/response cycle through Fa
 
 import pytest
 from uuid import uuid4
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from httpx import AsyncClient
 
 from datafusion.models.npc import NPC
@@ -241,7 +241,7 @@ async def pending_book(db_session, test_operator):
         summary="A tell-all exposé of government surveillance programs",
         controversy_type="whistleblower",
         was_banned=False,
-        published_at=datetime.utcnow(),
+        published_at=datetime.now(timezone.utc),
         awareness_impact=15,
     )
     db_session.add(book)

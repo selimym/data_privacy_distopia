@@ -10,7 +10,7 @@ Suppression actions (PRESS_BAN, PRESSURE_FIRING) have a Streisand effect risk.
 """
 import random
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -377,7 +377,7 @@ async def suppress_news_channel(
         # Suppression works
         if action_type == ActionType.PRESS_BAN:
             channel.is_banned = True
-            channel.banned_at = datetime.utcnow()
+            channel.banned_at = datetime.now(timezone.utc)
             awareness_change = 3  # Some awareness of ban
             anger_change = 5  # People are angry about censorship
         else:  # PRESSURE_FIRING
