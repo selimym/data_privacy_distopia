@@ -36,7 +36,11 @@ from datafusion.models.social import (
     PublicInference,
     SocialMediaRecord,
 )
-from datafusion.models.system_mode import Directive
+from datafusion.models.system_mode import Directive, Neighborhood, NewsChannel
+from datafusion.generators.system_seed_data import (
+    get_neighborhood_seed_data,
+    get_news_channel_seed_data,
+)
 
 
 async def reset_database():
@@ -378,6 +382,40 @@ async def seed_directives():
         print(f"Created {len(DIRECTIVES)} directives.")
 
 
+async def seed_neighborhoods():
+    """Seed neighborhoods for System Mode."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Neighborhood).limit(1))
+        if result.scalar_one_or_none():
+            print("Neighborhoods already exist, skipping.")
+            return
+
+        neighborhood_data = get_neighborhood_seed_data()
+        print(f"Seeding {len(neighborhood_data)} neighborhoods...")
+        for n_data in neighborhood_data:
+            neighborhood = Neighborhood(**n_data)
+            db.add(neighborhood)
+        await db.commit()
+        print(f"Created {len(neighborhood_data)} neighborhoods.")
+
+
+async def seed_news_channels():
+    """Seed news channels for System Mode."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(NewsChannel).limit(1))
+        if result.scalar_one_or_none():
+            print("News channels already exist, skipping.")
+            return
+
+        channel_data = get_news_channel_seed_data()
+        print(f"Seeding {len(channel_data)} news channels...")
+        for c_data in channel_data:
+            channel = NewsChannel(**c_data)
+            db.add(channel)
+        await db.commit()
+        print(f"Created {len(channel_data)} news channels.")
+
+
 async def seed_messages():
     """Generate message records for existing NPCs."""
     async with AsyncSessionLocal() as db:
@@ -445,8 +483,10 @@ async def main():
         if args.scenario:
             await seed_scenario_npcs(args.scenario)
 
-        # Always seed directives and messages for System Mode
+        # Always seed directives, neighborhoods, news channels, and messages for System Mode
         await seed_directives()
+        await seed_neighborhoods()
+        await seed_news_channels()
         await seed_messages()
 
         (

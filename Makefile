@@ -28,8 +28,8 @@ test:
 	cd backend && uv run pytest
 
 seed-db:
-	@echo "Seeding database..."
-	cd backend && uv run python -m scripts.seed_database --population 50 --scenario rogue_employee --seed 42
+	@echo "Seeding database (with schema reset)..."
+	cd backend && uv run python -m scripts.seed_database --reset --population 50 --scenario rogue_employee --seed 42
 
 clean:
 	@echo "Cleaning up..."
