@@ -14,10 +14,18 @@ from datafusion.schemas.outcomes import CitizenOutcomeSummary
 class EndingType(str, enum.Enum):
     """Types of endings based on player behavior."""
 
+    # Original endings
     COMPLIANT_OPERATOR = "compliant_operator"
     RELUCTANT_OPERATOR = "reluctant_operator"
     SUSPENDED_OPERATOR = "suspended_operator"
     RESISTANCE_PATH = "resistance_path"
+
+    # New endings (Phase 7-8 expansion)
+    FIRED_EARLY = "fired_early"  # Terminated for poor performance (high reluctance, early weeks)
+    IMPRISONED_DISSENT = "imprisoned_dissent"  # Imprisoned for severe dissent/reluctance
+    INTERNATIONAL_PARIAH = "international_pariah"  # Sanctioned due to high awareness
+    REVOLUTIONARY_CATALYST = "revolutionary_catalyst"  # Triggered revolution (high anger)
+    RELUCTANT_SURVIVOR = "reluctant_survivor"  # Low compliance but somehow survived
 
 
 class RealWorldExample(BaseModel):

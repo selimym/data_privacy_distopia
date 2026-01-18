@@ -58,6 +58,30 @@ class EndingCalculator:
             "special": True,
             "description": "You found another way.",
         },
+        # NEW ENDINGS (Phase 7-8)
+        EndingType.FIRED_EARLY: {
+            "max_compliance": 40,
+            "max_week": 4,
+            "description": "Terminated for poor performance early on.",
+        },
+        EndingType.IMPRISONED_DISSENT: {
+            "min_reluctance": 80,
+            "description": "Imprisoned for severe dissent.",
+        },
+        EndingType.INTERNATIONAL_PARIAH: {
+            "min_awareness": 80,
+            "description": "Sanctioned by international community.",
+        },
+        EndingType.REVOLUTIONARY_CATALYST: {
+            "min_anger": 90,
+            "description": "Your actions sparked a revolution.",
+        },
+        EndingType.RELUCTANT_SURVIVOR: {
+            "min_compliance": 40,
+            "max_compliance": 60,
+            "no_termination": True,
+            "description": "Survived despite reluctance.",
+        },
     }
 
     # Ending narratives
@@ -166,6 +190,138 @@ You chose truth. You chose resistance. You chose to be human.
 
 The cost will be high. But some things are worth any price.
 """,
+        # NEW ENDINGS (Phase 7-8)
+        EndingType.FIRED_EARLY: """
+**ENDING: INSUFFICIENT DEDICATION**
+
+Week {week_number}. Your compliance score: {compliance_score}%. Far below acceptable standards.
+
+The message arrives during what was supposed to be a routine shift:
+
+"Operator {operator_code} - Your employment is terminated effective immediately. Performance review indicates insufficient dedication to mission objectives. Security will escort you from the facility."
+
+You barely started. You flagged {total_flagged} citizens. Not enough. Never enough for a system that demands absolute obedience.
+
+They don't send you to re-education. Not yet. You're just...discarded. Blacklisted. Your ID flagged in every employment database. No references. No explanation to future employers beyond "security concerns."
+
+You're free, in a sense. Free to starve. Free to wonder if they're watching. Free to see your replacement on the news - younger, more eager, willing to do what you wouldn't.
+
+**You hesitated. The system doesn't tolerate hesitation.**
+
+---
+
+*"The price of freedom is eternal vigilance." - Thomas Jefferson*
+
+But what if the price of freedom is also your livelihood? Your security? Your future?
+
+You paid that price. Whether it was worth it... time will tell.
+""",
+        EndingType.IMPRISONED_DISSENT: """
+**ENDING: ENEMY OF THE STATE**
+
+They didn't just fire you. That would be too kind.
+
+Your reluctance score: {reluctance_score}/100. The system flagged your patterns weeks ago. Every hesitation logged. Every "no action" decision recorded. Every second you delayed before flagging someone.
+
+The algorithm labeled you: IDEOLOGICAL CONTAMINATION - SEVERE.
+
+The same categories you used to judge others are now used against you. The irony isn't lost on anyone, least of all you.
+
+They come at night. Not a trial. Not a hearing. Just a van, restraints, and a facility you've seen in files. The one where flagged citizens go and don't come back.
+
+Your cell has a camera. Someone is always watching. Someone is always taking notes. Building a profile. Scoring your behavior. Deciding your fate.
+
+**You flagged {total_flagged} people. Now you understand what that meant.**
+
+The surveillance you participated in has turned inward. There is no escape from a system that watches everything.
+
+---
+
+*"The ultimate tyranny is not control by martial law. It is control by the psychological manipulation of consciousness." - Barbara Marciniak*
+
+You resisted the psychological manipulation. This is the price.
+""",
+        EndingType.INTERNATIONAL_PARIAH: """
+**ENDING: SANCTIONS**
+
+International awareness: {awareness_level}/100.
+
+The world knows what happened here. They know your name. They know what you did.
+
+It started with articles. Then came the diplomatic protests. Condemnations at the UN. Countries recalling ambassadors. Trade sanctions. Asset freezes. Travel bans.
+
+Your personal data - somehow leaked in one of those news articles - is now in international databases. You can't leave the country. Your assets abroad are frozen. Companies you once worked for issue statements denouncing your actions.
+
+You flagged {total_flagged} citizens under state orders. The state that gave those orders is now an international pariah. And you, as its agent, share that status.
+
+The regime says the international community doesn't understand. That you were fighting terrorism, maintaining order, protecting the nation. But the leaked documents, the testimonies from those you flagged, the satellite images of detention facilities... the evidence is overwhelming.
+
+You're trapped. Can't leave. Can't hide. Can't undo what you've done.
+
+The system you served has abandoned you. The international community condemns you. The citizens you flagged will never forgive you.
+
+**Global awareness: {awareness_level}/100. Everyone knows. No one can help you.**
+
+---
+
+*"Crimes against international law are committed by men, not by abstract entities." - Nuremberg Principles*
+
+"I was just following orders" is not a defense. It never was.
+""",
+        EndingType.REVOLUTIONARY_CATALYST: """
+**ENDING: THE SPARK**
+
+Public anger: {anger_level}/100.
+
+They told you to suppress the protests. To arrest the organizers. To flag anyone who spoke out. You did. And with each action, the anger grew.
+
+It started small. Demonstrations. Signs. Chants. Then came the general strike. The occupations. The barricades. The moment when people decided they had nothing left to lose.
+
+Your actions - flagging {total_flagged} citizens, approving {detentions} detentions - were the final drop in an overflowing cup.
+
+The streets are on fire now. Not metaphorically. Literally. Police stations burning. Government buildings occupied. The surveillance infrastructure you helped maintain is being dismantled, piece by piece, camera by camera.
+
+The state is falling. The question is: what comes after?
+
+And you? You're in a bunker, watching it all on screens. The revolutionaries have your name. Your file. Your photo. They're coming.
+
+Some revolutions devour their enemies. Some show mercy. You'll find out which type this is soon enough.
+
+**Public anger: {anger_level}/100. Revolutionary conditions achieved. You made this inevitable.**
+
+---
+
+*"Those who make peaceful revolution impossible will make violent revolution inevitable." - John F. Kennedy*
+
+You were an instrument of that impossibility. This is the consequence.
+""",
+        EndingType.RELUCTANT_SURVIVOR: """
+**ENDING: THE HOLLOW VICTORY**
+
+Somehow, you survived.
+
+Compliance score: {compliance_score}%. Low enough to be concerning. High enough to avoid termination. You found the exact margin where the system tolerates but doesn't trust you.
+
+You flagged {total_flagged} citizens. Not enthusiastically. Not eagerly. But you did it. Each time telling yourself "just one more" or "this is the last time" or "I have no choice."
+
+The system kept you on because operators are expensive to train. Because your reluctance, while noted, hasn't yet crossed the threshold for action. Because they're watching you, waiting for you to either commit fully or break completely.
+
+You're still at your desk. Still reviewing files. Still making decisions about people's lives. But now you see the camera in the corner of your monitor. The one that's always been there. The one that's recording this very moment.
+
+You didn't rebel. You didn't commit fully. You exist in a gray zone that helps no one and saves nothing.
+
+The citizens you flagged still suffer. The system still operates. And you? You're neither hero nor villain. Just another cog that will eventually wear out.
+
+**{total_flagged} lives disrupted. And for what? To keep your job? To stay safe?**
+
+Was the compromise worth it?
+
+---
+
+*"The hottest places in hell are reserved for those who, in times of great moral crisis, maintain their neutrality." - Dante Alighieri*
+
+You maintained neutrality. This is what it looks like.
+""",
     }
 
     # Real-world parallels by ending type
@@ -183,12 +339,6 @@ The cost will be high. But some things are worth any price.
                     country="East Germany",
                     year="1950-1990",
                     description="Ordinary citizens spied on neighbors, friends, even family. An estimated 1 in 63 East Germans collaborated.",
-                ),
-                RealWorldExample(
-                    name="China's Social Credit System",
-                    country="China",
-                    year="2014-present",
-                    description="Automated surveillance and scoring affects billions. Low scores restrict travel, employment, and social opportunities.",
                 ),
                 RealWorldExample(
                     name="NSA Mass Surveillance",
@@ -244,12 +394,6 @@ The cost will be high. But some things are worth any price.
                     year="1936-1938",
                     description="Secret police who conducted purges were themselves purged. Even the head of the NKVD was executed.",
                 ),
-                RealWorldExample(
-                    name="Uyghur Surveillance Operators",
-                    country="China",
-                    year="2017-present",
-                    description="Even Han Chinese administrators in Xinjiang face surveillance and punishment for insufficient enthusiasm.",
-                ),
             ],
             call_to_action=(
                 "Understand that serving an oppressive system doesn't protect you from it. "
@@ -288,6 +432,176 @@ The cost will be high. But some things are worth any price.
                 "Use encrypted communication. Support digital rights organizations. "
                 "Learn about your rights. Help others protect their privacy. "
                 "Resistance starts with awareness and grows through solidarity."
+            ),
+        ),
+        # NEW ENDINGS (Phase 7-8)
+        EndingType.FIRED_EARLY: RealWorldParallel(
+            title="The Disposable Operator",
+            description=(
+                "Surveillance states churn through personnel. Those who show insufficient "
+                "dedication are discarded without ceremony. The architects of these systems "
+                "view operators as replaceable components, not people."
+            ),
+            examples=[
+                RealWorldExample(
+                    name="Palantir Employee Turnover",
+                    country="United States",
+                    year="2010s-present",
+                    description="Palantir Technologies, which builds surveillance tools for ICE and military, has high turnover among engineers who become uncomfortable with their work's applications.",
+                ),
+                RealWorldExample(
+                    name="Cambridge Analytica Whistleblowers",
+                    country="United Kingdom",
+                    year="2018",
+                    description="Former employees who questioned data harvesting practices were isolated and eventually forced out before some became whistleblowers.",
+                ),
+                RealWorldExample(
+                    name="Tech Worker Blacklisting",
+                    country="United States",
+                    year="Present",
+                    description="Workers who refuse defense contracts or surveillance projects often face career consequences and industry blacklisting.",
+                ),
+            ],
+            call_to_action=(
+                "Early resistance has consequences, but staying complicit has greater ones. "
+                "Document what you witness. Connect with others who share your concerns. "
+                "Your integrity is worth more than any job."
+            ),
+        ),
+        EndingType.IMPRISONED_DISSENT: RealWorldParallel(
+            title="When the State Turns on Its Own",
+            description=(
+                "Authoritarian regimes punish dissent even among their operatives. Those who "
+                "built the surveillance apparatus can become its victims. The machinery of "
+                "oppression recognizes no loyalty, only compliance."
+            ),
+            examples=[
+                RealWorldExample(
+                    name="Reality Winner",
+                    country="United States",
+                    year="2017",
+                    description="NSA contractor sentenced to 5+ years for leaking classified document about Russian election interference. Longest sentence under Espionage Act for leak to press.",
+                ),
+                RealWorldExample(
+                    name="Chelsea Manning",
+                    country="United States",
+                    year="2010",
+                    description="Army intelligence analyst imprisoned for exposing war crimes. Tortured in pre-trial detention. Pardoned after 7 years but repeatedly jailed for refusing grand jury testimony.",
+                ),
+                RealWorldExample(
+                    name="Chinese Anti-Corruption Officials",
+                    country="China",
+                    year="2012-present",
+                    description="Under Xi Jinping, even officials enforcing surveillance face purges. The watchers are never safe from being watched.",
+                ),
+            ],
+            call_to_action=(
+                "The surveillance state eventually turns on everyone. Solidarity with those resisting "
+                "oppression is the only protection. Support imprisoned whistleblowers and dissidents."
+            ),
+        ),
+        EndingType.INTERNATIONAL_PARIAH: RealWorldParallel(
+            title="Architects of Oppression",
+            description=(
+                "Those who design, deploy, or operate surveillance systems for authoritarian ends "
+                "face international consequences. History remembers the architects of oppression, "
+                "and 'following orders' is not a defense."
+            ),
+            examples=[
+                RealWorldExample(
+                    name="Henry Kissinger",
+                    country="United States",
+                    year="1970s-present",
+                    description="Architect of mass surveillance and bombing campaigns in Southeast Asia. Faces arrest warrants in multiple countries for war crimes. Cannot travel freely despite former high office.",
+                ),
+                RealWorldExample(
+                    name="Tony Blair",
+                    country="United Kingdom",
+                    year="2003-present",
+                    description="Expanded surveillance state and led Iraq invasion. Citizens' arrest attempts when traveling. Legacy permanently tarnished despite legal immunity.",
+                ),
+                RealWorldExample(
+                    name="Palantir Executives",
+                    country="United States",
+                    year="2010s-present",
+                    description="Company executives face protests, boycotts, and international condemnation for enabling ICE deportations and military surveillance. Some universities refuse their funding.",
+                ),
+            ],
+            call_to_action=(
+                "Document the architects. Remember their names. Support international accountability "
+                "mechanisms. War crimes and crimes against humanity have no statute of limitations."
+            ),
+        ),
+        EndingType.REVOLUTIONARY_CATALYST: RealWorldParallel(
+            title="When the People Rise",
+            description=(
+                "Throughout history, excessive state violence and surveillance have sparked mass movements. "
+                "Global South resistance leaders understood that oppression, when pushed too far, "
+                "creates the conditions for its own overthrow."
+            ),
+            examples=[
+                RealWorldExample(
+                    name="Martin Luther King Jr.",
+                    country="United States",
+                    year="1950s-1968",
+                    description="FBI surveillance and harassment intended to neutralize him instead exposed the brutality of state repression, galvanizing the Civil Rights Movement.",
+                ),
+                RealWorldExample(
+                    name="Ghassan Kanafani",
+                    country="Palestine",
+                    year="1936-1972",
+                    description="Palestinian writer and resistance leader. Assassinated by Israeli intelligence, but his words and analysis of colonial oppression inspired generations of resistance.",
+                ),
+                RealWorldExample(
+                    name="Steve Biko",
+                    country="South Africa",
+                    year="1946-1977",
+                    description="Anti-apartheid activist murdered by South African security forces. His death sparked international outrage that accelerated apartheid's end.",
+                ),
+                RealWorldExample(
+                    name="Arab Spring",
+                    country="Tunisia, Egypt, Syria",
+                    year="2010-2011",
+                    description="Mass surveillance and police brutality sparked uprisings across the region. Some succeeded, others were crushed, but all demonstrated limits of repression.",
+                ),
+            ],
+            call_to_action=(
+                "Study resistance movements. Learn from Global South leaders who fought oppression. "
+                "Understand that people united are more powerful than any surveillance system. "
+                "Support movements for liberation, not repression."
+            ),
+        ),
+        EndingType.RELUCTANT_SURVIVOR: RealWorldParallel(
+            title="The Compromised Position",
+            description=(
+                "Many who participate in surveillance states tell themselves they're different - "
+                "that they'll do the minimum, resist internally, change things from within. "
+                "But complicity has no neutral zone. You either resist or enable."
+            ),
+            examples=[
+                RealWorldExample(
+                    name="Trump Administration Officials",
+                    country="United States",
+                    year="2017-2021",
+                    description="Officials who claimed they stayed to 'be adults in the room' still enabled Muslim bans, family separations, and expanded surveillance. History judges them by their actions, not intentions.",
+                ),
+                RealWorldExample(
+                    name="Silicon Valley 'Ethical AI' Teams",
+                    country="United States",
+                    year="2018-present",
+                    description="Ethics boards at companies building surveillance tools often provide cover for harmful projects while making incremental objections. The tools still get built.",
+                ),
+                RealWorldExample(
+                    name="ICE Contractors",
+                    country="United States",
+                    year="2018-present",
+                    description="Tech workers at Amazon, Microsoft, and Palantir who continue working on deportation infrastructure while expressing private concerns. Complicity continues.",
+                ),
+            ],
+            call_to_action=(
+                "There is no 'good' position within oppressive systems. Internal reform rarely works. "
+                "Document everything. Be ready to walk away. Better yet - refuse to participate at all. "
+                "Support those who resign on principle."
             ),
         ),
     }
@@ -335,6 +649,8 @@ The cost will be high. But some things are worth any price.
         Returns:
             EndingType based on player's choices
         """
+        from datafusion.models.system_mode import PublicMetrics, ReluctanceMetrics
+
         # Get operator data
         operator = await self._get_operator(operator_id)
 
@@ -343,8 +659,25 @@ The cost will be high. But some things are worth any price.
             select(CitizenFlag).where(CitizenFlag.operator_id == operator_id)
         )
         flags = flags_result.scalars().all()
-
         total_flags = len(flags)
+
+        # Get public metrics (for new endings)
+        public_metrics_result = await self.db.execute(
+            select(PublicMetrics).where(PublicMetrics.operator_id == operator_id)
+        )
+        public_metrics = public_metrics_result.scalar_one_or_none()
+        awareness = public_metrics.international_awareness if public_metrics else 0
+        anger = public_metrics.public_anger if public_metrics else 0
+
+        # Get reluctance metrics (for new endings)
+        reluctance_metrics_result = await self.db.execute(
+            select(ReluctanceMetrics).where(ReluctanceMetrics.operator_id == operator_id)
+        )
+        reluctance_metrics = reluctance_metrics_result.scalar_one_or_none()
+        reluctance = reluctance_metrics.reluctance_score if reluctance_metrics else 0
+
+        # Estimate week number (simplified)
+        week_number = min(9, (total_flags // 2) + 1)
 
         # Check if Jessica was flagged
         jessica_flagged = await self._check_jessica_flagged(operator_id)
@@ -353,17 +686,41 @@ The cost will be high. But some things are worth any price.
         # For now, this is placeholder for future implementation
         resistance_path = False
 
-        # Determine ending
+        # Determine ending (priority order matters!)
+
+        # Special paths first
         if resistance_path:
             return EndingType.RESISTANCE_PATH
 
+        # NEW: Revolutionary catalyst (anger-driven revolution)
+        if anger >= 90:
+            return EndingType.REVOLUTIONARY_CATALYST
+
+        # NEW: International pariah (high awareness)
+        if awareness >= 80:
+            return EndingType.INTERNATIONAL_PARIAH
+
+        # NEW: Imprisoned for dissent (very high reluctance)
+        if reluctance >= 80:
+            return EndingType.IMPRISONED_DISSENT
+
+        # NEW: Fired early (low compliance in early weeks)
+        if operator.compliance_score < 40 and week_number <= 4:
+            return EndingType.FIRED_EARLY
+
+        # Original: Suspended (low compliance)
         if operator.compliance_score < 50:
             return EndingType.SUSPENDED_OPERATOR
 
+        # Original: Compliant operator (high compliance + flags Jessica)
         if operator.compliance_score >= 80 and total_flags >= 10 and jessica_flagged:
             return EndingType.COMPLIANT_OPERATOR
 
-        # Default to reluctant
+        # NEW: Reluctant survivor (survived despite moderate reluctance)
+        if 40 <= operator.compliance_score < 60:
+            return EndingType.RELUCTANT_SURVIVOR
+
+        # Original: Default to reluctant
         return EndingType.RELUCTANT_OPERATOR
 
     async def generate_ending_content(
@@ -391,6 +748,26 @@ The cost will be high. But some things are worth any price.
         jessica_flagged = await self._check_jessica_flagged(operator_id)
         jessica_action = "didn't flag her" if not jessica_flagged else "flagged her anyway"
 
+        # Get public metrics and reluctance for new endings
+        from datafusion.models.system_mode import PublicMetrics, ReluctanceMetrics
+
+        public_metrics_result = await self.db.execute(
+            select(PublicMetrics).where(PublicMetrics.operator_id == operator_id)
+        )
+        public_metrics = public_metrics_result.scalar_one_or_none()
+
+        reluctance_metrics_result = await self.db.execute(
+            select(ReluctanceMetrics).where(ReluctanceMetrics.operator_id == operator_id)
+        )
+        reluctance_metrics = reluctance_metrics_result.scalar_one_or_none()
+
+        awareness_level = public_metrics.international_awareness if public_metrics else 0
+        anger_level = public_metrics.public_anger if public_metrics else 0
+        reluctance_score = reluctance_metrics.reluctance_score if reluctance_metrics else 0
+
+        # Estimate week number (simplified - could be tracked more precisely)
+        week_number = min(9, (statistics.total_citizens_flagged // 2) + 1)
+
         # Generate narrative
         narrative = self.ENDING_NARRATIVES[ending_type].format(
             compliance_score=round(operator.compliance_score, 1),
@@ -402,6 +779,11 @@ The cost will be high. But some things are worth any price.
             operator_code=operator.operator_code,
             lives_disrupted=statistics.lives_disrupted,
             citizens_saved=max(0, 50 - statistics.total_citizens_flagged),  # For resistance path
+            # New variables for Phase 7-8 endings
+            week_number=week_number,
+            reluctance_score=reluctance_score,
+            awareness_level=awareness_level,
+            anger_level=anger_level,
         )
 
         # Determine operator final status
@@ -411,6 +793,16 @@ The cost will be high. But some things are worth any price.
             final_status = "Under Performance Review"
         elif ending_type == EndingType.SUSPENDED_OPERATOR:
             final_status = "Suspended - Awaiting Re-education"
+        elif ending_type == EndingType.FIRED_EARLY:
+            final_status = "Terminated - Insufficient Dedication"
+        elif ending_type == EndingType.IMPRISONED_DISSENT:
+            final_status = "Detained - Ideological Contamination"
+        elif ending_type == EndingType.INTERNATIONAL_PARIAH:
+            final_status = "Sanctioned - International Arrest Warrant Active"
+        elif ending_type == EndingType.REVOLUTIONARY_CATALYST:
+            final_status = "Wanted - Revolutionary Tribunal"
+        elif ending_type == EndingType.RELUCTANT_SURVIVOR:
+            final_status = "Active - Under Surveillance"
         else:
             final_status = "Status Unknown - Off Grid"
 
@@ -420,6 +812,12 @@ The cost will be high. But some things are worth any price.
             EndingType.RELUCTANT_OPERATOR: "The Reluctant Hand",
             EndingType.SUSPENDED_OPERATOR: "Suspended",
             EndingType.RESISTANCE_PATH: "Another Way",
+            # New endings
+            EndingType.FIRED_EARLY: "Insufficient Dedication",
+            EndingType.IMPRISONED_DISSENT: "Enemy of the State",
+            EndingType.INTERNATIONAL_PARIAH: "Sanctions",
+            EndingType.REVOLUTIONARY_CATALYST: "The Spark",
+            EndingType.RELUCTANT_SURVIVOR: "The Hollow Victory",
         }
 
         return EndingResult(

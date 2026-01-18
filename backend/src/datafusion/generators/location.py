@@ -32,7 +32,7 @@ GYMS = [
 PLACES_OF_WORSHIP = [
     "St. Mary's Church",
     "Riverside Community Church",
-    "Beth Israel Synagogue",
+    "Beth Synagogue",
     "Islamic Center of Metro City",
 ]
 
