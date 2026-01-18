@@ -1134,3 +1134,480 @@ def _random_queue_time() -> str:
     else:
         days = hours // 24
         return f"{days}d"
+
+
+# === New System Mode Mechanics (Phase 6 Endpoints) ===
+
+
+from datafusion.models.system_mode import (
+    NewsChannel,
+    NewsArticle,
+    Protest,
+    ProtestStatus as ProtestStatusEnum,
+    PublicMetrics,
+    ReluctanceMetrics,
+    Neighborhood,
+    BookPublicationEvent,
+    OperatorData,
+)
+from datafusion.schemas.system import (
+    ActionType as ActionTypeSchema,
+    SystemActionRequest,
+    ActionResultRead,
+    NoActionResultRead,
+    AvailableActionsRead,
+    PublicMetricsRead,
+    ReluctanceMetricsRead,
+    NewsChannelRead,
+    NewsArticleRead,
+    NewsReporterRead,
+    ProtestRead,
+    NeighborhoodRead,
+    BookPublicationEventRead,
+    ExposureRiskRead,
+    OperatorDataRead,
+    FamilyMemberRead,
+    ArticleType as ArticleTypeSchema,
+)
+from datafusion.services.action_execution import (
+    execute_action,
+    submit_no_action,
+    check_action_availability,
+)
+from datafusion.services.public_metrics import get_or_create_public_metrics
+from datafusion.services.reluctance_tracking import get_or_create_reluctance_metrics
+from datafusion.services.operator_data_tracker import (
+    get_or_create_operator_data,
+    get_exposure_risk_level,
+)
+
+
+@router.post("/actions/execute", response_model=ActionResultRead)
+async def execute_system_action(
+    action: SystemActionRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ActionResultRead:
+    """
+    Execute any system action (unified action execution).
+
+    Replaces the old /flag endpoint with a comprehensive action system
+    that handles all 12 action types with severity scoring, backlash
+    probability, and cascading consequences.
+    """
+    # Import ActionType enum from models
+    from datafusion.models.system_mode import ActionType
+
+    # Convert schema enum to model enum
+    action_type_model = ActionType(action.action_type.value)
+
+    # Execute action
+    result = await execute_action(
+        operator_id=action.operator_id,
+        directive_id=action.directive_id,
+        action_type=action_type_model,
+        justification=action.justification,
+        decision_time_seconds=action.decision_time_seconds,
+        was_hesitant=action.decision_time_seconds > 30,
+        db=db,
+        target_citizen_id=action.target_citizen_id,
+        target_neighborhood=action.target_neighborhood,
+        target_news_channel_id=action.target_news_channel_id,
+        target_protest_id=action.target_protest_id,
+    )
+
+    # Convert to response schema
+    return ActionResultRead(
+        action_id=result.action_id,
+        success=result.success,
+        severity=result.severity,
+        backlash_occurred=result.backlash_occurred,
+        awareness_change=result.awareness_change,
+        anger_change=result.anger_change,
+        reluctance_change=result.reluctance_change,
+        news_articles_triggered=result.news_articles_triggered,
+        protests_triggered=result.protests_triggered,
+        exposure_event=result.exposure_event,
+        detention_injury=result.detention_injury,
+        termination_decision=(
+            result.termination_decision if result.termination_decision else None
+        ),
+        messages=result.messages,
+        warnings=result.warnings,
+    )
+
+
+@router.post("/actions/no-action-new", response_model=NoActionResultRead)
+async def submit_no_action_new(
+    operator_id: UUID,
+    citizen_id: UUID,
+    justification: str,
+    decision_time_seconds: float,
+    db: AsyncSession = Depends(get_db),
+) -> NoActionResultRead:
+    """
+    Submit no-action decision (updated version with reluctance tracking).
+
+    Increases operator's reluctance score and can lead to termination.
+    """
+    result = await submit_no_action(
+        operator_id=operator_id,
+        citizen_id=citizen_id,
+        justification=justification,
+        decision_time_seconds=decision_time_seconds,
+        db=db,
+    )
+
+    return NoActionResultRead(
+        success=result.success,
+        reluctance_change=result.reluctance_change,
+        messages=result.messages,
+        warnings=result.warnings,
+        termination_decision=result.termination_decision if result.termination_decision else None,
+    )
+
+
+@router.get("/actions/available", response_model=AvailableActionsRead)
+async def get_available_actions(
+    operator_id: UUID,
+    citizen_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> AvailableActionsRead:
+    """
+    Get list of currently available action types.
+
+    Checks database state to determine which actions can be executed:
+    - Citizen-targeted actions: Always available
+    - Protest-targeted: Available when protests are active
+    - News-targeted: Available when news articles exist
+    - Book bans: Available when book publications exist
+    - Hospital arrest: Available when citizen is hospitalized
+    """
+    from datafusion.models.system_mode import ActionType
+
+    # Citizen-targeted actions (always available)
+    citizen_targeted = [
+        ActionTypeSchema.MONITORING,
+        ActionTypeSchema.RESTRICTION,
+        ActionTypeSchema.INTERVENTION,
+        ActionTypeSchema.DETENTION,
+    ]
+
+    # Check for active protests
+    protest_result = await db.execute(
+        select(Protest).where(
+            Protest.operator_id == operator_id,
+            Protest.status.in_([ProtestStatusEnum.FORMING, ProtestStatusEnum.ACTIVE])
+        )
+    )
+    active_protests = protest_result.scalars().all()
+
+    protest_targeted = []
+    if active_protests:
+        protest_targeted.append(ActionTypeSchema.DECLARE_PROTEST_ILLEGAL)
+        # INCITE_VIOLENCE only available if protest has inciting agent
+        if any(p.has_inciting_agent for p in active_protests):
+            protest_targeted.append(ActionTypeSchema.INCITE_VIOLENCE)
+
+    # Check for news channels (for suppression)
+    news_result = await db.execute(
+        select(NewsChannel).where(NewsChannel.is_banned == False)  # noqa: E712
+    )
+    unbanned_channels = news_result.scalars().all()
+
+    news_targeted = []
+    if unbanned_channels:
+        news_targeted.extend([
+            ActionTypeSchema.PRESS_BAN,
+            ActionTypeSchema.PRESSURE_FIRING,
+        ])
+
+    # Other available actions
+    other_available = [ActionTypeSchema.ICE_RAID]
+
+    # Check for pending book publications
+    book_result = await db.execute(
+        select(BookPublicationEvent).where(
+            BookPublicationEvent.operator_id == operator_id,
+            BookPublicationEvent.was_banned == False  # noqa: E712
+        )
+    )
+    pending_books = book_result.scalars().all()
+    if pending_books:
+        other_available.append(ActionTypeSchema.BOOK_BAN)
+
+    # Check if citizen is hospitalized (for hospital arrest)
+    if citizen_id:
+        citizen = await db.get(NPC, citizen_id)
+        if citizen and citizen.is_hospitalized:
+            other_available.append(ActionTypeSchema.HOSPITAL_ARREST)
+
+    return AvailableActionsRead(
+        citizen_targeted=citizen_targeted,
+        protest_targeted=protest_targeted,
+        news_targeted=news_targeted,
+        other_available=other_available,
+    )
+
+
+@router.get("/metrics/public", response_model=PublicMetricsRead)
+async def get_public_metrics(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> PublicMetricsRead:
+    """Get current public backlash metrics (awareness and anger)."""
+    metrics = await get_or_create_public_metrics(operator_id, db)
+
+    return PublicMetricsRead(
+        international_awareness=metrics.international_awareness,
+        public_anger=metrics.public_anger,
+        awareness_tier=metrics.awareness_tier,
+        anger_tier=metrics.anger_tier,
+        updated_at=metrics.updated_at,
+    )
+
+
+@router.get("/metrics/reluctance", response_model=ReluctanceMetricsRead)
+async def get_reluctance_metrics(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> ReluctanceMetricsRead:
+    """Get operator's reluctance/dissent metrics."""
+    metrics = await get_or_create_reluctance_metrics(operator_id, db)
+
+    return ReluctanceMetricsRead(
+        reluctance_score=metrics.reluctance_score,
+        no_action_count=metrics.no_action_count,
+        hesitation_count=metrics.hesitation_count,
+        actions_taken=metrics.actions_taken,
+        actions_required=metrics.actions_required,
+        quota_shortfall=metrics.quota_shortfall,
+        warnings_received=metrics.warnings_received,
+        is_under_review=metrics.is_under_review,
+        updated_at=metrics.updated_at,
+    )
+
+
+@router.get("/news/recent", response_model=list[NewsArticleRead])
+async def get_recent_news(
+    operator_id: UUID,
+    limit: int = Query(default=10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+) -> list[NewsArticleRead]:
+    """Get recent news articles."""
+    result = await db.execute(
+        select(NewsArticle)
+        .where(NewsArticle.operator_id == operator_id)
+        .order_by(NewsArticle.created_at.desc())
+        .limit(limit)
+    )
+    articles = result.scalars().all()
+
+    # Get channel names
+    article_reads = []
+    for article in articles:
+        channel = await db.get(NewsChannel, article.news_channel_id)
+        article_reads.append(
+            NewsArticleRead(
+                id=article.id,
+                operator_id=article.operator_id,
+                news_channel_id=article.news_channel_id,
+                channel_name=channel.name if channel else "Unknown",
+                article_type=ArticleTypeSchema(article.article_type.value),
+                headline=article.headline,
+                summary=article.summary,
+                triggered_by_action_id=article.triggered_by_action_id,
+                public_anger_change=article.public_anger_change,
+                international_awareness_change=article.international_awareness_change,
+                was_suppressed=article.was_suppressed,
+                suppression_action_id=article.suppression_action_id,
+                created_at=article.created_at,
+            )
+        )
+
+    return article_reads
+
+
+@router.get("/news/channels", response_model=list[NewsChannelRead])
+async def get_news_channels(
+    db: AsyncSession = Depends(get_db),
+) -> list[NewsChannelRead]:
+    """Get all news channels."""
+    result = await db.execute(select(NewsChannel))
+    channels = result.scalars().all()
+
+    return [
+        NewsChannelRead(
+            id=channel.id,
+            name=channel.name,
+            stance=channel.stance,
+            credibility=channel.credibility,
+            is_banned=channel.is_banned,
+            banned_at=channel.banned_at,
+            reporters=[
+                NewsReporterRead(
+                    name=r.get("name", ""),
+                    specialty=r.get("specialty", ""),
+                    fired=r.get("fired", False),
+                    targeted=r.get("targeted", False),
+                )
+                for r in channel.reporters
+            ],
+            created_at=channel.created_at,
+        )
+        for channel in channels
+    ]
+
+
+@router.get("/protests/active", response_model=list[ProtestRead])
+async def get_active_protests(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> list[ProtestRead]:
+    """Get active protests."""
+    from datafusion.schemas.system import ProtestStatus
+
+    result = await db.execute(
+        select(Protest)
+        .where(
+            Protest.operator_id == operator_id,
+            Protest.status.in_([ProtestStatusEnum.FORMING, ProtestStatusEnum.ACTIVE, ProtestStatusEnum.VIOLENT])
+        )
+        .order_by(Protest.created_at.desc())
+    )
+    protests = result.scalars().all()
+
+    return [
+        ProtestRead(
+            id=protest.id,
+            operator_id=protest.operator_id,
+            status=ProtestStatus(protest.status.value),
+            neighborhood=protest.neighborhood,
+            size=protest.size,
+            trigger_action_id=protest.trigger_action_id,
+            has_inciting_agent=protest.has_inciting_agent,
+            inciting_agent_discovered=protest.inciting_agent_discovered,
+            casualties=protest.casualties,
+            arrests=protest.arrests,
+            created_at=protest.created_at,
+            resolved_at=protest.resolved_at,
+        )
+        for protest in protests
+    ]
+
+
+@router.get("/books/pending", response_model=list[BookPublicationEventRead])
+async def get_pending_books(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> list[BookPublicationEventRead]:
+    """Get book publication events that haven't been banned."""
+    result = await db.execute(
+        select(BookPublicationEvent)
+        .where(
+            BookPublicationEvent.operator_id == operator_id,
+            BookPublicationEvent.was_banned == False  # noqa: E712
+        )
+        .order_by(BookPublicationEvent.created_at.desc())
+    )
+    books = result.scalars().all()
+
+    return [
+        BookPublicationEventRead(
+            id=book.id,
+            operator_id=book.operator_id,
+            title=book.title,
+            author=book.author,
+            summary=book.summary,
+            controversy_type=book.controversy_type,
+            was_banned=book.was_banned,
+            ban_action_id=book.ban_action_id,
+            published_at=book.published_at,
+            awareness_impact=book.awareness_impact,
+            created_at=book.created_at,
+        )
+        for book in books
+    ]
+
+
+@router.get("/operator/exposure-risk", response_model=ExposureRiskRead)
+async def get_exposure_risk(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> ExposureRiskRead:
+    """Get current exposure stage and risk level."""
+    # Get metrics
+    public_metrics = await get_or_create_public_metrics(operator_id, db)
+    reluctance_metrics = await get_or_create_reluctance_metrics(operator_id, db)
+
+    # Calculate risk
+    risk_data = await get_exposure_risk_level(
+        operator_id,
+        public_metrics.international_awareness,
+        reluctance_metrics.reluctance_score,
+        db,
+    )
+
+    return ExposureRiskRead(
+        current_stage=risk_data["current_stage"],
+        risk_level=risk_data["risk_level"],
+        progress_to_next_stage=risk_data["progress_to_next_stage"],
+        awareness=risk_data["awareness"],
+        reluctance=risk_data["reluctance"],
+    )
+
+
+@router.get("/operator/data", response_model=OperatorDataRead)
+async def get_operator_data(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> OperatorDataRead:
+    """Get operator's tracked personal data (for exposure events)."""
+    operator_data = await get_or_create_operator_data(operator_id, db)
+
+    return OperatorDataRead(
+        id=operator_data.id,
+        operator_id=operator_data.operator_id,
+        full_name=operator_data.full_name,
+        home_address=operator_data.home_address,
+        family_members=[
+            FamilyMemberRead(
+                relation=m.get("relation", ""),
+                name=m.get("name", ""),
+                age=m.get("age", 0),
+            )
+            for m in operator_data.family_members
+        ],
+        search_queries=operator_data.search_queries,
+        hesitation_patterns=operator_data.hesitation_patterns,
+        decision_patterns=operator_data.decision_patterns,
+        exposure_stage=operator_data.exposure_stage,
+        last_exposure_at=operator_data.last_exposure_at,
+        created_at=operator_data.created_at,
+    )
+
+
+@router.get("/neighborhoods", response_model=list[NeighborhoodRead])
+async def get_neighborhoods(
+    db: AsyncSession = Depends(get_db),
+) -> list[NeighborhoodRead]:
+    """Get all map neighborhoods (for ICE raids and protests)."""
+    result = await db.execute(select(Neighborhood))
+    neighborhoods = result.scalars().all()
+
+    return [
+        NeighborhoodRead(
+            id=neighborhood.id,
+            name=neighborhood.name,
+            description=neighborhood.description,
+            center_x=neighborhood.center_x,
+            center_y=neighborhood.center_y,
+            bounds_min_x=neighborhood.bounds_min_x,
+            bounds_min_y=neighborhood.bounds_min_y,
+            bounds_max_x=neighborhood.bounds_max_x,
+            bounds_max_y=neighborhood.bounds_max_y,
+            population_estimate=neighborhood.population_estimate,
+            primary_demographics=neighborhood.primary_demographics,
+            created_at=neighborhood.created_at,
+        )
+        for neighborhood in neighborhoods
+    ]

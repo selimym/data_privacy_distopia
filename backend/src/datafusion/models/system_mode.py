@@ -271,7 +271,7 @@ class SystemAction(Base):
     directive: Mapped["Directive | None"] = relationship()
     citizen: Mapped["NPC | None"] = relationship()  # type: ignore
     news_channel: Mapped["NewsChannel | None"] = relationship()
-    protest: Mapped["Protest | None"] = relationship(foreign_keys="[SystemAction.target_protest_id]")
+    protest: Mapped["Protest | None"] = relationship(foreign_keys=[target_protest_id])
 
 
 class PublicMetrics(Base):
@@ -403,7 +403,7 @@ class Protest(Base):
 
     # Trigger
     trigger_action_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("system_actions.id"), nullable=True
+        ForeignKey("system_actions.id", use_alter=True, name="fk_protest_trigger_action"), nullable=True
     )
 
     # Inciting agent tracking
@@ -419,7 +419,7 @@ class Protest(Base):
 
     # Relationships
     operator: Mapped["Operator"] = relationship()
-    trigger_action: Mapped["SystemAction | None"] = relationship(foreign_keys="[Protest.trigger_action_id]")
+    trigger_action: Mapped["SystemAction | None"] = relationship(foreign_keys=[trigger_action_id])
 
 
 class OperatorData(Base):

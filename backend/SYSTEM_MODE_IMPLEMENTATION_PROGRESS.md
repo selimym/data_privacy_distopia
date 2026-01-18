@@ -1,9 +1,9 @@
 # System Mode Expansion - Implementation Progress
 
-**Status**: Phase 4 Complete - All Backend Services Implemented!
+**Status**: Phase 6 Complete - All Backend + API Complete!
 **Date**: 2026-01-18
 
-## ✅ Completed (Phases 1-4)
+## ✅ Completed (Phases 1-6)
 
 ### Phase 1: Database Foundation
 - **All new database models created** (`backend/src/datafusion/models/system_mode.py`):
@@ -107,32 +107,42 @@
   - Modular design: each action type has its own handler
   - Functions: `execute_action()`, `check_action_availability()`, `submit_no_action()`
 
-## 🚧 To Do (Phases 5-8)
+### Phase 5: Pydantic Schemas ✅
+- **All schemas created** (`backend/src/datafusion/schemas/system.py`):
+  - **Enums**: ActionType, ArticleType, ProtestStatus
+  - **Metrics**: PublicMetricsRead, ReluctanceMetricsRead, TierEventRead
+  - **News**: NewsChannelRead, NewsArticleRead, NewsReporterRead
+  - **Protests**: ProtestRead, GambleResultRead
+  - **Operator Data**: OperatorDataRead, ExposureEventRead, ExposureRiskRead, FamilyMemberRead
+  - **Geography**: NeighborhoodRead
+  - **Books**: BookPublicationEventRead
+  - **Actions**: SystemActionRequest, SystemActionRead, ActionAvailabilityRead, ActionResultRead, NoActionResultRead, AvailableActionsRead, TerminationDecisionRead, TriggeredEventRead
 
-**Next Steps**: Schemas → Endpoints → Frontend → Content
+- **Schema exports updated** in `backend/src/datafusion/schemas/__init__.py`
+  - All 23 new schemas exported for API use
 
-### Phase 5: Pydantic Schemas
-- [ ] Create schemas for all new models:
-  - SystemActionRead, SystemActionCreate
-  - PublicMetricsRead
-  - ReluctanceMetricsRead
-  - NewsChannelRead, NewsArticleRead
-  - ProtestRead
-  - OperatorDataRead
-  - NeighborhoodRead
-  - BookPublicationEventRead
+### Phase 6: API Endpoints ✅
+- **12 new endpoints added** (`backend/src/datafusion/api/system.py`):
+  - POST `/system/actions/execute` - Execute any action type (unified action system)
+  - POST `/system/actions/no-action-new` - Submit no-action decision (reluctance tracking)
+  - GET `/system/actions/available` - Get currently available actions (dynamic based on game state)
+  - GET `/system/metrics/public` - Get public backlash metrics
+  - GET `/system/metrics/reluctance` - Get operator reluctance metrics
+  - GET `/system/news/recent` - Get recent news articles (with limit query param)
+  - GET `/system/news/channels` - Get all news channels and reporters
+  - GET `/system/protests/active` - Get active protests
+  - GET `/system/books/pending` - Get pending book publications
+  - GET `/system/operator/exposure-risk` - Get exposure stage and risk level
+  - GET `/system/operator/data` - Get operator's tracked personal data
+  - GET `/system/neighborhoods` - Get all map neighborhoods
 
-### Phase 6: API Endpoints
-- [ ] Update `backend/src/datafusion/api/system.py`:
-  - POST `/actions/execute` - Execute any action type
-  - POST `/actions/no-action` - Submit no-action decision
-  - GET `/actions/available` - Get currently available actions
-  - GET `/metrics/public` - Get public metrics
-  - GET `/metrics/reluctance` - Get reluctance metrics
-  - GET `/news/recent` - Get recent articles
-  - GET `/protests/active` - Get active protests
-  - GET `/neighborhoods` - Get all neighborhoods
-  - GET `/operator/exposure-risk` - Get exposure stage
+- **Full request/response cycle** with FastAPI
+- **Schema validation** using Pydantic models
+- **Database integration** with async SQLAlchemy queries
+
+## 🚧 To Do (Phases 7-8)
+
+**Next Steps**: Frontend → Content
 
 ### Phase 7: Frontend Components
 - [ ] **PublicMetricsDisplay** - Two horizontal progress bars (awareness + anger)

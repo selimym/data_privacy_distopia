@@ -18,10 +18,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datafusion.models.system_mode import (
     SystemAction,
     PublicMetrics,
-    NPC,
     NewsChannel,
     Neighborhood,
 )
+from datafusion.models.npc import NPC
 from datafusion.services.public_metrics import (
     calculate_protest_probability,
     calculate_news_probability,

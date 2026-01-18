@@ -18,12 +18,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from datafusion.models.system_mode import (
     SystemAction,
     ActionType,
-    NPC,
     Protest,
     ProtestStatus,
     NewsArticle,
     BookPublicationEvent,
 )
+from datafusion.models.npc import NPC
 
 # Import all the services we'll orchestrate
 from datafusion.services.severity_scoring import get_severity_score
@@ -210,11 +210,11 @@ async def execute_action(
     justification: str,
     decision_time_seconds: float,
     was_hesitant: bool,
+    db: AsyncSession,
     target_citizen_id: UUID | None = None,
     target_neighborhood: str | None = None,
     target_news_channel_id: UUID | None = None,
     target_protest_id: UUID | None = None,
-    db: AsyncSession,
 ) -> ActionResult:
     """
     Execute a system action - the main orchestrator.

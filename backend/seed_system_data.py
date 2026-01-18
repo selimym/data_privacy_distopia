@@ -4,6 +4,7 @@ import asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
+from datafusion.database import Base
 from datafusion.models.system_mode import Neighborhood, NewsChannel
 from datafusion.generators.system_seed_data import (
     get_neighborhood_seed_data,
@@ -14,6 +15,11 @@ from datafusion.generators.system_seed_data import (
 async def seed_system_data():
     """Seed neighborhoods and news channels."""
     engine = create_async_engine("sqlite+aiosqlite:///datafusion.db")
+
+    # Create all tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with async_session() as session:
