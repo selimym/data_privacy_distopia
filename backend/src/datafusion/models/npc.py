@@ -52,6 +52,10 @@ class NPC(Base, UUIDMixin, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # System mode hospitalization tracking (for hospital arrest mechanics)
+    is_hospitalized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    injury_from_action_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
     # Relationships
     message_record: Mapped["MessageRecord | None"] = relationship(  # type: ignore
         back_populates="npc", uselist=False
