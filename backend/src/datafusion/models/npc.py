@@ -23,9 +23,7 @@ class NPC(Base, UUIDMixin, TimestampMixin):
     """NPC with identity and demographic information."""
 
     __tablename__ = "npcs"
-    __table_args__ = (
-        Index("idx_npc_location", "map_x", "map_y"),
-    )
+    __table_args__ = (Index("idx_npc_location", "map_x", "map_y"),)
 
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)

@@ -37,9 +37,7 @@ class OutcomeTemplates(BaseModel):
             required_timepoints = ["immediate", "1_month", "6_months", "1_year"]
             for timepoint in required_timepoints:
                 if timepoint not in v[flag_type]:
-                    raise ValueError(
-                        f"Missing timepoint {timepoint} for flag type {flag_type}"
-                    )
+                    raise ValueError(f"Missing timepoint {timepoint} for flag type {flag_type}")
 
         return v
 
@@ -141,17 +139,11 @@ class Messages(BaseModel):
                     )
                 # Validate structure
                 if not isinstance(msg_data[0], str):
-                    raise ValueError(
-                        f"Message text must be string in {scenario_name}[{i}]"
-                    )
+                    raise ValueError(f"Message text must be string in {scenario_name}[{i}]")
                 if not isinstance(msg_data[1], (int, float)):
-                    raise ValueError(
-                        f"Sentiment must be number in {scenario_name}[{i}]"
-                    )
+                    raise ValueError(f"Sentiment must be number in {scenario_name}[{i}]")
                 if not isinstance(msg_data[2], list):
-                    raise ValueError(
-                        f"Keywords must be list in {scenario_name}[{i}]"
-                    )
+                    raise ValueError(f"Keywords must be list in {scenario_name}[{i}]")
                 if not isinstance(msg_data[3], int):
                     raise ValueError(f"Day must be integer in {scenario_name}[{i}]")
         return v
@@ -213,9 +205,7 @@ class Consequences(BaseModel):
         for action_name, timepoints in v.items():
             # Only require immediate timepoint at minimum
             if "immediate" not in timepoints:
-                raise ValueError(
-                    f"Missing required 'immediate' timepoint for action {action_name}"
-                )
+                raise ValueError(f"Missing required 'immediate' timepoint for action {action_name}")
             # Ensure at least one timepoint exists
             if len(timepoints) == 0:
                 raise ValueError(f"Action {action_name} must have at least one timepoint")

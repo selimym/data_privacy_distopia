@@ -3,6 +3,7 @@
 Tests the core System Mode mechanic that advances time and generates
 escalating outcomes for flagged citizens.
 """
+
 from datetime import date
 from uuid import uuid4
 
@@ -453,9 +454,7 @@ class TestCinematicDataStructure:
         assert len(outcomes[0].narrative) > 50  # Should have meaningful content
 
     @pytest.mark.asyncio
-    async def test_outcome_contains_status(
-        self, db_session, operator_with_directive, test_citizen
-    ):
+    async def test_outcome_contains_status(self, db_session, operator_with_directive, test_citizen):
         """Outcome should contain status for display."""
         operator, directive = operator_with_directive
         service = TimeProgressionService(db_session)

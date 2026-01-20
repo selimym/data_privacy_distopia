@@ -8,23 +8,23 @@ Events can be:
 - Triggered: Occur as a result of an action (probability-based)
 - Random: Occur on time progression (directive advance)
 """
+
 import random
 from uuid import UUID
-from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from datafusion.models.system_mode import (
-    SystemAction,
-    PublicMetrics,
-    NewsChannel,
-    Neighborhood,
-)
 from datafusion.models.npc import NPC
+from datafusion.models.system_mode import (
+    Neighborhood,
+    NewsChannel,
+    PublicMetrics,
+    SystemAction,
+)
 from datafusion.services.public_metrics import (
-    calculate_protest_probability,
     calculate_news_probability,
+    calculate_protest_probability,
 )
 
 

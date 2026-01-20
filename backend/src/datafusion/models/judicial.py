@@ -114,15 +114,11 @@ class CriminalRecord(Base, UUIDMixin, TimestampMixin):
     )
 
     case_number: Mapped[str] = mapped_column(String(100), nullable=False)
-    crime_category: Mapped[CrimeCategory] = mapped_column(
-        Enum(CrimeCategory), nullable=False
-    )
+    crime_category: Mapped[CrimeCategory] = mapped_column(Enum(CrimeCategory), nullable=False)
     charge_description: Mapped[str] = mapped_column(String(500), nullable=False)
     arrest_date: Mapped[date] = mapped_column(Date, nullable=False)
     disposition_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    disposition: Mapped[CaseDisposition] = mapped_column(
-        Enum(CaseDisposition), nullable=False
-    )
+    disposition: Mapped[CaseDisposition] = mapped_column(Enum(CaseDisposition), nullable=False)
 
     # Sentence details (if convicted)
     sentence_description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -160,23 +156,17 @@ class CivilCase(Base, UUIDMixin, TimestampMixin):
     case_description: Mapped[str] = mapped_column(String(500), nullable=False)
     filed_date: Mapped[date] = mapped_column(Date, nullable=False)
     closed_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    disposition: Mapped[CaseDisposition] = mapped_column(
-        Enum(CaseDisposition), nullable=False
-    )
+    disposition: Mapped[CaseDisposition] = mapped_column(Enum(CaseDisposition), nullable=False)
 
     # Case details
     plaintiff_name: Mapped[str] = mapped_column(
         String(200), nullable=False
     )  # Could be the NPC or other party
     defendant_name: Mapped[str] = mapped_column(String(200), nullable=False)
-    is_plaintiff: Mapped[bool] = mapped_column(
-        nullable=False
-    )  # True if NPC is plaintiff
+    is_plaintiff: Mapped[bool] = mapped_column(nullable=False)  # True if NPC is plaintiff
 
     # Financial outcome
-    judgment_amount: Mapped[Decimal | None] = mapped_column(
-        Numeric(12, 2), nullable=True
-    )
+    judgment_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
 
     # Sensitivity (divorce, restraining orders, etc.)
     is_sensitive: Mapped[bool] = mapped_column(nullable=False, default=False)
@@ -200,9 +190,7 @@ class TrafficViolation(Base, UUIDMixin, TimestampMixin):
     )
 
     citation_number: Mapped[str] = mapped_column(String(100), nullable=False)
-    violation_type: Mapped[ViolationType] = mapped_column(
-        Enum(ViolationType), nullable=False
-    )
+    violation_type: Mapped[ViolationType] = mapped_column(Enum(ViolationType), nullable=False)
     violation_description: Mapped[str] = mapped_column(String(500), nullable=False)
     violation_date: Mapped[date] = mapped_column(Date, nullable=False)
     location: Mapped[str] = mapped_column(String(300), nullable=False)

@@ -1,15 +1,16 @@
 """Seed neighborhoods and news channels into the database."""
+
 import asyncio
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from datafusion.database import Base
-from datafusion.models.system_mode import Neighborhood, NewsChannel
 from datafusion.generators.system_seed_data import (
     get_neighborhood_seed_data,
     get_news_channel_seed_data,
 )
+from datafusion.models.system_mode import Neighborhood, NewsChannel
 
 
 async def seed_system_data():

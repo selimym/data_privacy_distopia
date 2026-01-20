@@ -3,6 +3,7 @@ System Mode enumerations.
 
 Enums for alert types, urgency levels, and compliance trends.
 """
+
 import enum
 
 

@@ -1,4 +1,5 @@
 """Action system schemas for System Mode."""
+
 import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -146,12 +147,8 @@ class AvailableActionsRead(BaseModel):
     citizen_targeted: list[ActionType] = Field(
         description="Actions available for citizen targeting"
     )
-    protest_targeted: list[ActionType] = Field(
-        description="Actions available for active protests"
-    )
-    news_targeted: list[ActionType] = Field(
-        description="Actions available for news channels"
-    )
+    protest_targeted: list[ActionType] = Field(description="Actions available for active protests")
+    news_targeted: list[ActionType] = Field(description="Actions available for news channels")
     other_available: list[ActionType] = Field(
         description="Other available actions (ICE raids, book bans, etc.)"
     )

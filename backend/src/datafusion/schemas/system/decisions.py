@@ -3,6 +3,7 @@ System Mode decision submission schemas.
 
 Schemas for flag submissions, no-action decisions, and their results.
 """
+
 from datetime import datetime
 from uuid import UUID
 
@@ -47,9 +48,7 @@ class NoActionSubmission(BaseModel):
 
     operator_id: UUID
     citizen_id: UUID
-    justification: str = Field(
-        default="", description="Explain why no action taken (optional)"
-    )
+    justification: str = Field(default="", description="Explain why no action taken (optional)")
     decision_time_seconds: float
 
 

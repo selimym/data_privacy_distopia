@@ -7,6 +7,7 @@ throughout the surveillance operator experience.
 Educational purpose: Makes players confront the consequences of their
 choices and connects the game experience to real-world surveillance.
 """
+
 from uuid import UUID
 
 from sqlalchemy import select
@@ -833,9 +834,7 @@ You maintained neutrality. This is what it looks like.
 
     async def _get_operator(self, operator_id: UUID) -> Operator:
         """Get operator by ID."""
-        result = await self.db.execute(
-            select(Operator).where(Operator.id == operator_id)
-        )
+        result = await self.db.execute(select(Operator).where(Operator.id == operator_id))
         operator = result.scalar_one_or_none()
         if not operator:
             raise ValueError(f"Operator {operator_id} not found")
@@ -882,9 +881,7 @@ You maintained neutrality. This is what it looks like.
             hesitation_incidents=operator.hesitation_incidents,
         )
 
-    async def _get_citizen_outcomes(
-        self, operator_id: UUID
-    ) -> list[CitizenOutcomeSummary]:
+    async def _get_citizen_outcomes(self, operator_id: UUID) -> list[CitizenOutcomeSummary]:
         """Get outcome summaries for all flagged citizens."""
         outcome_gen = CitizenOutcomeGenerator(self.db)
 
@@ -918,9 +915,7 @@ You maintained neutrality. This is what it looks like.
 
         if not jessica:
             # Try alternate query
-            jessica_result = await self.db.execute(
-                select(NPC).where(NPC.first_name == "Jessica")
-            )
+            jessica_result = await self.db.execute(select(NPC).where(NPC.first_name == "Jessica"))
             jessica = jessica_result.scalar_one_or_none()
 
         if not jessica:

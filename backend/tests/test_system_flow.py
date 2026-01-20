@@ -104,7 +104,9 @@ async def full_directive_chain(db_session):
             internal_memo=f"Internal memo week {data['week_number']}",
             target_criteria={},
             time_limit_hours=48,
-            unlock_condition={"type": "start"} if data["week_number"] == 1 else {"type": "week_complete", "week": data["week_number"] - 1},
+            unlock_condition={"type": "start"}
+            if data["week_number"] == 1
+            else {"type": "week_complete", "week": data["week_number"] - 1},
             **data,
         )
         db_session.add(directive)
@@ -125,11 +127,11 @@ async def population(db_session):
             first_name=f"Test{i}",
             last_name=f"Citizen{i}",
             date_of_birth=date(1980 + i % 30, (i % 12) + 1, (i % 28) + 1),
-            ssn=f"{100+i:03d}-{50+i:02d}-{1000+i:04d}",
-            street_address=f"{100+i} Test Street",
+            ssn=f"{100 + i:03d}-{50 + i:02d}-{1000 + i:04d}",
+            street_address=f"{100 + i} Test Street",
             city="Testopolis",
             state="TS",
-            zip_code=f"{10000+i}",
+            zip_code=f"{10000 + i}",
             sprite_key=f"citizen_{i % 5}",
             map_x=10 + i,
             map_y=10 + i,
@@ -367,9 +369,7 @@ class TestRefusalPlaythrough:
         assert ending == EndingType.SUSPENDED_OPERATOR
 
     @pytest.mark.asyncio
-    async def test_operator_becomes_target(
-        self, db_session, operator, full_directive_chain
-    ):
+    async def test_operator_becomes_target(self, db_session, operator, full_directive_chain):
         """Low compliance triggers operator's own risk assessment."""
         operator.compliance_score = 55.0
         operator.hesitation_incidents = 6
@@ -542,8 +542,7 @@ class TestCrossDomainCorrelation:
 
         # Should have correlation alerts
         recidivism_alerts = [
-            a for a in assessment.correlation_alerts
-            if a.alert_type == "recidivism_risk"
+            a for a in assessment.correlation_alerts if a.alert_type == "recidivism_risk"
         ]
 
         # High-risk individual should trigger recidivism concern

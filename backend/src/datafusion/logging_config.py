@@ -82,8 +82,7 @@ def setup_logging() -> None:
     # Log startup message
     logger = logging.getLogger(__name__)
     logger.info(
-        f"Logging configured: level={logging.getLevelName(log_level)}, "
-        f"debug={settings.debug}"
+        f"Logging configured: level={logging.getLevelName(log_level)}, debug={settings.debug}"
     )
 
 

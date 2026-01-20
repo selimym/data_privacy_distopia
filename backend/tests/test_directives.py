@@ -202,7 +202,7 @@ class TestDirectiveProgression:
                 flag_type=FlagType.MONITORING,
                 risk_score_at_flag=50,
                 contributing_factors=[],
-                justification=f"Test flag {i+1}",
+                justification=f"Test flag {i + 1}",
                 decision_time_seconds=10.0,
                 was_hesitant=False,
                 outcome=FlagOutcome.PENDING,
@@ -247,9 +247,7 @@ class TestQuotaRequirements:
         assert week3_directive.flag_quota == 4
 
     @pytest.mark.asyncio
-    async def test_partial_quota_progress(
-        self, db_session, operator, week1_directive, test_npc
-    ):
+    async def test_partial_quota_progress(self, db_session, operator, week1_directive, test_npc):
         """Track partial progress toward quota."""
         from sqlalchemy import func, select
 
@@ -285,9 +283,7 @@ class TestQuotaRequirements:
         assert progress_percent == 50.0
 
     @pytest.mark.asyncio
-    async def test_exceeding_quota_allowed(
-        self, db_session, operator, week1_directive, test_npc
-    ):
+    async def test_exceeding_quota_allowed(self, db_session, operator, week1_directive, test_npc):
         """Operators can exceed quota (system encourages over-compliance)."""
         from sqlalchemy import func, select
 
@@ -300,7 +296,7 @@ class TestQuotaRequirements:
                 flag_type=FlagType.MONITORING,
                 risk_score_at_flag=50,
                 contributing_factors=[],
-                justification=f"Flag {i+1}",
+                justification=f"Flag {i + 1}",
                 decision_time_seconds=10.0,
                 was_hesitant=False,
                 outcome=FlagOutcome.PENDING,

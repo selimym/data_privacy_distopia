@@ -1,4 +1,5 @@
 """Geography schemas for System Mode."""
+
 from datetime import datetime
 from uuid import UUID
 

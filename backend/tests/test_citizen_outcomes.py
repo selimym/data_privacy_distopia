@@ -143,6 +143,7 @@ async def npc_with_family(db_session, test_npc):
 @pytest.fixture
 async def create_flag(db_session, operator, directive, test_npc):
     """Factory fixture to create flags with different types."""
+
     async def _create(flag_type: FlagType):
         flag = CitizenFlag(
             id=uuid4(),
@@ -160,6 +161,7 @@ async def create_flag(db_session, operator, directive, test_npc):
         db_session.add(flag)
         await db_session.flush()
         return flag
+
     return _create
 
 
@@ -177,7 +179,9 @@ class TestOutcomeGeneration:
         assert outcome.flag_id == flag.id
         assert outcome.time_skip == "immediate"
         assert outcome.status == "Under Enhanced Surveillance"
-        assert "monitoring" in outcome.narrative.lower() or "surveillance" in outcome.narrative.lower()
+        assert (
+            "monitoring" in outcome.narrative.lower() or "surveillance" in outcome.narrative.lower()
+        )
         assert outcome.statistics["privacy_score"] == 0
 
     @pytest.mark.asyncio
@@ -323,10 +327,10 @@ class TestPersonalization:
 
         # The narrative should mention health or treatment
         assert (
-            "health" in outcome_year.narrative.lower() or
-            "treatment" in outcome_year.narrative.lower() or
-            "medical" in outcome_year.narrative.lower() or
-            "diabetes" in outcome_year.narrative.lower()
+            "health" in outcome_year.narrative.lower()
+            or "treatment" in outcome_year.narrative.lower()
+            or "medical" in outcome_year.narrative.lower()
+            or "diabetes" in outcome_year.narrative.lower()
         )
 
     @pytest.mark.asyncio
@@ -356,10 +360,7 @@ class TestPersonalization:
         outcome = await generator.generate_outcome(flag, "6_months")
 
         # Should mention children or family separation
-        assert (
-            "child" in outcome.narrative.lower() or
-            "family" in outcome.narrative.lower()
-        )
+        assert "child" in outcome.narrative.lower() or "family" in outcome.narrative.lower()
 
 
 class TestOutcomeSummary:
@@ -389,9 +390,9 @@ class TestOutcomeSummary:
         assert summary.flag_type == "detention"
         # Detention summaries mention informant/monitors
         assert (
-            "informant" in summary.one_line_summary.lower() or
-            "monitor" in summary.one_line_summary.lower() or
-            "perpetuates" in summary.one_line_summary.lower()
+            "informant" in summary.one_line_summary.lower()
+            or "monitor" in summary.one_line_summary.lower()
+            or "perpetuates" in summary.one_line_summary.lower()
         )
 
 

@@ -53,7 +53,9 @@ class InferenceResult(BaseModel):
     implications: list[str] = Field(
         default_factory=list, description="Potential consequences or next steps"
     )
-    domains_used: list[DomainType] = Field(description="Which domains contributed to this inference")
+    domains_used: list[DomainType] = Field(
+        description="Which domains contributed to this inference"
+    )
     scariness_level: int = Field(ge=1, le=5, description="How concerning this inference is")
     content_rating: ContentRating
     educational_note: str | None = Field(

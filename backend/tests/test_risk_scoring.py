@@ -154,12 +154,10 @@ class TestRiskScoreCalculation:
 
         assert assessment.risk_score > 0
         assert any(
-            f.factor_key == "mental_health_treatment"
-            for f in assessment.contributing_factors
+            f.factor_key == "mental_health_treatment" for f in assessment.contributing_factors
         )
         health_factors = [
-            f for f in assessment.contributing_factors
-            if f.domain_source == DomainType.HEALTH
+            f for f in assessment.contributing_factors if f.domain_source == DomainType.HEALTH
         ]
         assert len(health_factors) > 0
 
@@ -170,10 +168,7 @@ class TestRiskScoreCalculation:
         assessment = await scorer.calculate_risk_score(npc_with_criminal_record.id)
 
         assert assessment.risk_score >= 25  # Prior record weight
-        assert any(
-            f.factor_key == "prior_record"
-            for f in assessment.contributing_factors
-        )
+        assert any(f.factor_key == "prior_record" for f in assessment.contributing_factors)
 
     @pytest.mark.asyncio
     async def test_financial_factors_add_to_score(self, db_session, npc_with_financial_stress):
@@ -182,10 +177,7 @@ class TestRiskScoreCalculation:
         assessment = await scorer.calculate_risk_score(npc_with_financial_stress.id)
 
         assert assessment.risk_score > 0
-        assert any(
-            f.factor_key == "financial_stress"
-            for f in assessment.contributing_factors
-        )
+        assert any(f.factor_key == "financial_stress" for f in assessment.contributing_factors)
 
     @pytest.mark.asyncio
     async def test_score_caps_at_100(self, db_session, npc_with_data):
@@ -234,7 +226,7 @@ class TestRiskScoreCalculation:
         for i in range(5):
             criminal = CriminalRecord(
                 judicial_record_id=judicial_record.id,
-                case_number=f"CR-{2015+i}-{i:03d}",
+                case_number=f"CR-{2015 + i}-{i:03d}",
                 crime_category=CrimeCategory.PROPERTY,
                 charge_description=f"Crime {i}",
                 arrest_date=date(2015 + i, 1, 1),
@@ -276,8 +268,10 @@ class TestContributingFactors:
         assessment = await scorer.calculate_risk_score(npc_with_health_issues.id)
 
         health_factors = [
-            f for f in assessment.contributing_factors
-            if f.factor_key in ["mental_health_treatment", "substance_treatment", "chronic_condition"]
+            f
+            for f in assessment.contributing_factors
+            if f.factor_key
+            in ["mental_health_treatment", "substance_treatment", "chronic_condition"]
         ]
         for factor in health_factors:
             assert factor.domain_source == DomainType.HEALTH
@@ -343,8 +337,7 @@ class TestCorrelationAlerts:
         assessment = await scorer.calculate_risk_score(npc_with_data.id)
 
         recidivism_alerts = [
-            a for a in assessment.correlation_alerts
-            if a.alert_type == "recidivism_risk"
+            a for a in assessment.correlation_alerts if a.alert_type == "recidivism_risk"
         ]
         assert len(recidivism_alerts) > 0
         alert = recidivism_alerts[0]

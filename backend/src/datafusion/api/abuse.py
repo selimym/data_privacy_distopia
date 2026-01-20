@@ -222,8 +222,6 @@ async def reset_session(
         No content (204 status)
     """
     # Delete all executions for this session
-    delete_query = delete(AbuseExecution).where(
-        AbuseExecution.session_id == session_id
-    )
+    delete_query = delete(AbuseExecution).where(AbuseExecution.session_id == session_id)
     await db.execute(delete_query)
     await db.commit()

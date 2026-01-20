@@ -136,9 +136,7 @@ async def get_inferences(
             ContentRating.DYSTOPIAN: 5,
         }
         max_level = rating_hierarchy[max_content_rating]
-        inferences = [
-            i for i in inferences if rating_hierarchy[i.content_rating] <= max_level
-        ]
+        inferences = [i for i in inferences if rating_hierarchy[i.content_rating] <= max_level]
 
     # Calculate unlockable inferences by checking which rules would become available
     # with each additional domain

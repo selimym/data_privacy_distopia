@@ -17,38 +17,38 @@ from datafusion.schemas.npc import (
 )
 from datafusion.schemas.settings import ContentRating, UserSettings
 from datafusion.schemas.system import (
+    ActionAvailabilityRead,
+    ActionResultRead,
     # Enums
     ActionType,
     ArticleType,
+    AvailableActionsRead,
+    # Books
+    BookPublicationEventRead,
+    ExposureEventRead,
+    ExposureRiskRead,
+    FamilyMemberRead,
+    GambleResultRead,
+    # Geography
+    NeighborhoodRead,
+    NewsArticleRead,
+    # News
+    NewsChannelRead,
+    NewsReporterRead,
+    NoActionResultRead,
+    # Operator Data
+    OperatorDataRead,
+    # Protests
+    ProtestRead,
     ProtestStatus,
     # Metrics
     PublicMetricsRead,
     ReluctanceMetricsRead,
-    TierEventRead,
-    # News
-    NewsChannelRead,
-    NewsArticleRead,
-    NewsReporterRead,
-    # Protests
-    ProtestRead,
-    GambleResultRead,
-    # Operator Data
-    OperatorDataRead,
-    ExposureEventRead,
-    ExposureRiskRead,
-    FamilyMemberRead,
-    # Geography
-    NeighborhoodRead,
-    # Books
-    BookPublicationEventRead,
+    SystemActionRead,
     # Actions
     SystemActionRequest,
-    SystemActionRead,
-    ActionAvailabilityRead,
-    ActionResultRead,
-    NoActionResultRead,
-    AvailableActionsRead,
     TerminationDecisionRead,
+    TierEventRead,
     TriggeredEventRead,
 )
 

@@ -8,22 +8,21 @@ Articles can be:
 
 Suppression actions (PRESS_BAN, PRESSURE_FIRING) have a Streisand effect risk.
 """
+
 import random
-from uuid import UUID
 from datetime import datetime, timezone
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from datafusion.models.system_mode import (
-    NewsChannel,
-    NewsArticle,
-    ArticleType,
     ActionType,
+    ArticleType,
+    NewsArticle,
+    NewsChannel,
     SystemAction,
-    PublicMetrics,
 )
-
 
 # Article headline templates by action type
 ARTICLE_TEMPLATES = {
@@ -433,9 +432,7 @@ def generate_background_summary(stance: str) -> str:
         return "The ongoing security program continues to generate public discussion. Supporters cite safety concerns while critics raise questions about oversight and transparency."
 
 
-def calculate_article_impact(
-    action: SystemAction, stance: str
-) -> tuple[int, int]:
+def calculate_article_impact(action: SystemAction, stance: str) -> tuple[int, int]:
     """
     Calculate how much an article affects public metrics.
 

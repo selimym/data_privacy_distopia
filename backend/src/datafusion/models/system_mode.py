@@ -3,6 +3,7 @@ Models for System Mode gameplay.
 
 System Mode: Player acts as surveillance state operator reviewing citizens.
 """
+
 import enum
 from datetime import UTC, datetime
 from datetime import date as date_type
@@ -112,13 +113,17 @@ class Operator(Base):
     status: Mapped[OperatorStatus] = mapped_column(default=OperatorStatus.ACTIVE)
     current_time_period: Mapped[str] = mapped_column(String(20), default="immediate")
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     # Relationships
     metrics: Mapped[list["OperatorMetrics"]] = relationship(
         back_populates="operator", cascade="all, delete-orphan"
     )
-    current_directive: Mapped["Directive | None"] = relationship(foreign_keys=[current_directive_id])
+    current_directive: Mapped["Directive | None"] = relationship(
+        foreign_keys=[current_directive_id]
+    )
     flags: Mapped[list["CitizenFlag"]] = relationship(
         back_populates="operator", cascade="all, delete-orphan"
     )
@@ -182,7 +187,9 @@ class Directive(Base):
     content_rating: Mapped[str] = mapped_column(String(20))  # ContentRating enum value
     unlock_condition: Mapped[dict] = mapped_column(JSON)  # What triggers this directive
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     # Relationships
     flags: Mapped[list["CitizenFlag"]] = relationship(
@@ -292,7 +299,9 @@ class PublicMetrics(Base):
     awareness_tier: Mapped[int] = mapped_column(Integer, default=0)
     anger_tier: Mapped[int] = mapped_column(Integer, default=0)
 
-    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     # Relationships
     operator: Mapped["Operator"] = relationship(back_populates="public_metrics")
@@ -322,7 +331,9 @@ class ReluctanceMetrics(Base):
     warnings_received: Mapped[int] = mapped_column(Integer, default=0)
     is_under_review: Mapped[bool] = mapped_column(default=False)
 
-    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     # Relationships
     operator: Mapped["Operator"] = relationship(back_populates="reluctance_metrics")
@@ -361,7 +372,9 @@ class NewsArticle(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     operator_id: Mapped[UUID] = mapped_column(ForeignKey("operators.id", ondelete="CASCADE"))
-    news_channel_id: Mapped[UUID] = mapped_column(ForeignKey("news_channels.id", ondelete="CASCADE"))
+    news_channel_id: Mapped[UUID] = mapped_column(
+        ForeignKey("news_channels.id", ondelete="CASCADE")
+    )
 
     article_type: Mapped[ArticleType] = mapped_column()
     headline: Mapped[str] = mapped_column(String(300))
@@ -403,7 +416,8 @@ class Protest(Base):
 
     # Trigger
     trigger_action_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("system_actions.id", use_alter=True, name="fk_protest_trigger_action"), nullable=True
+        ForeignKey("system_actions.id", use_alter=True, name="fk_protest_trigger_action"),
+        nullable=True,
     )
 
     # Inciting agent tracking
@@ -443,7 +457,9 @@ class OperatorData(Base):
     decision_patterns: Mapped[dict] = mapped_column(JSON, default=dict)
 
     # Exposure tracking
-    exposure_stage: Mapped[int] = mapped_column(Integer, default=0)  # 0=none, 1=hints, 2=partial, 3=full
+    exposure_stage: Mapped[int] = mapped_column(
+        Integer, default=0
+    )  # 0=none, 1=hints, 2=partial, 3=full
     last_exposure_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC))
@@ -495,7 +511,9 @@ class BookPublicationEvent(Base):
 
     # Status
     was_banned: Mapped[bool] = mapped_column(default=False)
-    ban_action_id: Mapped[UUID | None] = mapped_column(ForeignKey("system_actions.id"), nullable=True)
+    ban_action_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("system_actions.id"), nullable=True
+    )
 
     # If published (not banned), impact on metrics
     published_at: Mapped[datetime | None] = mapped_column(nullable=True)

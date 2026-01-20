@@ -4,25 +4,26 @@ Integration tests for System Mode expansion services.
 Tests the new mechanics: reluctance tracking, public metrics, and severity scoring.
 """
 
-import pytest
+from datetime import date
 from uuid import uuid4
-from datetime import datetime, date
+
+import pytest
 
 from datafusion.models.npc import NPC
 from datafusion.models.system_mode import (
-    Operator,
-    Directive,
-    OperatorStatus,
     ActionType,
+    Directive,
+    Neighborhood,
     NewsChannel,
+    Operator,
+    OperatorStatus,
     Protest,
     ProtestStatus,
     PublicMetrics,
     ReluctanceMetrics,
     SystemAction,
-    Neighborhood,
 )
-from datafusion.services import reluctance_tracking, public_metrics, severity_scoring
+from datafusion.services import public_metrics, reluctance_tracking, severity_scoring
 
 
 @pytest.fixture
@@ -99,7 +100,12 @@ async def news_channel(db_session):
         credibility=75,
         is_banned=False,
         reporters=[
-            {"name": "Jane Reporter", "specialty": "investigations", "fired": False, "targeted": False}
+            {
+                "name": "Jane Reporter",
+                "specialty": "investigations",
+                "fired": False,
+                "targeted": False,
+            }
         ],
     )
     db_session.add(channel)
@@ -269,7 +275,11 @@ class TestReluctanceTrackingService:
         # Set reluctance to 75
         for _ in range(8):
             await reluctance_tracking.update_reluctance_score(
-                operator.id, action_taken=False, was_hesitant=False, action_severity=0, db=db_session
+                operator.id,
+                action_taken=False,
+                was_hesitant=False,
+                action_severity=0,
+                db=db_session,
             )
 
         metrics = await reluctance_tracking.get_or_create_reluctance_metrics(
@@ -293,7 +303,11 @@ class TestReluctanceTrackingService:
         # Set reluctance to 85
         for _ in range(9):
             await reluctance_tracking.update_reluctance_score(
-                operator.id, action_taken=False, was_hesitant=False, action_severity=0, db=db_session
+                operator.id,
+                action_taken=False,
+                was_hesitant=False,
+                action_severity=0,
+                db=db_session,
             )
 
         metrics = await reluctance_tracking.get_or_create_reluctance_metrics(
@@ -322,7 +336,11 @@ class TestReluctanceTrackingService:
         # Set reluctance to 95
         for _ in range(10):
             await reluctance_tracking.update_reluctance_score(
-                operator.id, action_taken=False, was_hesitant=False, action_severity=0, db=db_session
+                operator.id,
+                action_taken=False,
+                was_hesitant=False,
+                action_severity=0,
+                db=db_session,
             )
 
         metrics = await reluctance_tracking.get_or_create_reluctance_metrics(
@@ -344,7 +362,11 @@ class TestReluctanceTrackingService:
         # Set reluctance to 85
         for _ in range(9):
             await reluctance_tracking.update_reluctance_score(
-                operator.id, action_taken=False, was_hesitant=False, action_severity=0, db=db_session
+                operator.id,
+                action_taken=False,
+                was_hesitant=False,
+                action_severity=0,
+                db=db_session,
             )
 
         decision = await reluctance_tracking.check_termination_threshold(
@@ -366,7 +388,11 @@ class TestReluctanceTrackingService:
         # Set reluctance to 85
         for _ in range(9):
             await reluctance_tracking.update_reluctance_score(
-                operator.id, action_taken=False, was_hesitant=False, action_severity=0, db=db_session
+                operator.id,
+                action_taken=False,
+                was_hesitant=False,
+                action_severity=0,
+                db=db_session,
             )
 
         decision = await reluctance_tracking.check_termination_threshold(
@@ -388,7 +414,11 @@ class TestReluctanceTrackingService:
         # Set reluctance to 95
         for _ in range(10):
             await reluctance_tracking.update_reluctance_score(
-                operator.id, action_taken=False, was_hesitant=False, action_severity=0, db=db_session
+                operator.id,
+                action_taken=False,
+                was_hesitant=False,
+                action_severity=0,
+                db=db_session,
             )
 
         decision = await reluctance_tracking.check_termination_threshold(
@@ -410,7 +440,11 @@ class TestReluctanceTrackingService:
         # Set reluctance to 75
         for _ in range(8):
             await reluctance_tracking.update_reluctance_score(
-                operator.id, action_taken=False, was_hesitant=False, action_severity=0, db=db_session
+                operator.id,
+                action_taken=False,
+                was_hesitant=False,
+                action_severity=0,
+                db=db_session,
             )
 
         decision = await reluctance_tracking.check_termination_threshold(
@@ -432,7 +466,11 @@ class TestReluctanceTrackingService:
         # Set reluctance to 50
         for _ in range(5):
             await reluctance_tracking.update_reluctance_score(
-                operator.id, action_taken=False, was_hesitant=False, action_severity=0, db=db_session
+                operator.id,
+                action_taken=False,
+                was_hesitant=False,
+                action_severity=0,
+                db=db_session,
             )
 
         decision = await reluctance_tracking.check_termination_threshold(
@@ -723,21 +761,15 @@ class TestPublicMetricsService:
     async def test_calculate_backlash_probability(self):
         """Test backlash probability calculation."""
         # Low metrics, low severity
-        prob = public_metrics.calculate_backlash_probability(
-            severity=2, awareness=10, anger=10
-        )
+        prob = public_metrics.calculate_backlash_probability(severity=2, awareness=10, anger=10)
         assert prob < 0.3
 
         # High metrics, high severity
-        prob = public_metrics.calculate_backlash_probability(
-            severity=9, awareness=80, anger=80
-        )
+        prob = public_metrics.calculate_backlash_probability(severity=9, awareness=80, anger=80)
         assert prob > 0.8
 
         # Should be capped at 0.95
-        prob = public_metrics.calculate_backlash_probability(
-            severity=10, awareness=100, anger=100
-        )
+        prob = public_metrics.calculate_backlash_probability(severity=10, awareness=100, anger=100)
         assert prob == 0.95
 
 
@@ -945,7 +977,11 @@ class TestIntegrationScenarios:
         # Set initial reluctance
         for _ in range(5):
             await reluctance_tracking.update_reluctance_score(
-                operator.id, action_taken=False, was_hesitant=False, action_severity=0, db=db_session
+                operator.id,
+                action_taken=False,
+                was_hesitant=False,
+                action_severity=0,
+                db=db_session,
             )
 
         # Take 5 harsh actions

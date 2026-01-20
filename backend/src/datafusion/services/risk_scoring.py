@@ -7,6 +7,7 @@ by analyzing their data across all domains.
 Educational purpose: Shows how real surveillance systems work and why
 they're problematic (bias, lack of transparency, chilling effects).
 """
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -228,15 +229,24 @@ class RiskScorer:
                 match_conditions = []
 
                 if "required_factors_any" in alert_config and alert_config["required_factors_any"]:
-                    any_match = any(f in factor_keys_present for f in alert_config["required_factors_any"])
+                    any_match = any(
+                        f in factor_keys_present for f in alert_config["required_factors_any"]
+                    )
                     match_conditions.append(any_match)
 
                 if "required_factors_all" in alert_config and alert_config["required_factors_all"]:
-                    all_match = all(f in factor_keys_present for f in alert_config["required_factors_all"])
+                    all_match = all(
+                        f in factor_keys_present for f in alert_config["required_factors_all"]
+                    )
                     match_conditions.append(all_match)
 
-                if "required_factors_any_2" in alert_config and alert_config["required_factors_any_2"]:
-                    any_match_2 = any(f in factor_keys_present for f in alert_config["required_factors_any_2"])
+                if (
+                    "required_factors_any_2" in alert_config
+                    and alert_config["required_factors_any_2"]
+                ):
+                    any_match_2 = any(
+                        f in factor_keys_present for f in alert_config["required_factors_any_2"]
+                    )
                     match_conditions.append(any_match_2)
 
                 factors_match = all(match_conditions) if match_conditions else False
@@ -362,7 +372,9 @@ class RiskScorer:
             if amounts:
                 avg_amount = sum(amounts) / len(amounts)
                 multiplier = self.thresholds["transaction_multiplier"]
-                large_transactions = [t for t in transactions if abs(t.amount) > avg_amount * multiplier]
+                large_transactions = [
+                    t for t in transactions if abs(t.amount) > avg_amount * multiplier
+                ]
 
                 if large_transactions:
                     factors.append(
@@ -378,9 +390,7 @@ class RiskScorer:
         # Check for cash-heavy behavior (using OTHER category as proxy for cash)
         if transactions:
             # TransactionCategory doesn't have CASH_WITHDRAWAL, use OTHER as proxy
-            cash_transactions = [
-                t for t in transactions if t.category == TransactionCategory.OTHER
-            ]
+            cash_transactions = [t for t in transactions if t.category == TransactionCategory.OTHER]
             if cash_transactions:
                 cash_ratio = len(cash_transactions) / len(transactions)
 
@@ -390,7 +400,7 @@ class RiskScorer:
                             factor_key="cash_heavy",
                             factor_name=self.RISK_FACTORS["cash_heavy"]["description"],
                             weight=self.RISK_FACTORS["cash_heavy"]["weight"],
-                            evidence=f"{cash_ratio*100:.0f}% of transactions are unclassified (OTHER category)",
+                            evidence=f"{cash_ratio * 100:.0f}% of transactions are unclassified (OTHER category)",
                             domain_source=DomainType.FINANCE,
                         )
                     )
@@ -428,7 +438,10 @@ class RiskScorer:
             )
 
         # Check for civil disputes
-        if judicial_record.civil_cases and len(judicial_record.civil_cases) >= self.thresholds["civil_cases_threshold"]:
+        if (
+            judicial_record.civil_cases
+            and len(judicial_record.civil_cases) >= self.thresholds["civil_cases_threshold"]
+        ):
             factors.append(
                 ContributingFactor(
                     factor_key="civil_disputes",
@@ -491,9 +504,7 @@ class RiskScorer:
                 factors.append(
                     ContributingFactor(
                         factor_key="flagged_location_visits",
-                        factor_name=self.RISK_FACTORS["flagged_location_visits"][
-                            "description"
-                        ],
+                        factor_name=self.RISK_FACTORS["flagged_location_visits"]["description"],
                         weight=self.RISK_FACTORS["flagged_location_visits"]["weight"],
                         evidence=f"Frequent visits to monitored locations ({len(flagged_types)} visits)",
                         domain_source=DomainType.LOCATION,
@@ -503,8 +514,13 @@ class RiskScorer:
         # Check for irregular patterns (high visit diversity)
         min_visits = self.thresholds["flagged_location_visits_min"]
         min_diversity = self.thresholds["location_diversity_min"]
-        if location_record.inferred_locations and len(location_record.inferred_locations) >= min_visits:
-            unique_places = len(set(loc.location_name for loc in location_record.inferred_locations))
+        if (
+            location_record.inferred_locations
+            and len(location_record.inferred_locations) >= min_visits
+        ):
+            unique_places = len(
+                set(loc.location_name for loc in location_record.inferred_locations)
+            )
             if unique_places >= min_diversity:
                 factors.append(
                     ContributingFactor(
@@ -565,7 +581,10 @@ class RiskScorer:
 
         # Check for rapid connection growth (placeholder - would need historical data)
         # For now, high follower count as proxy
-        if follower_count > self.thresholds["network_activity_threshold"] and social_record.public_inferences:
+        if (
+            follower_count > self.thresholds["network_activity_threshold"]
+            and social_record.public_inferences
+        ):
             recent_activity = len(social_record.public_inferences)
             if recent_activity >= self.thresholds["network_inference_threshold"]:
                 factors.append(
@@ -632,9 +651,7 @@ class RiskScorer:
                 )
             )
             # Add travel restriction if location factors present
-            if any(
-                f.domain_source == DomainType.LOCATION for f in contributing_factors
-            ):
+            if any(f.domain_source == DomainType.LOCATION for f in contributing_factors):
                 recommendations.append(
                     RecommendedAction(
                         action_type=ActionType.TRAVEL_RESTRICTION,

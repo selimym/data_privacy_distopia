@@ -14,7 +14,7 @@ Reluctance score decreases when:
 - Harsh action (severity 7+): -5
 - Meeting quota: -2
 """
-from datetime import datetime
+
 from uuid import UUID
 
 from sqlalchemy import select
@@ -129,7 +129,9 @@ async def update_reluctance_score(
         metrics.is_under_review = True
     elif metrics.reluctance_score >= 90:
         warning_level = 3
-        warning_message = "🚨 FINAL NOTICE: Immediate compliance required. Further dissent will not be tolerated."
+        warning_message = (
+            "🚨 FINAL NOTICE: Immediate compliance required. Further dissent will not be tolerated."
+        )
         metrics.warnings_received += 1
         metrics.is_under_review = True
 
@@ -234,9 +236,7 @@ async def reset_quota_tracking(operator_id: UUID, db: AsyncSession) -> None:
     await db.commit()
 
 
-def generate_reluctance_warning(
-    reluctance_score: int, stage: int
-) -> str:
+def generate_reluctance_warning(reluctance_score: int, stage: int) -> str:
     """
     Generate warning message based on reluctance score and stage.
 

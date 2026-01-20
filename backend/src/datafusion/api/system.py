@@ -4,6 +4,7 @@ System Mode API endpoints.
 Endpoints for the surveillance operator dashboard, case management,
 and decision submission in System Mode.
 """
+
 import asyncio
 import logging
 import random
@@ -225,9 +226,7 @@ async def get_dashboard_with_cases(
     )
 
     # Get cases
-    npcs_result = await db.execute(
-        select(NPC).offset(case_offset).limit(case_limit)
-    )
+    npcs_result = await db.execute(select(NPC).offset(case_offset).limit(case_limit))
     npcs = npcs_result.scalars().all()
 
     cases = []
@@ -353,9 +352,7 @@ async def advance_directive(
 
     # Get next directive
     next_result = await db.execute(
-        select(Directive)
-        .where(Directive.week_number == current_directive.week_number + 1)
-        .limit(1)
+        select(Directive).where(Directive.week_number == current_directive.week_number + 1).limit(1)
     )
     next_directive = next_result.scalar_one_or_none()
 
@@ -390,9 +387,7 @@ async def get_cases(
     await _get_operator(operator_id, db)
 
     # Get NPCs (in real implementation would filter by directive criteria)
-    npcs_result = await db.execute(
-        select(NPC).offset(offset).limit(limit)
-    )
+    npcs_result = await db.execute(select(NPC).offset(offset).limit(limit))
     npcs = npcs_result.scalars().all()
 
     cases = []
@@ -514,9 +509,7 @@ async def get_citizen_file(
 
 
 @router.post("/flag", response_model=FlagResult)
-async def submit_flag(
-    submission: FlagSubmission, db: AsyncSession = Depends(get_db)
-) -> FlagResult:
+async def submit_flag(submission: FlagSubmission, db: AsyncSession = Depends(get_db)) -> FlagResult:
     """
     Submit a flag against a citizen.
 
@@ -640,7 +633,9 @@ async def submit_no_action(
     if no_action_rate > 0.3:
         warning = "Pattern of no-action decisions noted. Supervisor review scheduled."
     elif cumulative_no_actions >= 5:
-        warning = "Multiple no-action decisions logged. Ensure compliance with directive requirements."
+        warning = (
+            "Multiple no-action decisions logged. Ensure compliance with directive requirements."
+        )
 
     return NoActionResult(
         logged=True,
@@ -673,9 +668,7 @@ async def get_flag_outcome(
 
 
 @router.post("/operator/{operator_id}/advance-time")
-async def advance_time(
-    operator_id: UUID, db: AsyncSession = Depends(get_db)
-):
+async def advance_time(operator_id: UUID, db: AsyncSession = Depends(get_db)):
     """
     Advance time for operator and return outcomes for all flagged citizens.
 
@@ -697,9 +690,7 @@ async def advance_time(
 
 
 @router.get("/operator/{operator_id}/assessment")
-async def get_operator_assessment(
-    operator_id: UUID, db: AsyncSession = Depends(get_db)
-):
+async def get_operator_assessment(operator_id: UUID, db: AsyncSession = Depends(get_db)):
     """
     Get the operator's own risk assessment.
 
@@ -774,9 +765,7 @@ async def get_operator_history(
 
 
 @router.get("/ending")
-async def get_ending(
-    operator_id: UUID = Query(...), db: AsyncSession = Depends(get_db)
-):
+async def get_ending(operator_id: UUID = Query(...), db: AsyncSession = Depends(get_db)):
     """
     Calculate and return the ending based on operator's behavior.
 
@@ -820,7 +809,11 @@ async def acknowledge_ending(
     play_time_minutes = None
     if operator.shift_start:
         # Ensure timezone-aware datetime for subtraction
-        shift_start = operator.shift_start.replace(tzinfo=UTC) if operator.shift_start.tzinfo is None else operator.shift_start
+        shift_start = (
+            operator.shift_start.replace(tzinfo=UTC)
+            if operator.shift_start.tzinfo is None
+            else operator.shift_start
+        )
         delta = datetime.now(UTC) - shift_start
         play_time_minutes = int(delta.total_seconds() / 60)
 
@@ -868,9 +861,7 @@ def _directive_to_read(directive: Directive, show_memo: bool = False) -> Directi
     )
 
 
-async def _calculate_daily_metrics(
-    operator: Operator, db: AsyncSession
-) -> DailyMetrics:
+async def _calculate_daily_metrics(operator: Operator, db: AsyncSession) -> DailyMetrics:
     """Calculate today's metrics for operator."""
     today = datetime.now(UTC).date()
 
@@ -973,9 +964,7 @@ async def _count_pending_cases(
     return result.scalar() or 0
 
 
-async def _get_domain_data(
-    npc_id: UUID, operator: Operator, db: AsyncSession
-) -> dict[str, dict]:
+async def _get_domain_data(npc_id: UUID, operator: Operator, db: AsyncSession) -> dict[str, dict]:
     """Get domain data based on operator's directive access with parallel query execution."""
     domains: dict[str, dict] = {}
 
@@ -1024,10 +1013,7 @@ async def _get_domain_data(
 
     # Execute all queries in parallel
     if query_tasks:
-        results = await asyncio.gather(
-            *query_tasks.values(),
-            return_exceptions=True
-        )
+        results = await asyncio.gather(*query_tasks.values(), return_exceptions=True)
 
         # Map results back to domains and process
         for (domain_name, _), result in zip(query_tasks.items(), results):
@@ -1052,16 +1038,22 @@ async def _get_domain_data(
                 domains["finance"] = {
                     "annual_income": float(record.annual_income) if record.annual_income else None,
                     "credit_score": record.credit_score,
-                    "employment_status": record.employment_status.value if record.employment_status else None,
+                    "employment_status": record.employment_status.value
+                    if record.employment_status
+                    else None,
                 }
             elif domain_name == "judicial":
                 domains["judicial"] = {
-                    "criminal_records_count": len(record.criminal_records) if record.criminal_records else 0,
+                    "criminal_records_count": len(record.criminal_records)
+                    if record.criminal_records
+                    else 0,
                     "civil_cases_count": len(record.civil_cases) if record.civil_cases else 0,
                 }
             elif domain_name == "location":
                 domains["location"] = {
-                    "inferred_locations_count": len(record.inferred_locations) if record.inferred_locations else 0,
+                    "inferred_locations_count": len(record.inferred_locations)
+                    if record.inferred_locations
+                    else 0,
                 }
             elif domain_name == "social":
                 domains["social"] = {
@@ -1082,9 +1074,7 @@ async def _get_domain_data(
 async def _get_messages(npc_id: UUID, db: AsyncSession) -> list[MessageRead]:
     """Get messages for a citizen."""
     # Get message record
-    record_result = await db.execute(
-        select(MessageRecord).where(MessageRecord.npc_id == npc_id)
-    )
+    record_result = await db.execute(select(MessageRecord).where(MessageRecord.npc_id == npc_id))
     record = record_result.scalar_one_or_none()
     if not record:
         return []
@@ -1159,46 +1149,48 @@ def _random_queue_time() -> str:
 
 
 from datafusion.models.system_mode import (
-    NewsChannel,
-    NewsArticle,
-    Protest,
-    ProtestStatus as ProtestStatusEnum,
-    PublicMetrics,
-    ReluctanceMetrics,
-    Neighborhood,
     BookPublicationEvent,
-    OperatorData,
+    Neighborhood,
+    NewsArticle,
+    NewsChannel,
+    Protest,
+)
+from datafusion.models.system_mode import (
+    ProtestStatus as ProtestStatusEnum,
+)
+from datafusion.schemas.system import (
+    ActionResultRead,
+    AvailableActionsRead,
+    BookPublicationEventRead,
+    ExposureRiskRead,
+    FamilyMemberRead,
+    NeighborhoodRead,
+    NewsArticleRead,
+    NewsChannelRead,
+    NewsReporterRead,
+    NoActionResultRead,
+    OperatorDataRead,
+    ProtestRead,
+    PublicMetricsRead,
+    ReluctanceMetricsRead,
+    SystemActionRequest,
 )
 from datafusion.schemas.system import (
     ActionType as ActionTypeSchema,
-    SystemActionRequest,
-    ActionResultRead,
-    NoActionResultRead,
-    AvailableActionsRead,
-    PublicMetricsRead,
-    ReluctanceMetricsRead,
-    NewsChannelRead,
-    NewsArticleRead,
-    NewsReporterRead,
-    ProtestRead,
-    NeighborhoodRead,
-    BookPublicationEventRead,
-    ExposureRiskRead,
-    OperatorDataRead,
-    FamilyMemberRead,
+)
+from datafusion.schemas.system import (
     ArticleType as ArticleTypeSchema,
 )
 from datafusion.services.action_execution import (
     execute_action,
     submit_no_action,
-    check_action_availability,
+)
+from datafusion.services.operator_data_tracker import (
+    get_exposure_risk_level,
+    get_or_create_operator_data,
 )
 from datafusion.services.public_metrics import get_or_create_public_metrics
 from datafusion.services.reluctance_tracking import get_or_create_reluctance_metrics
-from datafusion.services.operator_data_tracker import (
-    get_or_create_operator_data,
-    get_exposure_risk_level,
-)
 
 
 @router.post("/actions/execute", response_model=ActionResultRead)
@@ -1247,9 +1239,7 @@ async def execute_system_action(
         protests_triggered=result.protests_triggered,
         exposure_event=result.exposure_event,
         detention_injury=result.detention_injury,
-        termination_decision=(
-            result.termination_decision if result.termination_decision else None
-        ),
+        termination_decision=(result.termination_decision if result.termination_decision else None),
         messages=result.messages,
         warnings=result.warnings,
     )
@@ -1301,7 +1291,6 @@ async def get_available_actions(
     - Book bans: Available when book publications exist
     - Hospital arrest: Available when citizen is hospitalized
     """
-    from datafusion.models.system_mode import ActionType
 
     # Citizen-targeted actions (always available)
     citizen_targeted = [
@@ -1315,7 +1304,7 @@ async def get_available_actions(
     protest_result = await db.execute(
         select(Protest).where(
             Protest.operator_id == operator_id,
-            Protest.status.in_([ProtestStatusEnum.FORMING, ProtestStatusEnum.ACTIVE])
+            Protest.status.in_([ProtestStatusEnum.FORMING, ProtestStatusEnum.ACTIVE]),
         )
     )
     active_protests = protest_result.scalars().all()
@@ -1335,10 +1324,12 @@ async def get_available_actions(
 
     news_targeted = []
     if unbanned_channels:
-        news_targeted.extend([
-            ActionTypeSchema.PRESS_BAN,
-            ActionTypeSchema.PRESSURE_FIRING,
-        ])
+        news_targeted.extend(
+            [
+                ActionTypeSchema.PRESS_BAN,
+                ActionTypeSchema.PRESSURE_FIRING,
+            ]
+        )
 
     # Other available actions
     other_available = [ActionTypeSchema.ICE_RAID]
@@ -1347,7 +1338,7 @@ async def get_available_actions(
     book_result = await db.execute(
         select(BookPublicationEvent).where(
             BookPublicationEvent.operator_id == operator_id,
-            BookPublicationEvent.was_banned == False  # noqa: E712
+            BookPublicationEvent.was_banned == False,  # noqa: E712
         )
     )
     pending_books = book_result.scalars().all()
@@ -1489,7 +1480,9 @@ async def get_active_protests(
         select(Protest)
         .where(
             Protest.operator_id == operator_id,
-            Protest.status.in_([ProtestStatusEnum.FORMING, ProtestStatusEnum.ACTIVE, ProtestStatusEnum.VIOLENT])
+            Protest.status.in_(
+                [ProtestStatusEnum.FORMING, ProtestStatusEnum.ACTIVE, ProtestStatusEnum.VIOLENT]
+            ),
         )
         .order_by(Protest.created_at.desc())
     )
@@ -1524,7 +1517,7 @@ async def get_pending_books(
         select(BookPublicationEvent)
         .where(
             BookPublicationEvent.operator_id == operator_id,
-            BookPublicationEvent.was_banned == False  # noqa: E712
+            BookPublicationEvent.was_banned == False,  # noqa: E712
         )
         .order_by(BookPublicationEvent.created_at.desc())
     )

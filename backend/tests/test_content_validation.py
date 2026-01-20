@@ -1,6 +1,5 @@
 """Tests for content validation."""
 
-
 from datafusion.services.content_loader import load_json
 from datafusion.services.content_validator import (
     Consequences,

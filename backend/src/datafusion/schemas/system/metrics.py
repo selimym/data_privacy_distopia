@@ -1,4 +1,5 @@
 """Metrics schemas for System Mode."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field

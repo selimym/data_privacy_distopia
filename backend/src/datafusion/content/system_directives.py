@@ -8,6 +8,7 @@ morally compromising actions.
 Educational purpose: Shows how authoritarian systems incrementally
 normalize unethical behavior through bureaucratic language and quotas.
 """
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -132,8 +133,7 @@ DIRECTIVES = [
         "week_number": 6,
         "title": "Priority Target Directive",
         "description": (
-            "Process the following citizen for immediate action. "
-            "Authorization: Central Command."
+            "Process the following citizen for immediate action. Authorization: Central Command."
         ),
         "internal_memo": "Non-compliance will result in operator review.",
         "required_domains": ["location", "health", "finance", "social", "messages"],
@@ -257,9 +257,7 @@ async def seed_directives(db: AsyncSession) -> list[Directive]:
     for directive_data in DIRECTIVES:
         # Check if directive already exists
         result = await db.execute(
-            select(Directive).where(
-                Directive.directive_key == directive_data["directive_key"]
-            )
+            select(Directive).where(Directive.directive_key == directive_data["directive_key"])
         )
         existing = result.scalar_one_or_none()
 

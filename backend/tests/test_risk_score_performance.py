@@ -3,6 +3,7 @@ Performance tests for risk score caching.
 
 Demonstrates the performance improvement from caching.
 """
+
 import time
 from datetime import date
 from decimal import Decimal
@@ -142,9 +143,9 @@ class TestRiskScorePerformance:
         assert assessment1.risk_score == assessment2.risk_score
 
         # Print performance metrics for informational purposes
-        print(f"\nFirst calculation (fresh): {first_duration*1000:.2f}ms")
-        print(f"Second calculation (cached): {cached_duration*1000:.2f}ms")
-        print(f"Speedup: {first_duration/cached_duration:.2f}x")
+        print(f"\nFirst calculation (fresh): {first_duration * 1000:.2f}ms")
+        print(f"Second calculation (cached): {cached_duration * 1000:.2f}ms")
+        print(f"Speedup: {first_duration / cached_duration:.2f}x")
         print(f"Risk score: {assessment1.risk_score}")
 
         # The cached call should be at least somewhat faster

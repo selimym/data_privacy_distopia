@@ -80,9 +80,7 @@ class AbuseSimulator:
 
         return [AbuseActionRead.model_validate(a) for a in actions]
 
-    async def execute(
-        self, request: AbuseExecuteRequest, session_id: UUID
-    ) -> AbuseExecuteResponse:
+    async def execute(self, request: AbuseExecuteRequest, session_id: UUID) -> AbuseExecuteResponse:
         """
         Execute an abuse action.
 
@@ -214,9 +212,7 @@ class AbuseSimulator:
         all_templates = list(templates_result.scalars().all())
 
         # Get template for requested time skip
-        template = next(
-            (t for t in all_templates if t.time_skip == time_skip.value), None
-        )
+        template = next((t for t in all_templates if t.time_skip == time_skip.value), None)
 
         # Default events if no template
         events = ["No specific consequences defined yet for this action."]
@@ -242,7 +238,10 @@ class AbuseSimulator:
                 ContentRating.DYSTOPIAN,
             ]
             max_index = content_ratings.index(content_filter)
-            if template and content_ratings.index(ContentRating(template.content_rating)) > max_index:
+            if (
+                template
+                and content_ratings.index(ContentRating(template.content_rating)) > max_index
+            ):
                 events = ["[Content filtered - enable higher content rating to view]"]
                 victim_impact = None
                 real_world_parallel_data = None
@@ -273,9 +272,7 @@ class AbuseSimulator:
             f"Using your {action.name.lower()}, you can now see their private information."
         )
 
-    def _determine_player_status(
-        self, execution: AbuseExecution, time_skip: TimeSkip
-    ) -> str:
+    def _determine_player_status(self, execution: AbuseExecution, time_skip: TimeSkip) -> str:
         """Determine player's status based on execution and time."""
         if not execution.was_detected:
             return "Still employed - no one suspects anything"

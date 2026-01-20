@@ -10,49 +10,49 @@ This is the central orchestrator that:
 
 Replaces the old flag submission system with a unified, scalable approach.
 """
+
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from datafusion.models.npc import NPC
 from datafusion.models.system_mode import (
-    SystemAction,
     ActionType,
+    BookPublicationEvent,
     Protest,
     ProtestStatus,
-    NewsArticle,
-    BookPublicationEvent,
-)
-from datafusion.models.npc import NPC
-
-# Import all the services we'll orchestrate
-from datafusion.services.severity_scoring import get_severity_score
-from datafusion.services.public_metrics import (
-    get_or_create_public_metrics,
-    update_public_metrics,
-    calculate_backlash_probability,
-)
-from datafusion.services.reluctance_tracking import (
-    update_reluctance_score,
-    check_termination_threshold,
+    SystemAction,
 )
 from datafusion.services.event_generation import (
-    check_triggered_events,
     check_detention_injury,
-)
-from datafusion.services.operator_data_tracker import (
-    track_decision,
-    trigger_exposure_event,
+    check_triggered_events,
 )
 from datafusion.services.news_system import (
     generate_triggered_article,
     suppress_news_channel,
 )
+from datafusion.services.operator_data_tracker import (
+    track_decision,
+    trigger_exposure_event,
+)
 from datafusion.services.protest_system import (
-    trigger_protest,
     suppress_protest_legal,
     suppress_protest_violence,
+    trigger_protest,
 )
+from datafusion.services.public_metrics import (
+    calculate_backlash_probability,
+    get_or_create_public_metrics,
+    update_public_metrics,
+)
+from datafusion.services.reluctance_tracking import (
+    check_termination_threshold,
+    update_reluctance_score,
+)
+
+# Import all the services we'll orchestrate
+from datafusion.services.severity_scoring import get_severity_score
 
 
 class ActionResult:
@@ -138,9 +138,7 @@ async def check_action_availability(
 
         citizen = await db.get(NPC, target_citizen_id)
         if not citizen or not citizen.is_hospitalized:
-            return ActionAvailability(
-                False, "Citizen is not hospitalized from prior detention"
-            )
+            return ActionAvailability(False, "Citizen is not hospitalized from prior detention")
         return ActionAvailability(True)
 
     # ARBITRARY_DETENTION: Available when targeting journalists/whistleblowers
@@ -193,9 +191,7 @@ async def check_action_availability(
 
         # INCITE_VIOLENCE requires planted agent
         if action_type == ActionType.INCITE_VIOLENCE and not protest.has_inciting_agent:
-            return ActionAvailability(
-                False, "No inciting agent available for this protest"
-            )
+            return ActionAvailability(False, "No inciting agent available for this protest")
 
         return ActionAvailability(True)
 
@@ -318,9 +314,7 @@ async def execute_action(
     for event in triggered_events:
         if event.event_type == "news_article":
             # Generate the article
-            article = await generate_triggered_article(
-                action, event.data["channel_id"], db
-            )
+            article = await generate_triggered_article(action, event.data["channel_id"], db)
             result.news_articles_triggered.append(
                 {
                     "id": str(article.id),
@@ -328,15 +322,11 @@ async def execute_action(
                     "headline": article.headline,
                 }
             )
-            result.messages.append(
-                f"📰 {event.data['channel_name']}: {article.headline}"
-            )
+            result.messages.append(f"📰 {event.data['channel_name']}: {article.headline}")
 
         elif event.event_type == "protest":
             # Generate the protest
-            protest = await trigger_protest(
-                operator_id, action, public_metrics.public_anger, db
-            )
+            protest = await trigger_protest(operator_id, action, public_metrics.public_anger, db)
             result.protests_triggered.append(
                 {
                     "id": str(protest.id),
@@ -440,10 +430,14 @@ async def execute_action_specific_logic(
                 )
 
     # Press suppression: Execute the gamble
-    if action.action_type in [
-        ActionType.PRESS_BAN,
-        ActionType.PRESSURE_FIRING,
-    ] and target_news_channel_id:
+    if (
+        action.action_type
+        in [
+            ActionType.PRESS_BAN,
+            ActionType.PRESSURE_FIRING,
+        ]
+        and target_news_channel_id
+    ):
         success, awareness_change, anger_change = await suppress_news_channel(
             action.operator_id, target_news_channel_id, action.action_type, db
         )
@@ -478,9 +472,7 @@ async def execute_action_specific_logic(
         if not gamble_result.success:
             # Catastrophic failure
             result.messages.append(gamble_result.discovery_message or "")
-            result.warnings.append(
-                "🚨 INCITING AGENT DISCOVERED: Catastrophic backlash!"
-            )
+            result.warnings.append("🚨 INCITING AGENT DISCOVERED: Catastrophic backlash!")
         else:
             result.messages.append(
                 f"Protest turned violent. {gamble_result.casualties} casualties, {gamble_result.arrests} arrests. Blame placed on protesters."

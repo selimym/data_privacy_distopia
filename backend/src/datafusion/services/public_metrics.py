@@ -7,13 +7,13 @@ These metrics represent the external consequences of the operator's actions:
 
 Both metrics trigger tier events at thresholds and affect protest/news generation.
 """
+
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from datafusion.models.system_mode import PublicMetrics, ActionType
-
+from datafusion.models.system_mode import ActionType, PublicMetrics
 
 # Tier thresholds for awareness and anger (0-100 scale)
 AWARENESS_TIERS = [
@@ -61,13 +61,9 @@ class PublicMetricsUpdate:
         self.tier_events = tier_events
 
 
-async def get_or_create_public_metrics(
-    operator_id: UUID, db: AsyncSession
-) -> PublicMetrics:
+async def get_or_create_public_metrics(operator_id: UUID, db: AsyncSession) -> PublicMetrics:
     """Get existing public metrics or create new ones."""
-    result = await db.execute(
-        select(PublicMetrics).where(PublicMetrics.operator_id == operator_id)
-    )
+    result = await db.execute(select(PublicMetrics).where(PublicMetrics.operator_id == operator_id))
     metrics = result.scalar_one_or_none()
 
     if not metrics:
@@ -110,9 +106,7 @@ async def update_public_metrics(
     )
 
     # Calculate anger increase
-    anger_delta = calculate_anger_increase(
-        action_severity, action_type, triggered_backlash
-    )
+    anger_delta = calculate_anger_increase(action_severity, action_type, triggered_backlash)
 
     # Update metrics (clamped 0-100)
     metrics.international_awareness = min(100, old_awareness + awareness_delta)
@@ -126,9 +120,7 @@ async def update_public_metrics(
         tier_index = AWARENESS_TIERS.index((threshold, description))
         if old_awareness < threshold <= metrics.international_awareness:
             metrics.awareness_tier = max(metrics.awareness_tier, tier_index + 1)
-            tier_events.append(
-                TierEvent("awareness", tier_index + 1, threshold, description)
-            )
+            tier_events.append(TierEvent("awareness", tier_index + 1, threshold, description))
 
     # Check anger tiers
     for threshold, description in ANGER_TIERS:
@@ -149,9 +141,7 @@ async def update_public_metrics(
     )
 
 
-def calculate_awareness_increase(
-    severity: int, current_awareness: int, was_backlash: bool
-) -> int:
+def calculate_awareness_increase(severity: int, current_awareness: int, was_backlash: bool) -> int:
     """
     Calculate awareness increase from an action.
 
@@ -182,9 +172,7 @@ def calculate_awareness_increase(
     return base_increase
 
 
-def calculate_anger_increase(
-    severity: int, action_type: ActionType, was_backlash: bool
-) -> int:
+def calculate_anger_increase(severity: int, action_type: ActionType, was_backlash: bool) -> int:
     """
     Calculate anger increase from an action.
 
@@ -249,9 +237,7 @@ def calculate_protest_probability(severity: int, anger: int) -> float:
     return (severity / 10) * (1 + anger / 50)
 
 
-def calculate_news_probability(
-    severity: int, news_channel_stance: str, awareness: int
-) -> float:
+def calculate_news_probability(severity: int, news_channel_stance: str, awareness: int) -> float:
     """
     Calculate probability that an action triggers a news article.
 
@@ -286,9 +272,7 @@ def calculate_news_probability(
     return min(0.95, probability)
 
 
-def calculate_backlash_probability(
-    severity: int, awareness: int, anger: int
-) -> float:
+def calculate_backlash_probability(severity: int, awareness: int, anger: int) -> float:
     """
     Calculate probability that an action triggers backlash.
 

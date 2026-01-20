@@ -7,6 +7,7 @@ for the player themselves.
 
 The watcher becomes the watched.
 """
+
 from datetime import datetime
 from uuid import UUID
 
@@ -30,16 +31,10 @@ class OperatorStatusResponse(BaseModel):
     operator_id: UUID = Field(description="Operator's unique identifier")
     operator_code: str = Field(description="Operator's assigned code (e.g., OP-7842)")
     status: OperatorStatusEnum = Field(description="Current operational status")
-    compliance_score: float = Field(
-        ge=0.0, le=100.0, description="Compliance score (0-100)"
-    )
-    current_quota_progress: str = Field(
-        description="Current quota progress (e.g., '3/5')"
-    )
+    compliance_score: float = Field(ge=0.0, le=100.0, description="Compliance score (0-100)")
+    current_quota_progress: str = Field(description="Current quota progress (e.g., '3/5')")
     warnings: list[str] = Field(description="Active warnings for operator")
-    next_review: datetime | None = Field(
-        description="Scheduled review date if under review"
-    )
+    next_review: datetime | None = Field(description="Scheduled review date if under review")
 
 
 class OperatorRiskAssessment(BaseModel):
@@ -57,9 +52,7 @@ class OperatorRiskAssessment(BaseModel):
     contributing_factors: list[OperatorContributingFactor] = Field(
         description="Factors contributing to risk assessment"
     )
-    recommended_action: str = Field(
-        description="Recommended action for this operator"
-    )
+    recommended_action: str = Field(description="Recommended action for this operator")
     assessment_date: datetime = Field(description="When assessment was generated")
 
 
@@ -69,21 +62,13 @@ class FlagDecision(BaseModel):
     citizen_id: UUID = Field(description="ID of citizen being evaluated")
     citizen_name: str = Field(description="Name of citizen for display")
     directive_id: UUID = Field(description="ID of current directive")
-    action_taken: str = Field(
-        description="Action taken: 'flag', 'skip', 'no_action'"
-    )
+    action_taken: str = Field(description="Action taken: 'flag', 'skip', 'no_action'")
     flag_type: str | None = Field(
         description="Type of flag if flagged (monitoring, restriction, etc.)"
     )
-    risk_score_at_decision: int = Field(
-        description="Citizen's risk score at time of decision"
-    )
-    decision_time_seconds: float = Field(
-        description="How long operator took to decide"
-    )
-    justification: str | None = Field(
-        description="Operator's stated justification"
-    )
+    risk_score_at_decision: int = Field(description="Citizen's risk score at time of decision")
+    decision_time_seconds: float = Field(description="How long operator took to decide")
+    justification: str | None = Field(description="Operator's stated justification")
 
 
 class QuotaProgress(BaseModel):
@@ -94,6 +79,4 @@ class QuotaProgress(BaseModel):
     flags_submitted: int = Field(description="Flags submitted this directive")
     flags_required: int = Field(description="Flags required by quota")
     progress_percent: float = Field(description="Completion percentage")
-    time_remaining_hours: int | None = Field(
-        description="Hours remaining if time-limited"
-    )
+    time_remaining_hours: int | None = Field(description="Hours remaining if time-limited")

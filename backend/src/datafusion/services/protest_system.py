@@ -6,9 +6,10 @@ They can be suppressed via two methods:
 - DECLARE_PROTEST_ILLEGAL: Always succeeds but high awareness cost
 - INCITE_VIOLENCE: Gamble - 60% success, 40% agent discovered (catastrophe)
 """
+
 import random
-from uuid import UUID
 from datetime import datetime, timezone
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,11 +18,10 @@ from datafusion.models.system_mode import (
     Protest,
     ProtestStatus,
     SystemAction,
-    ActionType,
 )
 from datafusion.services.event_generation import (
-    select_protest_neighborhood,
     calculate_protest_size,
+    select_protest_neighborhood,
     should_include_inciting_agent,
 )
 
@@ -330,9 +330,7 @@ async def get_protest_description(
     Returns:
         Description string
     """
-    size_desc = (
-        "small" if protest.size < 100 else "moderate" if protest.size < 500 else "large"
-    )
+    size_desc = "small" if protest.size < 100 else "moderate" if protest.size < 500 else "large"
 
     status_desc = {
         ProtestStatus.FORMING: "is beginning to gather",

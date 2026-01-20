@@ -6,10 +6,15 @@ import sys
 
 from sqlalchemy import select
 
+from datafusion.content.system_directives import DIRECTIVES
 from datafusion.database import AsyncSessionLocal, Base, engine
 from datafusion.generators import generate_full_population
 from datafusion.generators.messages import MessageGenerator
 from datafusion.generators.scenarios import seed_scenario
+from datafusion.generators.system_seed_data import (
+    get_neighborhood_seed_data,
+    get_news_channel_seed_data,
+)
 from datafusion.models.finance import (
     BankAccount,
     Debt,
@@ -37,11 +42,6 @@ from datafusion.models.social import (
     SocialMediaRecord,
 )
 from datafusion.models.system_mode import Directive, Neighborhood, NewsChannel
-from datafusion.content.system_directives import DIRECTIVES
-from datafusion.generators.system_seed_data import (
-    get_neighborhood_seed_data,
-    get_news_channel_seed_data,
-)
 
 
 async def reset_database():

@@ -118,9 +118,7 @@ def generate_finance_record(npc_id: UUID, seed: int | None = None) -> dict:
         elif account_type == AccountType.SAVINGS:
             balance = Decimal(random.uniform(500, 50000))
         elif account_type == AccountType.CREDIT_CARD:
-            balance = Decimal(
-                -random.uniform(0, 5000)
-            )  # Negative means owed balance
+            balance = Decimal(-random.uniform(0, 5000))  # Negative means owed balance
         else:  # INVESTMENT
             balance = Decimal(random.uniform(5000, 200000))
 
@@ -183,9 +181,7 @@ def generate_finance_record(npc_id: UUID, seed: int | None = None) -> dict:
                     "current_balance": current_balance,
                     "monthly_payment": monthly_payment,
                     "interest_rate": interest_rate,
-                    "opened_date": fake.date_between(
-                        start_date="-10y", end_date="-6m"
-                    ),
+                    "opened_date": fake.date_between(start_date="-10y", end_date="-6m"),
                     "is_delinquent": is_delinquent,
                 }
             )

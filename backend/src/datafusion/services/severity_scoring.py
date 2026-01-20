@@ -7,8 +7,8 @@ Severity scores (1-10) determine:
 - Reluctance reduction for harsh actions
 - Protest trigger probability
 """
-from datafusion.models.system_mode import ActionType
 
+from datafusion.models.system_mode import ActionType
 
 # Severity scores for each action type (1-10 scale)
 SEVERITY_SCORES = {

@@ -10,15 +10,15 @@ Progressive exposure stages:
 
 The goal is to make the player uncomfortable by showing them their own surveillance.
 """
+
 import random
-from uuid import UUID
 from datetime import datetime, timezone
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from datafusion.models.system_mode import OperatorData, ActionType
-
+from datafusion.models.system_mode import ActionType, OperatorData
 
 # Fake names for operator profile generation
 FIRST_NAMES = [
@@ -174,9 +174,7 @@ async def get_or_create_operator_data(
     db: AsyncSession,
 ) -> OperatorData:
     """Get existing operator data or create new."""
-    result = await db.execute(
-        select(OperatorData).where(OperatorData.operator_id == operator_id)
-    )
+    result = await db.execute(select(OperatorData).where(OperatorData.operator_id == operator_id))
     data = result.scalar_one_or_none()
 
     if not data:
@@ -326,13 +324,13 @@ The watchers themselves are being watched.
 Leaked documents reveal the surveillance system tracks its own operators.
 
 Your recent search history:
-{chr(10).join('  - ' + q for q in recent_queries)}
+{chr(10).join("  - " + q for q in recent_queries)}
 
 Hesitation detected on action types:
-{chr(10).join('  - ' + t.replace('_', ' ').title() for t in hesitant_types[:5])}
+{chr(10).join("  - " + t.replace("_", " ").title() for t in hesitant_types[:5])}
 
 Family connections mentioned in records:
-{chr(10).join('  - ' + f"{m['relation']}: {m['name']}, age {m['age']}" for m in operator_data.family_members[:3])}
+{chr(10).join("  - " + f"{m['relation']}: {m['name']}, age {m['age']}" for m in operator_data.family_members[:3])}
 
 The system is watching you as closely as you watch them.
 
@@ -362,14 +360,14 @@ OPERATOR PROFILE:
   Address: {operator_data.home_address}
 
 FAMILY MEMBERS:
-{chr(10).join('  - ' + f"{m['relation']}: {m['name']}, age {m['age']}" for m in operator_data.family_members)}
+{chr(10).join("  - " + f"{m['relation']}: {m['name']}, age {m['age']}" for m in operator_data.family_members)}
 
 BEHAVIORAL ANALYSIS:
   Total Actions: {total_actions}
-  Most Used Action: {max(operator_data.decision_patterns.items(), key=lambda x: x[1])[0].replace('_', ' ').title() if operator_data.decision_patterns else 'N/A'}
+  Most Used Action: {max(operator_data.decision_patterns.items(), key=lambda x: x[1])[0].replace("_", " ").title() if operator_data.decision_patterns else "N/A"}
 
 RECENT SEARCH QUERIES:
-{chr(10).join('  - ' + q for q in operator_data.search_queries[-15:])}
+{chr(10).join("  - " + q for q in operator_data.search_queries[-15:])}
 
 HESITATION PATTERNS:
 {chr(10).join(f"  - {action_type.replace('_', ' ').title()}: {pattern['hesitant_decisions']}/{pattern['total_decisions']} decisions showed hesitation (avg {pattern['avg_decision_time']:.1f}s)" for action_type, pattern in list(operator_data.hesitation_patterns.items())[:5])}

@@ -19,9 +19,7 @@ class ScenarioEngine:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_scenario_state(
-        self, scenario_key: str, session_id: UUID
-    ) -> ScenarioState:
+    async def get_scenario_state(self, scenario_key: str, session_id: UUID) -> ScenarioState:
         """
         Get current state of a scenario session.
 
@@ -47,9 +45,7 @@ class ScenarioEngine:
 
         for execution in executions:
             # Get action
-            action_query = select(AbuseAction).where(
-                AbuseAction.id == execution.action_id
-            )
+            action_query = select(AbuseAction).where(AbuseAction.id == execution.action_id)
             action_result = await self.db.execute(action_query)
             action = action_result.scalar_one()
             actions_taken.append(action.action_key)
@@ -91,9 +87,7 @@ class ScenarioEngine:
         state = await self.get_scenario_state(scenario_key, session_id)
 
         # Get prompt data
-        prompt_data = get_prompt_for_state(
-            scenario_key, state.actions_taken, state.phase
-        )
+        prompt_data = get_prompt_for_state(scenario_key, state.actions_taken, state.phase)
 
         if not prompt_data:
             return None
@@ -105,9 +99,7 @@ class ScenarioEngine:
         # Fetch suggested action if specified
         if prompt_data.get("suggested_action"):
             action_key = prompt_data["suggested_action"]
-            action_query = select(AbuseAction).where(
-                AbuseAction.action_key == action_key
-            )
+            action_query = select(AbuseAction).where(AbuseAction.action_key == action_key)
             action_result = await self.db.execute(action_query)
             action = action_result.scalar_one_or_none()
             if action:

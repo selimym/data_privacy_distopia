@@ -76,9 +76,7 @@ class FinanceRecord(Base, UUIDMixin, TimestampMixin):
         Enum(EmploymentStatus), nullable=False
     )
     employer_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    annual_income: Mapped[Decimal] = mapped_column(
-        Numeric(12, 2), nullable=False
-    )  # e.g., 75000.00
+    annual_income: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)  # e.g., 75000.00
 
     # Credit information
     credit_score: Mapped[int] = mapped_column(nullable=False)  # 300-850
@@ -117,9 +115,7 @@ class BankAccount(Base, UUIDMixin, TimestampMixin):
 
     account_type: Mapped[AccountType] = mapped_column(Enum(AccountType), nullable=False)
     bank_name: Mapped[str] = mapped_column(String(200), nullable=False)
-    account_number_last4: Mapped[str] = mapped_column(
-        String(4), nullable=False
-    )  # Last 4 digits
+    account_number_last4: Mapped[str] = mapped_column(String(4), nullable=False)  # Last 4 digits
     balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     opened_date: Mapped[date] = mapped_column(Date, nullable=False)
 
@@ -146,9 +142,7 @@ class Debt(Base, UUIDMixin, TimestampMixin):
     original_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     current_balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     monthly_payment: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
-    interest_rate: Mapped[Decimal] = mapped_column(
-        Numeric(5, 2), nullable=False
-    )  # e.g., 5.25%
+    interest_rate: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False)  # e.g., 5.25%
     opened_date: Mapped[date] = mapped_column(Date, nullable=False)
     is_delinquent: Mapped[bool] = mapped_column(nullable=False, default=False)
 
@@ -173,9 +167,7 @@ class Transaction(Base, UUIDMixin, TimestampMixin):
     transaction_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     merchant_name: Mapped[str] = mapped_column(String(200), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
-    category: Mapped[TransactionCategory] = mapped_column(
-        Enum(TransactionCategory), nullable=False
-    )
+    category: Mapped[TransactionCategory] = mapped_column(Enum(TransactionCategory), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_sensitive: Mapped[bool] = mapped_column(
         nullable=False, default=False

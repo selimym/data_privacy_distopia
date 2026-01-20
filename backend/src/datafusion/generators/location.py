@@ -153,9 +153,7 @@ def generate_location_record(npc_id: UUID, seed: int | None = None) -> dict:
 
     # Family location (50% of people visit family regularly)
     if random.random() < 0.50:
-        relationship = random.choice(
-            ["Elderly parent", "Parents", "Sibling", "Adult child"]
-        )
+        relationship = random.choice(["Elderly parent", "Parents", "Sibling", "Adult child"])
         inferred_locations.append(
             {
                 "location_type": LocationType.FAMILY,
@@ -181,15 +179,11 @@ def generate_location_record(npc_id: UUID, seed: int | None = None) -> dict:
 
     # Frequent visits (gym, store, etc.) - 60% of people
     if random.random() < 0.60:
-        location_type = random.choice(
-            [LocationType.FREQUENT_VISIT, LocationType.PLACE_OF_WORSHIP]
-        )
+        location_type = random.choice([LocationType.FREQUENT_VISIT, LocationType.PLACE_OF_WORSHIP])
 
         if location_type == LocationType.FREQUENT_VISIT:
             location_name = random.choice(GYMS + ENTERTAINMENT)
-            days = random.choice(
-                ["Monday, Wednesday, Friday", "Weekdays", "Tuesday, Thursday"]
-            )
+            days = random.choice(["Monday, Wednesday, Friday", "Weekdays", "Tuesday, Thursday"])
             frequency = random.choice(["3-4 times per week", "Weekly", "Bi-weekly"])
             relationship = "Regular recreation/fitness location"
             implications = "Daily routine patterns exposed, habits and interests revealed"
@@ -234,9 +228,7 @@ def generate_location_record(npc_id: UUID, seed: int | None = None) -> dict:
                 "city": fake.city(),
                 "state": fake.state_abbr(),
                 "zip_code": fake.zipcode(),
-                "typical_days": random.choice(
-                    ["Tuesday", "Thursday", "Varies", "Monthly"]
-                ),
+                "typical_days": random.choice(["Tuesday", "Thursday", "Varies", "Monthly"]),
                 "typical_arrival_time": time(
                     hour=random.randint(9, 15), minute=random.choice([0, 30])
                 ),

@@ -7,6 +7,7 @@ This is where the human cost of surveillance becomes real and personal.
 Educational purpose: Shows that surveillance decisions have cascading,
 devastating effects on real people's lives - jobs, families, health, freedom.
 """
+
 import random
 from uuid import UUID
 
@@ -45,9 +46,7 @@ class CitizenOutcomeGenerator:
         """Initialize with database session."""
         self.db = db
 
-    async def generate_outcome(
-        self, flag: CitizenFlag, time_skip: str
-    ) -> CitizenOutcome:
+    async def generate_outcome(self, flag: CitizenFlag, time_skip: str) -> CitizenOutcome:
         """
         Generate outcome for a flagged citizen at a specific time point.
 
@@ -91,9 +90,7 @@ class CitizenOutcomeGenerator:
             statistics=statistics,
         )
 
-    async def generate_outcome_timeline(
-        self, flag: CitizenFlag
-    ) -> OutcomeTimeline:
+    async def generate_outcome_timeline(self, flag: CitizenFlag) -> OutcomeTimeline:
         """
         Generate complete timeline of outcomes for a flag.
 
@@ -118,9 +115,7 @@ class CitizenOutcomeGenerator:
             outcomes=outcomes,
         )
 
-    async def generate_outcome_summary(
-        self, flag: CitizenFlag
-    ) -> CitizenOutcomeSummary:
+    async def generate_outcome_summary(self, flag: CitizenFlag) -> CitizenOutcomeSummary:
         """
         Generate one-line summary of citizen's final outcome.
 
@@ -146,9 +141,7 @@ class CitizenOutcomeGenerator:
             one_line_summary=summary,
         )
 
-    async def generate_outcome_summary_for_ending(
-        self, operator_id: UUID
-    ) -> OperatorImpactSummary:
+    async def generate_outcome_summary_for_ending(self, operator_id: UUID) -> OperatorImpactSummary:
         """
         Generate complete impact summary for ending sequence.
 
@@ -161,9 +154,7 @@ class CitizenOutcomeGenerator:
             OperatorImpactSummary with all outcomes
         """
         # Get operator
-        operator_result = await self.db.execute(
-            select(Operator).where(Operator.id == operator_id)
-        )
+        operator_result = await self.db.execute(select(Operator).where(Operator.id == operator_id))
         operator = operator_result.scalar_one_or_none()
         if not operator:
             raise ValueError(f"Operator {operator_id} not found")
@@ -262,7 +253,10 @@ class CitizenOutcomeGenerator:
             # Check for family mentions in inferences
             if social_record.public_inferences:
                 for inf in social_record.public_inferences:
-                    if "child" in inf.inference_text.lower() or "parent" in inf.inference_text.lower():
+                    if (
+                        "child" in inf.inference_text.lower()
+                        or "parent" in inf.inference_text.lower()
+                    ):
                         personalization["has_children"] = True
                         break
 
@@ -284,18 +278,10 @@ class CitizenOutcomeGenerator:
         narrative = narrative_template.replace("{name}", citizen_name)
 
         # Add randomized specific details
-        narrative = narrative.replace(
-            "{social_reduction}", str(random.randint(55, 80))
-        )
-        narrative = narrative.replace(
-            "{connections_lost}", str(random.randint(35, 60))
-        )
-        narrative = narrative.replace(
-            "{family_event}", random.choice(FAMILY_EVENTS)
-        )
-        narrative = narrative.replace(
-            "{detention_conditions}", random.choice(DETENTION_CONDITIONS)
-        )
+        narrative = narrative.replace("{social_reduction}", str(random.randint(55, 80)))
+        narrative = narrative.replace("{connections_lost}", str(random.randint(35, 60)))
+        narrative = narrative.replace("{family_event}", random.choice(FAMILY_EVENTS))
+        narrative = narrative.replace("{detention_conditions}", random.choice(DETENTION_CONDITIONS))
 
         # Add personalized impacts based on NPC data
         additional_impacts = []
@@ -313,21 +299,21 @@ class CitizenOutcomeGenerator:
             if flag_type == FlagType.INTERVENTION and time_skip == "6_months":
                 narrative = narrative.replace(
                     "{family_separation_narrative}",
-                    f"Subject {citizen_name}'s children removed by child protective services pending investigation. Investigation status: Ongoing (no end date)."
+                    f"Subject {citizen_name}'s children removed by child protective services pending investigation. Investigation status: Ongoing (no end date).",
                 )
             else:
                 narrative = narrative.replace("{family_separation_narrative}", "")
         else:
             narrative = narrative.replace(
                 "{family_separation_narrative}",
-                f"Subject {citizen_name}'s family members placed under enhanced monitoring. Contact restricted."
+                f"Subject {citizen_name}'s family members placed under enhanced monitoring. Contact restricted.",
             )
 
         # Job impact
         if time_skip == "6_months" and flag_type == FlagType.RESTRICTION:
             narrative = narrative.replace(
                 "{job_impact}",
-                "Former colleagues have distanced themselves. Professional network: Collapsed."
+                "Former colleagues have distanced themselves. Professional network: Collapsed.",
             )
         else:
             narrative = narrative.replace("{job_impact}", "")
@@ -337,12 +323,12 @@ class CitizenOutcomeGenerator:
             if personalization["has_health_issues"]:
                 narrative = narrative.replace(
                     "{health_impact}",
-                    f"Health deteriorating without proper treatment for {personalization.get('health_condition', 'conditions')}."
+                    f"Health deteriorating without proper treatment for {personalization.get('health_condition', 'conditions')}.",
                 )
             else:
                 narrative = narrative.replace(
                     "{health_impact}",
-                    "Subject reports chronic stress symptoms. Medical evaluation: Not authorized."
+                    "Subject reports chronic stress symptoms. Medical evaluation: Not authorized.",
                 )
         else:
             narrative = narrative.replace("{health_impact}", "")
@@ -350,13 +336,11 @@ class CitizenOutcomeGenerator:
         # Additional impact for monitoring
         if time_skip == "1_year" and flag_type == FlagType.MONITORING:
             if additional_impacts:
-                narrative = narrative.replace(
-                    "{additional_impact}", " ".join(additional_impacts)
-                )
+                narrative = narrative.replace("{additional_impact}", " ".join(additional_impacts))
             else:
                 narrative = narrative.replace(
                     "{additional_impact}",
-                    "Subject has become a 'model citizen' - silent, isolated, compliant."
+                    "Subject has become a 'model citizen' - silent, isolated, compliant.",
                 )
         else:
             narrative = narrative.replace("{additional_impact}", "")
@@ -365,22 +349,18 @@ class CitizenOutcomeGenerator:
         if time_skip == "1_year" and flag_type == FlagType.INTERVENTION:
             if personalization["has_children"]:
                 narrative = narrative.replace(
-                    "{final_status}",
-                    "Parental rights terminated. Children in state custody."
+                    "{final_status}", "Parental rights terminated. Children in state custody."
                 )
             else:
                 narrative = narrative.replace(
-                    "{final_status}",
-                    "Family estranged. Employment prospects: None."
+                    "{final_status}", "Family estranged. Employment prospects: None."
                 )
         else:
             narrative = narrative.replace("{final_status}", "")
 
         return narrative
 
-    def _generate_one_line_summary(
-        self, flag_type: FlagType, final_outcome: CitizenOutcome
-    ) -> str:
+    def _generate_one_line_summary(self, flag_type: FlagType, final_outcome: CitizenOutcome) -> str:
         """Generate one-line summary based on flag type."""
         summaries = {
             FlagType.MONITORING: "Isolated. Career stalled. Now lives in fear.",

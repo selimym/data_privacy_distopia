@@ -5,25 +5,25 @@ Tests the new unified action execution system and all related endpoints.
 These are integration tests that test the full request/response cycle through FastAPI.
 """
 
-import pytest
+from datetime import date, datetime, timezone
 from uuid import uuid4
-from datetime import datetime, date, timezone
+
+import pytest
 from httpx import AsyncClient
 
 from datafusion.models.npc import NPC
 from datafusion.models.system_mode import (
-    Operator,
+    BookPublicationEvent,
     Directive,
-    OperatorStatus,
+    Neighborhood,
     NewsChannel,
+    Operator,
+    OperatorStatus,
     Protest,
     ProtestStatus,
-    Neighborhood,
     PublicMetrics,
     ReluctanceMetrics,
-    BookPublicationEvent,
 )
-
 
 # ============================================================================
 # FIXTURES
@@ -145,7 +145,12 @@ async def test_news_channel(db_session):
         is_banned=False,
         reporters=[
             {"name": "Sarah Reporter", "specialty": "politics", "fired": False, "targeted": False},
-            {"name": "John Journalist", "specialty": "investigations", "fired": False, "targeted": False},
+            {
+                "name": "John Journalist",
+                "specialty": "investigations",
+                "fired": False,
+                "targeted": False,
+            },
         ],
     )
     db_session.add(channel)
@@ -163,7 +168,12 @@ async def critical_news_channel(db_session):
         credibility=85,
         is_banned=False,
         reporters=[
-            {"name": "Jane Investigator", "specialty": "corruption", "fired": False, "targeted": False},
+            {
+                "name": "Jane Investigator",
+                "specialty": "corruption",
+                "fired": False,
+                "targeted": False,
+            },
         ],
     )
     db_session.add(channel)
@@ -492,7 +502,12 @@ class TestActionExecutionEndpoint:
 
     @pytest.mark.asyncio
     async def test_execute_action_triggers_news_article(
-        self, client: AsyncClient, test_operator, test_citizen, test_directive, critical_news_channel
+        self,
+        client: AsyncClient,
+        test_operator,
+        test_citizen,
+        test_directive,
+        critical_news_channel,
     ):
         """Test that high-severity action can trigger news article."""
         # Execute multiple high-severity actions to increase likelihood
@@ -548,9 +563,7 @@ class TestNoActionSubmission:
     """Test POST /actions/no-action-new endpoint."""
 
     @pytest.mark.asyncio
-    async def test_submit_no_action(
-        self, client: AsyncClient, test_operator, test_citizen
-    ):
+    async def test_submit_no_action(self, client: AsyncClient, test_operator, test_citizen):
         """Test submitting a no-action decision."""
         response = await client.post(
             "/api/system/actions/no-action-new",
@@ -618,7 +631,9 @@ class TestNoActionSubmission:
 
             # Check if warning was generated
             if len(result["warnings"]) > 0:
-                assert any("performance" in w.lower() or "warning" in w.lower() for w in result["warnings"])
+                assert any(
+                    "performance" in w.lower() or "warning" in w.lower() for w in result["warnings"]
+                )
                 break
 
 
@@ -764,9 +779,7 @@ class TestMetricsEndpoints:
     """Test metrics retrieval endpoints."""
 
     @pytest.mark.asyncio
-    async def test_get_public_metrics(
-        self, client: AsyncClient, test_operator
-    ):
+    async def test_get_public_metrics(self, client: AsyncClient, test_operator):
         """Test GET /metrics/public endpoint."""
         response = await client.get(
             "/api/system/metrics/public",
@@ -790,9 +803,7 @@ class TestMetricsEndpoints:
         assert 0 <= result["anger_tier"] <= 5
 
     @pytest.mark.asyncio
-    async def test_get_reluctance_metrics(
-        self, client: AsyncClient, test_operator
-    ):
+    async def test_get_reluctance_metrics(self, client: AsyncClient, test_operator):
         """Test GET /metrics/reluctance endpoint."""
         response = await client.get(
             "/api/system/metrics/reluctance",
@@ -864,9 +875,7 @@ class TestNewsEndpoints:
     """Test news-related endpoints."""
 
     @pytest.mark.asyncio
-    async def test_get_recent_news_empty(
-        self, client: AsyncClient, test_operator
-    ):
+    async def test_get_recent_news_empty(self, client: AsyncClient, test_operator):
         """Test getting news when no articles exist."""
         response = await client.get(
             "/api/system/news/recent",
@@ -902,9 +911,7 @@ class TestNewsEndpoints:
             assert isinstance(channel["reporters"], list)
 
     @pytest.mark.asyncio
-    async def test_news_channels_show_reporters(
-        self, client: AsyncClient, test_news_channel
-    ):
+    async def test_news_channels_show_reporters(self, client: AsyncClient, test_news_channel):
         """Test that reporters are included in channel data."""
         response = await client.get("/api/system/news/channels")
 
@@ -926,9 +933,7 @@ class TestProtestEndpoints:
     """Test protest-related endpoints."""
 
     @pytest.mark.asyncio
-    async def test_get_active_protests_empty(
-        self, client: AsyncClient, test_operator
-    ):
+    async def test_get_active_protests_empty(self, client: AsyncClient, test_operator):
         """Test getting protests when none exist."""
         response = await client.get(
             "/api/system/protests/active",
@@ -992,9 +997,7 @@ class TestBookPublicationEndpoints:
     """Test book publication endpoints."""
 
     @pytest.mark.asyncio
-    async def test_get_pending_books_empty(
-        self, client: AsyncClient, test_operator
-    ):
+    async def test_get_pending_books_empty(self, client: AsyncClient, test_operator):
         """Test getting books when none exist."""
         response = await client.get(
             "/api/system/books/pending",
@@ -1006,9 +1009,7 @@ class TestBookPublicationEndpoints:
         assert isinstance(result, list)
 
     @pytest.mark.asyncio
-    async def test_get_pending_books(
-        self, client: AsyncClient, test_operator, pending_book
-    ):
+    async def test_get_pending_books(self, client: AsyncClient, test_operator, pending_book):
         """Test getting pending books."""
         response = await client.get(
             "/api/system/books/pending",
@@ -1037,9 +1038,7 @@ class TestOperatorDataEndpoints:
     """Test operator data and exposure endpoints."""
 
     @pytest.mark.asyncio
-    async def test_get_exposure_risk(
-        self, client: AsyncClient, test_operator
-    ):
+    async def test_get_exposure_risk(self, client: AsyncClient, test_operator):
         """Test GET /operator/exposure-risk endpoint."""
         response = await client.get(
             "/api/system/operator/exposure-risk",
@@ -1061,9 +1060,7 @@ class TestOperatorDataEndpoints:
         assert 0 <= result["progress_to_next_stage"] <= 100
 
     @pytest.mark.asyncio
-    async def test_get_operator_data(
-        self, client: AsyncClient, test_operator
-    ):
+    async def test_get_operator_data(self, client: AsyncClient, test_operator):
         """Test GET /operator/data endpoint."""
         response = await client.get(
             "/api/system/operator/data",
@@ -1089,9 +1086,7 @@ class TestOperatorDataEndpoints:
         assert isinstance(result["family_members"], list)
 
     @pytest.mark.asyncio
-    async def test_get_dashboard_with_cases(
-        self, client: AsyncClient, test_operator, test_citizen
-    ):
+    async def test_get_dashboard_with_cases(self, client: AsyncClient, test_operator, test_citizen):
         """Test GET /dashboard-with-cases endpoint (catches Pydantic errors)."""
         response = await client.get(
             "/api/system/dashboard-with-cases",
@@ -1130,9 +1125,7 @@ class TestNeighborhoodEndpoints:
     """Test neighborhood endpoints."""
 
     @pytest.mark.asyncio
-    async def test_get_neighborhoods(
-        self, client: AsyncClient, test_neighborhood
-    ):
+    async def test_get_neighborhoods(self, client: AsyncClient, test_neighborhood):
         """Test GET /neighborhoods endpoint."""
         response = await client.get("/api/system/neighborhoods")
 

@@ -341,9 +341,7 @@ async def seed_scenario(db: AsyncSession, scenario: str) -> dict:
     health_records_created = 0
 
     for npc_key, npc_data in SCENARIO_NPCS.items():
-        existing = await db.execute(
-            select(NPC).where(NPC.scenario_key == npc_key)
-        )
+        existing = await db.execute(select(NPC).where(NPC.scenario_key == npc_key))
         if existing.scalar_one_or_none():
             continue
 

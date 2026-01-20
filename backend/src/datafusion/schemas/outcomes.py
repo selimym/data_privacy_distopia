@@ -6,6 +6,7 @@ what happens to people after they're flagged by the system.
 
 Educational purpose: Makes abstract surveillance harm concrete and personal.
 """
+
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -20,11 +21,11 @@ class CitizenOutcome(BaseModel):
     """
 
     flag_id: UUID = Field(description="ID of the flag that caused this outcome")
-    citizen_id: UUID = Field(description="ID of the affected citizen")  # Added for cinematic transitions
+    citizen_id: UUID = Field(
+        description="ID of the affected citizen"
+    )  # Added for cinematic transitions
     citizen_name: str = Field(description="Name of the affected citizen")
-    time_skip: str = Field(
-        description="Time period (immediate, 1_month, 6_months, 1_year)"
-    )
+    time_skip: str = Field(description="Time period (immediate, 1_month, 6_months, 1_year)")
     status: str = Field(description="Current status of the citizen")
     narrative: str = Field(description="Detailed narrative of what happened")
     statistics: dict = Field(
@@ -67,9 +68,7 @@ class OperatorImpactSummary(BaseModel):
 
     operator_code: str = Field(description="Operator's assigned code")
     total_citizens_flagged: int = Field(description="Total citizens flagged")
-    outcomes_by_type: dict[str, int] = Field(
-        description="Count of flags by type"
-    )
+    outcomes_by_type: dict[str, int] = Field(description="Count of flags by type")
     citizen_summaries: list[CitizenOutcomeSummary] = Field(
         description="Individual outcomes for each flagged citizen"
     )

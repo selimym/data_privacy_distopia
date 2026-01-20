@@ -1,6 +1,5 @@
 """Tests for configuration file loading and validation."""
 
-
 from datafusion.services.content_loader import (
     load_correlation_alerts,
     load_inference_rules,
@@ -180,23 +179,23 @@ def test_correlation_alerts_reference_valid_factors():
         # Check required_factors if present
         if "required_factors" in alert and alert["required_factors"]:
             for factor in alert["required_factors"]:
-                assert (
-                    factor in valid_factor_keys
-                ), f"Alert {alert['name']} references invalid factor: {factor}"
+                assert factor in valid_factor_keys, (
+                    f"Alert {alert['name']} references invalid factor: {factor}"
+                )
 
         # Check required_factors_any if present
         if "required_factors_any" in alert and alert["required_factors_any"]:
             for factor in alert["required_factors_any"]:
-                assert (
-                    factor in valid_factor_keys
-                ), f"Alert {alert['name']} references invalid factor: {factor}"
+                assert factor in valid_factor_keys, (
+                    f"Alert {alert['name']} references invalid factor: {factor}"
+                )
 
         # Check required_factors_all if present
         if "required_factors_all" in alert and alert["required_factors_all"]:
             for factor in alert["required_factors_all"]:
-                assert (
-                    factor in valid_factor_keys
-                ), f"Alert {alert['name']} references invalid factor: {factor}"
+                assert factor in valid_factor_keys, (
+                    f"Alert {alert['name']} references invalid factor: {factor}"
+                )
 
 
 def test_risk_level_boundaries_are_sequential():
