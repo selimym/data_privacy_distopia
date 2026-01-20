@@ -10,8 +10,8 @@
 import type { NewsArticleRead, NewsChannelRead } from '../../types/system';
 
 export interface NewsFeedPanelConfig {
-  articles: NewsArticleRead[];
-  channels: NewsChannelRead[];
+  articles?: NewsArticleRead[];  // Optional - may not be loaded yet
+  channels?: NewsChannelRead[];  // Optional - may not be loaded yet
   maxArticles?: number;
   onSuppressChannel?: (channelId: string, channelName: string) => void;
   onSilenceReporter?: (articleId: string, channelName: string) => void;
@@ -65,8 +65,9 @@ export class NewsFeedPanel {
   }
 
   private getPanelHTML(): string {
-    const displayArticles = this.config.articles.slice(0, this.maxArticles);
-    const totalArticles = this.config.articles.length;
+    const articles = this.config.articles || [];
+    const displayArticles = articles.slice(0, this.maxArticles);
+    const totalArticles = articles.length;
     const hiddenCount = Math.max(0, totalArticles - this.maxArticles);
 
     return `
@@ -235,7 +236,7 @@ export class NewsFeedPanel {
   }
 
   private getChannelInfo(channelId: string): NewsChannelRead | undefined {
-    return this.config.channels.find(c => c.id === channelId);
+    return this.config.channels?.find(c => c.id === channelId);
   }
 
   private escapeHtml(text: string): string {

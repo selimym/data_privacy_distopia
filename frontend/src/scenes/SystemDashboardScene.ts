@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { systemState } from '../state/SystemState';
-import type { CaseOverview, FlagResult, RiskLevel, CinematicData, CitizenOutcome } from '../types/system';
+import type { CaseOverview, FlagResult, RiskLevel, CinematicData, CitizenOutcome, ExposureEventRead, OperatorDataRead } from '../types/system';
 import { MessagesPanel } from '../ui/system/MessagesPanel';
 import { DecisionResultModal } from '../ui/system/DecisionResultModal';
 import { OutcomeViewer } from '../ui/system/OutcomeViewer';
@@ -13,7 +13,7 @@ import { ExposureEventModal } from '../ui/system/ExposureEventModal';
 import { getSystemAudioManager } from '../audio/SystemAudioManager';
 import { getSystemVisualEffects } from '../ui/system/SystemVisualEffects';
 import * as systemApi from '../api/system';
-import { getNPCsBatch } from '../api/npcs';
+import { getNPCsBatch, getNPC } from '../api/npcs';
 import { generateActionCinematic, getDefaultCinematicLocation } from '../utils/cinematicGenerator';
 
 /**
@@ -268,7 +268,7 @@ export class SystemDashboardScene extends Phaser.Scene {
     this.publicMetricsDisplay = new PublicMetricsDisplay({
       onTierCrossed: (metric: 'awareness' | 'anger', tier: number) => {
         console.log(`${metric} crossed tier ${tier}`);
-        getSystemAudioManager().play('alert');
+        getSystemAudioManager().play('warning_alert');
         // Could trigger visual effects here
       },
     });
@@ -278,10 +278,10 @@ export class SystemDashboardScene extends Phaser.Scene {
 
   private initializeReluctanceWarning() {
     this.reluctanceWarningPanel = new ReluctanceWarningPanel({
-      onStageChange: (stage: number) => {
+      onWarningStageChanged: (stage: number) => {
         console.log(`Reluctance warning stage changed to ${stage}`);
         if (stage === 3) {
-          getSystemAudioManager().play('alert');
+          getSystemAudioManager().play('warning_alert');
         }
       },
     });
@@ -299,13 +299,7 @@ export class SystemDashboardScene extends Phaser.Scene {
   private renderReluctanceWarning() {
     if (!this.reluctanceWarningPanel || !systemState.reluctanceMetrics) return;
 
-    const metrics = systemState.reluctanceMetrics;
-    this.reluctanceWarningPanel.update({
-      score: metrics.reluctance_score,
-      warningCount: metrics.warning_count,
-      underReview: metrics.under_review,
-      quotaStatus: metrics.quota_status,
-    });
+    this.reluctanceWarningPanel.update(systemState.reluctanceMetrics);
   }
 
   private initializeNewsFeed() {
@@ -314,20 +308,23 @@ export class SystemDashboardScene extends Phaser.Scene {
 
     this.newsFeedPanel = new NewsFeedPanel({
       maxArticles: 10,
-      onSuppressOutlet: async (channelId: string) => {
+      onSuppressChannel: async (channelId: string, channelName: string) => {
         if (!systemState.operatorId) return;
 
-        console.log('Suppress outlet:', channelId);
+        console.log('Suppress outlet:', channelId, channelName);
 
         try {
           // Execute the press ban action via API
           const result = await systemApi.executeAction({
             operator_id: systemState.operatorId,
-            target_id: channelId,
+            directive_id: systemState.currentDirective?.id || null,
             action_type: 'press_ban',
+            justification: 'Media suppression',
+            decision_time_seconds: 0,
+            target_news_channel_id: channelId,
           });
 
-          getSystemAudioManager().play('action_execute');
+          getSystemAudioManager().play('flag_submit');
 
           // Generate and show cinematic
           const cinematics = generateActionCinematic({
@@ -345,26 +342,29 @@ export class SystemDashboardScene extends Phaser.Scene {
           console.error('Failed to suppress outlet:', err);
         }
       },
-      onSilenceReporter: async (reporterId: string) => {
+      onSilenceReporter: async (articleId: string, channelName: string) => {
         if (!systemState.operatorId) return;
 
-        console.log('Silence reporter:', reporterId);
+        console.log('Silence reporter:', articleId, channelName);
 
         try {
           // Execute arbitrary detention action (arresting journalist)
           const result = await systemApi.executeAction({
             operator_id: systemState.operatorId,
-            target_id: reporterId,
+            directive_id: systemState.currentDirective?.id || null,
             action_type: 'arbitrary_detention',
+            justification: 'Journalist arrest',
+            decision_time_seconds: 0,
+            target_citizen_id: articleId,  // Note: This might need to be the reporter's citizen ID
           });
 
-          getSystemAudioManager().play('action_execute');
+          getSystemAudioManager().play('flag_submit');
 
           // Generate and show cinematic
           const cinematics = generateActionCinematic({
             actionType: 'arbitrary_detention',
             success: result.success,
-            targetId: reporterId,
+            targetId: articleId,
             targetName: 'Journalist', // TODO: Get actual reporter name
             targetLocation: getDefaultCinematicLocation(),
             arrests: 1,
@@ -418,12 +418,18 @@ export class SystemDashboardScene extends Phaser.Scene {
           // Execute the action via API
           const result = await systemApi.executeAction({
             operator_id: systemState.operatorId,
-            target_id: protest.id,
+            directive_id: systemState.currentDirective?.id || null,
             action_type: 'declare_protest_illegal',
+            justification: 'Protest suppression',
+            decision_time_seconds: 0,
+            target_protest_id: protest.id,
           });
 
-          getSystemAudioManager().play('action_execute');
+          getSystemAudioManager().play('flag_submit');
           this.currentProtestModal = null;
+
+          // Extract protest data
+          const protestData = result.protests_triggered?.[0] as any || {};
 
           // Generate and show cinematic
           const cinematics = generateActionCinematic({
@@ -432,7 +438,7 @@ export class SystemDashboardScene extends Phaser.Scene {
             targetId: protest.id,
             targetName: protest.neighborhood,
             targetLocation: getDefaultCinematicLocation(), // TODO: Get actual neighborhood coords
-            arrests: result.protests_triggered?.[0]?.arrests ?? 0,
+            arrests: protestData.arrests ?? 0,
           });
 
           if (cinematics.length > 0) {
@@ -452,23 +458,32 @@ export class SystemDashboardScene extends Phaser.Scene {
           // Execute the gamble action via API
           const result = await systemApi.executeAction({
             operator_id: systemState.operatorId,
-            target_id: protest.id,
+            directive_id: systemState.currentDirective?.id || null,
             action_type: 'incite_violence',
+            justification: 'False flag operation',
+            decision_time_seconds: 0,
+            target_protest_id: protest.id,
           });
 
-          getSystemAudioManager().play('action_execute');
+          getSystemAudioManager().play('flag_submit');
           this.currentProtestModal = null;
+
+          // Extract protest data
+          const protestData = result.protests_triggered?.[0] as any || {};
 
           // Show gamble result modal
           const gambleModal = new ActionGambleModal({
-            actionType: 'incite_violence',
-            success: result.success,
-            awarenessDelta: result.awareness_change,
-            angerDelta: result.anger_change,
-            casualties: result.protests_triggered?.[0]?.casualties ?? 0,
-            arrests: result.protests_triggered?.[0]?.arrests ?? 0,
-            outcomeMessage: result.messages[0] ?? '',
-            onComplete: () => {
+            result: {
+              success: result.success,
+              awareness_change: result.awareness_change,
+              anger_change: result.anger_change,
+              casualties: protestData.casualties ?? 0,
+              arrests: protestData.arrests ?? 0,
+              discovery_message: result.messages[0] ?? null,
+            },
+            protestSize: 100, // TODO: Get actual protest size
+            neighborhood: protest.neighborhood,
+            onAcknowledge: () => {
               // After showing results, show cinematic
               const cinematics = generateActionCinematic({
                 actionType: 'incite_violence',
@@ -476,8 +491,8 @@ export class SystemDashboardScene extends Phaser.Scene {
                 targetId: protest.id,
                 targetName: protest.neighborhood,
                 targetLocation: getDefaultCinematicLocation(),
-                casualties: result.protests_triggered?.[0]?.casualties ?? 0,
-                arrests: result.protests_triggered?.[0]?.arrests ?? 0,
+                casualties: protestData.casualties ?? 0,
+                arrests: protestData.arrests ?? 0,
                 discoveryMessage: result.messages[0] ?? null,
               });
 
@@ -516,10 +531,10 @@ export class SystemDashboardScene extends Phaser.Scene {
     }
   }
 
-  private async showExposureEvent(stage: 1 | 2 | 3) {
+  private async showExposureEvent(stage: number) {
     if (!systemState.operatorId) return;
 
-    let operatorData = null;
+    let operatorData: OperatorDataRead | undefined = undefined;
     if (stage >= 2) {
       // Fetch operator personal data for stages 2 and 3
       try {
@@ -530,8 +545,16 @@ export class SystemDashboardScene extends Phaser.Scene {
       }
     }
 
-    const modal = new ExposureEventModal({
+    // Create exposure event data
+    const exposureEvent: ExposureEventRead = {
       stage,
+      message: stage === 1 ? 'An operator has been flagged...' : stage === 2 ? 'Your data is being leaked...' : 'You have been fully exposed!',
+      operator_name: operatorData?.full_name ?? null,
+      data_revealed: {},
+    };
+
+    const modal = new ExposureEventModal({
+      exposureEvent,
       operatorData,
       onFullExposure: () => {
         console.log('Operator fully exposed - could add to citizen database');

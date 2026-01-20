@@ -11,7 +11,7 @@
 import type { ReluctanceMetricsRead } from '../../types/system';
 
 export interface ReluctanceWarningPanelConfig {
-  metrics: ReluctanceMetricsRead;
+  metrics?: ReluctanceMetricsRead;  // Optional - may not be loaded yet
   onWarningStageChanged?: (newStage: number) => void;
 }
 
@@ -65,7 +65,7 @@ The system is watching. Compliance is mandatory.`,
 
   constructor(config: ReluctanceWarningPanelConfig) {
     this.config = config;
-    this.currentStage = this.calculateWarningStage(config.metrics.reluctance_score);
+    this.currentStage = config.metrics ? this.calculateWarningStage(config.metrics.reluctance_score) : 0;
     this.container = this.createPanel();
   }
 
@@ -92,7 +92,7 @@ The system is watching. Compliance is mandatory.`,
   }
 
   private getPanelHTML(): string {
-    if (this.currentStage === 0) return '';
+    if (this.currentStage === 0 || !this.config.metrics) return '';
 
     const stage = this.WARNING_STAGES[this.currentStage - 1];
     const { is_under_review, warnings_received } = this.config.metrics;
@@ -126,6 +126,7 @@ The system is watching. Compliance is mandatory.`,
   }
 
   private getStatusText(): string {
+    if (!this.config.metrics) return 'Loading...';
     const { actions_taken, actions_required, quota_shortfall } = this.config.metrics;
 
     if (quota_shortfall > 0) {

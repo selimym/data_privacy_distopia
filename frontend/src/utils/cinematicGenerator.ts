@@ -30,7 +30,7 @@ export function generateActionCinematic(config: ActionCinematicConfig): Cinemati
       return generateProtestSuppressionCinematic(targetName, targetLocation, arrests ?? 0);
 
     case 'incite_violence':
-      return generateInciteViolenceCinematic(targetName, targetLocation, success, casualties ?? 0, arrests ?? 0, discoveryMessage);
+      return generateInciteViolenceCinematic(targetName, targetLocation, success, casualties ?? 0, arrests ?? 0, discoveryMessage ?? null);
 
     case 'press_ban':
       return generatePressBanCinematic(targetName, targetLocation);

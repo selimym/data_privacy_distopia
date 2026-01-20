@@ -48,7 +48,7 @@ export class ActionGambleModal {
   }
 
   private getModalHTML(): string {
-    const { result, protestSize, neighborhood } = this.config;
+    const { result } = this.config;
 
     if (result.success) {
       return this.getSuccessHTML();

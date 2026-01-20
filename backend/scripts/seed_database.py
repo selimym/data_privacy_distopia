@@ -390,17 +390,24 @@ async def main():
         if args.reset:
             await reset_database()
 
+        # Always seed directives, neighborhoods, news channels for System Mode FIRST
+        print("Seeding directives...")
+        await seed_directives()
+        print("Seeding neighborhoods...")
+        await seed_neighborhoods()
+        print("Seeding news channels...")
+        await seed_news_channels()
+
         if args.population > 0:
+            print(f"Seeding {args.population} NPCs...")
             await seed_population(args.population, args.seed)
 
         if args.scenario:
+            print(f"Seeding scenario: {args.scenario}")
             await seed_scenario_npcs(args.scenario)
 
-        # Always seed directives, neighborhoods, news channels, and messages for System Mode
-        await seed_directives()
-        await seed_neighborhoods()
-        await seed_news_channels()
-        await seed_messages()
+        # Skip message generation for now - it's very slow
+        # await seed_messages()
 
         (
             npcs,

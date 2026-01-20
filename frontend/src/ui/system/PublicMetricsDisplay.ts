@@ -118,7 +118,7 @@ export class PublicMetricsDisplay {
     `;
   }
 
-  private renderProgressBar(type: 'awareness' | 'anger', value: number, tier: number): string {
+  private renderProgressBar(type: 'awareness' | 'anger', value: number, _tier: number): string {
     const tiers = type === 'awareness' ? this.AWARENESS_TIERS : this.ANGER_TIERS;
 
     return `
@@ -195,7 +195,7 @@ export class PublicMetricsDisplay {
    */
   private handleTierCrossing(metric: 'awareness' | 'anger', newTier: number): void {
     // Play alert sound
-    getSystemAudioManager().play('alert_high');
+    getSystemAudioManager().play('warning_alert');
 
     // Flash the progress bar
     const bar = this.container.querySelector(`.${metric}-bar`);

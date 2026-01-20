@@ -57,6 +57,7 @@ from .session import SystemStartRequest, SystemStartResponse
 
 # Rebuild models with forward references after all imports
 ActionResultRead.model_rebuild()
+SystemDashboardWithCases.model_rebuild()
 
 __all__ = [
     # Enums

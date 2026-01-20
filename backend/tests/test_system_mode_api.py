@@ -1088,6 +1088,38 @@ class TestOperatorDataEndpoints:
         assert result["full_name"] != ""
         assert isinstance(result["family_members"], list)
 
+    @pytest.mark.asyncio
+    async def test_get_dashboard_with_cases(
+        self, client: AsyncClient, test_operator, test_citizen
+    ):
+        """Test GET /dashboard-with-cases endpoint (catches Pydantic errors)."""
+        response = await client.get(
+            "/api/system/dashboard-with-cases",
+            params={
+                "operator_id": str(test_operator.id),
+                "case_limit": 50,
+                "case_offset": 0,
+            },
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+
+        # Verify dashboard structure
+        assert "dashboard" in result
+        assert "cases" in result
+        assert isinstance(result["cases"], list)
+
+        # Verify citizen appears in cases
+        assert len(result["cases"]) >= 1
+
+        # Verify case structure (catches Pydantic schema errors)
+        case = result["cases"][0]
+        assert "npc_id" in case
+        assert "name" in case
+        assert "risk_score" in case
+        assert "risk_level" in case
+
 
 # ============================================================================
 # NEIGHBORHOOD TESTS

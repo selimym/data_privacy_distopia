@@ -207,7 +207,7 @@ export class ExposureEventModal {
                 <div class="profile-data">
                   ${operatorData.family_members.map(member => `
                     <div class="data-row">
-                      <span class="data-key">${this.escapeHtml(member.relationship)}:</span>
+                      <span class="data-key">${this.escapeHtml(member.relation)}:</span>
                       <span class="data-value">${this.escapeHtml(member.name)}</span>
                     </div>
                   `).join('')}
