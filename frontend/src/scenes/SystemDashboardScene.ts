@@ -4,10 +4,17 @@ import type { CaseOverview, FlagResult, RiskLevel, CinematicData, CitizenOutcome
 import { MessagesPanel } from '../ui/system/MessagesPanel';
 import { DecisionResultModal } from '../ui/system/DecisionResultModal';
 import { OutcomeViewer } from '../ui/system/OutcomeViewer';
+import { PublicMetricsDisplay } from '../ui/system/PublicMetricsDisplay';
+import { ReluctanceWarningPanel } from '../ui/system/ReluctanceWarningPanel';
+import { NewsFeedPanel } from '../ui/system/NewsFeedPanel';
+import { ProtestAlertModal } from '../ui/system/ProtestAlertModal';
+import { ActionGambleModal } from '../ui/system/ActionGambleModal';
+import { ExposureEventModal } from '../ui/system/ExposureEventModal';
 import { getSystemAudioManager } from '../audio/SystemAudioManager';
 import { getSystemVisualEffects } from '../ui/system/SystemVisualEffects';
 import * as systemApi from '../api/system';
 import { getNPCsBatch } from '../api/npcs';
+import { generateActionCinematic, getDefaultCinematicLocation } from '../utils/cinematicGenerator';
 
 /**
  * SystemDashboardScene - Main surveillance operator interface.
@@ -20,6 +27,12 @@ export class SystemDashboardScene extends Phaser.Scene {
   private sessionId: string | null = null;
   private decisionTimerInterval: number | null = null;
   private messagesPanel: MessagesPanel | null = null;
+  private publicMetricsDisplay: PublicMetricsDisplay | null = null;
+  private reluctanceWarningPanel: ReluctanceWarningPanel | null = null;
+  private newsFeedPanel: NewsFeedPanel | null = null;
+  private shownProtestIds: Set<string> = new Set();
+  private currentProtestModal: ProtestAlertModal | null = null;
+  private lastShownExposureStage: number = 0;
 
   constructor() {
     super({ key: 'SystemDashboardScene' });
@@ -40,6 +53,9 @@ export class SystemDashboardScene extends Phaser.Scene {
 
     this.createDashboardUI();
     this.setupStateSubscription();
+    this.initializePublicMetrics();
+    this.initializeReluctanceWarning();
+    this.initializeNewsFeed();
 
     // Add data flow background
     visualEffects.addDataFlowBackground(this.container);
@@ -75,42 +91,59 @@ export class SystemDashboardScene extends Phaser.Scene {
         </div>
       </div>
 
+      <!-- Public Metrics Display (Awareness/Anger bars) -->
+      <div class="public-metrics-container"></div>
+
       <div class="system-body">
         <div class="left-panel">
-          <div class="directive-section">
-            <h3>CURRENT DIRECTIVE</h3>
-            <div class="directive-content">
-              <div class="directive-loading">Initializing...</div>
+          <!-- Tab Navigation -->
+          <div class="left-panel-tabs">
+            <button class="left-tab active" data-tab="status">Status</button>
+            <button class="left-tab" data-tab="news">News</button>
+          </div>
+
+          <!-- Status Tab (Directive + Metrics + Alerts) -->
+          <div class="left-tab-content" data-tab-content="status">
+            <div class="directive-section">
+              <h3>CURRENT DIRECTIVE</h3>
+              <div class="directive-content">
+                <div class="directive-loading">Initializing...</div>
+              </div>
+            </div>
+
+            <div class="metrics-section">
+              <h3>PERFORMANCE METRICS</h3>
+              <div class="metrics-content">
+                <div class="metric-item">
+                  <span class="metric-label">Compliance Score</span>
+                  <span class="metric-value compliance-score">--</span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-label">Quota Progress</span>
+                  <span class="metric-value quota-progress">--/--</span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-label">Flags Submitted</span>
+                  <span class="metric-value flags-submitted">0</span>
+                </div>
+                <div class="metric-item">
+                  <span class="metric-label">Hesitation Incidents</span>
+                  <span class="metric-value hesitation-count">0</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="alerts-section">
+              <h3>SYSTEM ALERTS</h3>
+              <div class="alerts-content">
+                <div class="no-alerts">No active alerts</div>
+              </div>
             </div>
           </div>
 
-          <div class="metrics-section">
-            <h3>PERFORMANCE METRICS</h3>
-            <div class="metrics-content">
-              <div class="metric-item">
-                <span class="metric-label">Compliance Score</span>
-                <span class="metric-value compliance-score">--</span>
-              </div>
-              <div class="metric-item">
-                <span class="metric-label">Quota Progress</span>
-                <span class="metric-value quota-progress">--/--</span>
-              </div>
-              <div class="metric-item">
-                <span class="metric-label">Flags Submitted</span>
-                <span class="metric-value flags-submitted">0</span>
-              </div>
-              <div class="metric-item">
-                <span class="metric-label">Hesitation Incidents</span>
-                <span class="metric-value hesitation-count">0</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="alerts-section">
-            <h3>SYSTEM ALERTS</h3>
-            <div class="alerts-content">
-              <div class="no-alerts">No active alerts</div>
-            </div>
+          <!-- News Tab -->
+          <div class="left-tab-content" data-tab-content="news" style="display: none;">
+            <div class="news-feed-container"></div>
           </div>
         </div>
 
@@ -183,6 +216,26 @@ export class SystemDashboardScene extends Phaser.Scene {
         }
       }
     });
+
+    // Left panel tab switching
+    const leftTabs = this.container.querySelectorAll('.left-tab');
+    leftTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab');
+        if (!tabName) return;
+
+        // Update active tab button
+        leftTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        // Show/hide tab content
+        const tabContents = this.container.querySelectorAll('.left-tab-content');
+        tabContents.forEach(content => {
+          const contentTab = content.getAttribute('data-tab-content');
+          (content as HTMLElement).style.display = contentTab === tabName ? 'block' : 'none';
+        });
+      });
+    });
   }
 
   private setupStateSubscription() {
@@ -200,7 +253,293 @@ export class SystemDashboardScene extends Phaser.Scene {
     this.renderCitizenFile();
     this.renderLoadingState();
     this.renderError();
+    this.renderPublicMetrics();
+    this.renderReluctanceWarning();
+    this.renderNewsFeed();
+    this.checkForNewProtests();
+    this.checkForExposureEvents();
     this.checkEnding();
+  }
+
+  private initializePublicMetrics() {
+    const container = this.container.querySelector('.public-metrics-container');
+    if (!container) return;
+
+    this.publicMetricsDisplay = new PublicMetricsDisplay({
+      onTierCrossed: (metric: 'awareness' | 'anger', tier: number) => {
+        console.log(`${metric} crossed tier ${tier}`);
+        getSystemAudioManager().play('alert');
+        // Could trigger visual effects here
+      },
+    });
+
+    container.appendChild(this.publicMetricsDisplay.getContainer());
+  }
+
+  private initializeReluctanceWarning() {
+    this.reluctanceWarningPanel = new ReluctanceWarningPanel({
+      onStageChange: (stage: number) => {
+        console.log(`Reluctance warning stage changed to ${stage}`);
+        if (stage === 3) {
+          getSystemAudioManager().play('alert');
+        }
+      },
+    });
+
+    // Append to body (it positions itself at bottom-center)
+    document.body.appendChild(this.reluctanceWarningPanel.getElement());
+  }
+
+  private renderPublicMetrics() {
+    if (!this.publicMetricsDisplay || !systemState.publicMetrics) return;
+
+    this.publicMetricsDisplay.update(systemState.publicMetrics);
+  }
+
+  private renderReluctanceWarning() {
+    if (!this.reluctanceWarningPanel || !systemState.reluctanceMetrics) return;
+
+    const metrics = systemState.reluctanceMetrics;
+    this.reluctanceWarningPanel.update({
+      score: metrics.reluctance_score,
+      warningCount: metrics.warning_count,
+      underReview: metrics.under_review,
+      quotaStatus: metrics.quota_status,
+    });
+  }
+
+  private initializeNewsFeed() {
+    const container = this.container.querySelector('.news-feed-container');
+    if (!container) return;
+
+    this.newsFeedPanel = new NewsFeedPanel({
+      maxArticles: 10,
+      onSuppressOutlet: async (channelId: string) => {
+        if (!systemState.operatorId) return;
+
+        console.log('Suppress outlet:', channelId);
+
+        try {
+          // Execute the press ban action via API
+          const result = await systemApi.executeAction({
+            operator_id: systemState.operatorId,
+            target_id: channelId,
+            action_type: 'press_ban',
+          });
+
+          getSystemAudioManager().play('action_execute');
+
+          // Generate and show cinematic
+          const cinematics = generateActionCinematic({
+            actionType: 'press_ban',
+            success: result.success,
+            targetId: channelId,
+            targetName: 'News Outlet', // TODO: Get actual channel name
+            targetLocation: getDefaultCinematicLocation(),
+          });
+
+          if (cinematics.length > 0) {
+            this.transitionToCinematic(cinematics);
+          }
+        } catch (err) {
+          console.error('Failed to suppress outlet:', err);
+        }
+      },
+      onSilenceReporter: async (reporterId: string) => {
+        if (!systemState.operatorId) return;
+
+        console.log('Silence reporter:', reporterId);
+
+        try {
+          // Execute arbitrary detention action (arresting journalist)
+          const result = await systemApi.executeAction({
+            operator_id: systemState.operatorId,
+            target_id: reporterId,
+            action_type: 'arbitrary_detention',
+          });
+
+          getSystemAudioManager().play('action_execute');
+
+          // Generate and show cinematic
+          const cinematics = generateActionCinematic({
+            actionType: 'arbitrary_detention',
+            success: result.success,
+            targetId: reporterId,
+            targetName: 'Journalist', // TODO: Get actual reporter name
+            targetLocation: getDefaultCinematicLocation(),
+            arrests: 1,
+          });
+
+          if (cinematics.length > 0) {
+            this.transitionToCinematic(cinematics);
+          }
+        } catch (err) {
+          console.error('Failed to silence reporter:', err);
+        }
+      },
+    });
+
+    container.appendChild(this.newsFeedPanel.getElement());
+  }
+
+  private renderNewsFeed() {
+    if (!this.newsFeedPanel) return;
+
+    this.newsFeedPanel.update(systemState.newsArticles);
+  }
+
+  private checkForNewProtests() {
+    // Don't show new protests if one is already showing
+    if (this.currentProtestModal) return;
+
+    // Find first unhandled protest
+    const newProtest = systemState.activeProtests.find(
+      protest => !this.shownProtestIds.has(protest.id)
+    );
+
+    if (newProtest) {
+      this.showProtestAlert(newProtest);
+    }
+  }
+
+  private showProtestAlert(protest: typeof systemState.activeProtests[0]) {
+    if (!systemState.operatorId) return;
+
+    this.shownProtestIds.add(protest.id);
+
+    this.currentProtestModal = new ProtestAlertModal({
+      protest,
+      onDeclareIllegal: async () => {
+        if (!systemState.operatorId) return;
+
+        console.log('Declare protest illegal:', protest.id);
+
+        try {
+          // Execute the action via API
+          const result = await systemApi.executeAction({
+            operator_id: systemState.operatorId,
+            target_id: protest.id,
+            action_type: 'declare_protest_illegal',
+          });
+
+          getSystemAudioManager().play('action_execute');
+          this.currentProtestModal = null;
+
+          // Generate and show cinematic
+          const cinematics = generateActionCinematic({
+            actionType: 'declare_protest_illegal',
+            success: result.success,
+            targetId: protest.id,
+            targetName: protest.neighborhood,
+            targetLocation: getDefaultCinematicLocation(), // TODO: Get actual neighborhood coords
+            arrests: result.protests_triggered?.[0]?.arrests ?? 0,
+          });
+
+          if (cinematics.length > 0) {
+            this.transitionToCinematic(cinematics);
+          }
+        } catch (err) {
+          console.error('Failed to declare protest illegal:', err);
+          this.currentProtestModal = null;
+        }
+      },
+      onInciteViolence: async () => {
+        if (!systemState.operatorId) return;
+
+        console.log('Incite violence at protest:', protest.id);
+
+        try {
+          // Execute the gamble action via API
+          const result = await systemApi.executeAction({
+            operator_id: systemState.operatorId,
+            target_id: protest.id,
+            action_type: 'incite_violence',
+          });
+
+          getSystemAudioManager().play('action_execute');
+          this.currentProtestModal = null;
+
+          // Show gamble result modal
+          const gambleModal = new ActionGambleModal({
+            actionType: 'incite_violence',
+            success: result.success,
+            awarenessDelta: result.awareness_change,
+            angerDelta: result.anger_change,
+            casualties: result.protests_triggered?.[0]?.casualties ?? 0,
+            arrests: result.protests_triggered?.[0]?.arrests ?? 0,
+            outcomeMessage: result.messages[0] ?? '',
+            onComplete: () => {
+              // After showing results, show cinematic
+              const cinematics = generateActionCinematic({
+                actionType: 'incite_violence',
+                success: result.success,
+                targetId: protest.id,
+                targetName: protest.neighborhood,
+                targetLocation: getDefaultCinematicLocation(),
+                casualties: result.protests_triggered?.[0]?.casualties ?? 0,
+                arrests: result.protests_triggered?.[0]?.arrests ?? 0,
+                discoveryMessage: result.messages[0] ?? null,
+              });
+
+              if (cinematics.length > 0) {
+                this.transitionToCinematic(cinematics);
+              }
+            },
+          });
+
+          gambleModal.show();
+        } catch (err) {
+          console.error('Failed to incite violence:', err);
+          this.currentProtestModal = null;
+        }
+      },
+      onIgnore: async () => {
+        console.log('Ignore protest:', protest.id);
+        // Just close modal, no action taken
+        this.currentProtestModal = null;
+      },
+    });
+
+    this.currentProtestModal.show();
+  }
+
+  private async checkForExposureEvents() {
+    if (!systemState.exposureRisk) return;
+
+    const risk = systemState.exposureRisk;
+    const stage = risk.current_stage;
+
+    // Only show if this is a new stage we haven't shown before
+    if (stage > this.lastShownExposureStage && stage > 0) {
+      this.lastShownExposureStage = stage;
+      await this.showExposureEvent(stage);
+    }
+  }
+
+  private async showExposureEvent(stage: 1 | 2 | 3) {
+    if (!systemState.operatorId) return;
+
+    let operatorData = null;
+    if (stage >= 2) {
+      // Fetch operator personal data for stages 2 and 3
+      try {
+        operatorData = await systemApi.getOperatorData(systemState.operatorId);
+      } catch (err) {
+        console.error('Failed to load operator data:', err);
+        return;
+      }
+    }
+
+    const modal = new ExposureEventModal({
+      stage,
+      operatorData,
+      onFullExposure: () => {
+        console.log('Operator fully exposed - could add to citizen database');
+        // TODO: Could trigger adding operator to citizen review queue
+      },
+    });
+
+    modal.show();
   }
 
   private renderOperatorStatus() {
@@ -889,6 +1228,18 @@ export class SystemDashboardScene extends Phaser.Scene {
       this.messagesPanel.destroy();
       this.messagesPanel = null;
     }
+    if (this.publicMetricsDisplay) {
+      this.publicMetricsDisplay.destroy();
+      this.publicMetricsDisplay = null;
+    }
+    if (this.reluctanceWarningPanel) {
+      this.reluctanceWarningPanel.destroy();
+      this.reluctanceWarningPanel = null;
+    }
+    if (this.newsFeedPanel) {
+      this.newsFeedPanel.destroy();
+      this.newsFeedPanel = null;
+    }
     if (this.container) {
       this.container.remove();
     }
@@ -898,6 +1249,22 @@ export class SystemDashboardScene extends Phaser.Scene {
     getSystemVisualEffects().cleanup();
 
     systemState.reset();
+  }
+
+  /**
+   * Transition to WorldScene to show action cinematics.
+   */
+  private transitionToCinematic(cinematics: CinematicData[]) {
+    console.log('[SystemDashboard] Transitioning to cinematic with', cinematics.length, 'sequences');
+
+    // Stop polling while in cinematic mode
+    systemState.stopPolling();
+
+    // Transition to WorldScene with cinematic data
+    this.scene.start('WorldScene', {
+      showCinematic: true,
+      cinematicQueue: cinematics,
+    });
   }
 
   shutdown() {

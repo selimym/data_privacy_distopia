@@ -14,6 +14,11 @@ import type {
   NoActionResult,
   OperatorStatus,
   SystemDashboard,
+  PublicMetricsRead,
+  ReluctanceMetricsRead,
+  NewsArticleRead,
+  ProtestRead,
+  ExposureRiskRead,
 } from '../types/system';
 
 export type SystemStateListener = () => void;
@@ -45,6 +50,21 @@ export class SystemState {
 
   // Dashboard data
   public dashboard: SystemDashboard | null = null;
+
+  // New metrics (Phase 7-8)
+  public publicMetrics: PublicMetricsRead | null = null;
+  public reluctanceMetrics: ReluctanceMetricsRead | null = null;
+  public newsArticles: NewsArticleRead[] = [];
+  public activeProtests: ProtestRead[] = [];
+  public exposureRisk: ExposureRiskRead | null = null;
+  public lastAwarenessTier: number = 0;
+  public lastAngerTier: number = 0;
+  public lastReluctanceStage: number = 0;
+
+  // Polling intervals
+  private metricsPollingInterval: number | null = null;
+  private protestPollingInterval: number | null = null;
+  private newsPollingInterval: number | null = null;
 
   // Listeners for state changes
   private listeners: Set<SystemStateListener> = new Set();
@@ -91,6 +111,11 @@ export class SystemState {
 
       // Load initial data (optimized: single API call)
       await this.loadDashboardWithCases();
+
+      // Start polling for metrics, protests, and news
+      this.startMetricsPolling();
+      this.startProtestPolling();
+      this.startNewsPolling();
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Failed to initialize';
     } finally {
@@ -137,7 +162,10 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
+      console.log('[SystemState] Loading dashboard and cases for operator:', this.operatorId);
       const result = await api.getDashboardWithCases(this.operatorId, 50);
+      console.log('[SystemState] Received dashboard with', result.cases.length, 'cases');
+      console.log('[SystemState] Cases:', result.cases);
       this.dashboard = result.dashboard;
       this.operatorStatus = result.dashboard.operator;
       this.currentDirective = result.dashboard.directive;
@@ -347,9 +375,186 @@ export class SystemState {
   }
 
   /**
+   * Load public metrics (awareness, anger).
+   */
+  public async loadPublicMetrics(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      const newMetrics = await api.getPublicMetrics(this.operatorId);
+
+      // Check for tier crossings
+      if (this.publicMetrics) {
+        if (newMetrics.awareness_tier > this.lastAwarenessTier) {
+          this.lastAwarenessTier = newMetrics.awareness_tier;
+        }
+        if (newMetrics.anger_tier > this.lastAngerTier) {
+          this.lastAngerTier = newMetrics.anger_tier;
+        }
+      } else {
+        this.lastAwarenessTier = newMetrics.awareness_tier;
+        this.lastAngerTier = newMetrics.anger_tier;
+      }
+
+      this.publicMetrics = newMetrics;
+      this.notify();
+    } catch (err) {
+      console.error('Failed to load public metrics:', err);
+    }
+  }
+
+  /**
+   * Load reluctance metrics.
+   */
+  public async loadReluctanceMetrics(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      const newMetrics = await api.getReluctanceMetrics(this.operatorId);
+
+      // Check for reluctance stage change
+      const newStage = this.getReluctanceStage(newMetrics.reluctance_score);
+      if (newStage > this.lastReluctanceStage) {
+        this.lastReluctanceStage = newStage;
+      }
+
+      this.reluctanceMetrics = newMetrics;
+      this.notify();
+    } catch (err) {
+      console.error('Failed to load reluctance metrics:', err);
+    }
+  }
+
+  /**
+   * Load news articles.
+   */
+  public async loadNews(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      this.newsArticles = await api.getRecentNews(this.operatorId, 10);
+      this.notify();
+    } catch (err) {
+      console.error('Failed to load news:', err);
+    }
+  }
+
+  /**
+   * Load active protests.
+   */
+  public async loadActiveProtests(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      const protests = await api.getActiveProtests(this.operatorId);
+
+      // Only update if protests changed (to avoid unnecessary re-renders)
+      const protestsChanged = JSON.stringify(this.activeProtests) !== JSON.stringify(protests);
+      if (protestsChanged) {
+        this.activeProtests = protests;
+        this.notify();
+      }
+    } catch (err) {
+      console.error('Failed to load protests:', err);
+    }
+  }
+
+  /**
+   * Load exposure risk status.
+   */
+  public async loadExposureRisk(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      this.exposureRisk = await api.getExposureRisk(this.operatorId);
+      this.notify();
+    } catch (err) {
+      console.error('Failed to load exposure risk:', err);
+    }
+  }
+
+  /**
+   * Start polling for metrics updates.
+   */
+  public startMetricsPolling(): void {
+    if (this.metricsPollingInterval) return;
+
+    // Initial load
+    this.loadPublicMetrics();
+    this.loadReluctanceMetrics();
+    this.loadExposureRisk();
+
+    // Poll every 5 seconds
+    this.metricsPollingInterval = window.setInterval(() => {
+      this.loadPublicMetrics();
+      this.loadReluctanceMetrics();
+      this.loadExposureRisk();
+    }, 5000);
+  }
+
+  /**
+   * Start polling for protests.
+   */
+  public startProtestPolling(): void {
+    if (this.protestPollingInterval) return;
+
+    // Initial load
+    this.loadActiveProtests();
+
+    // Poll every 10 seconds
+    this.protestPollingInterval = window.setInterval(() => {
+      this.loadActiveProtests();
+    }, 10000);
+  }
+
+  /**
+   * Start polling for news.
+   */
+  public startNewsPolling(): void {
+    if (this.newsPollingInterval) return;
+
+    // Initial load
+    this.loadNews();
+
+    // Poll every 15 seconds
+    this.newsPollingInterval = window.setInterval(() => {
+      this.loadNews();
+    }, 15000);
+  }
+
+  /**
+   * Stop all polling.
+   */
+  public stopPolling(): void {
+    if (this.metricsPollingInterval) {
+      window.clearInterval(this.metricsPollingInterval);
+      this.metricsPollingInterval = null;
+    }
+    if (this.protestPollingInterval) {
+      window.clearInterval(this.protestPollingInterval);
+      this.protestPollingInterval = null;
+    }
+    if (this.newsPollingInterval) {
+      window.clearInterval(this.newsPollingInterval);
+      this.newsPollingInterval = null;
+    }
+  }
+
+  /**
+   * Get reluctance stage (1, 2, or 3) from score.
+   */
+  private getReluctanceStage(score: number): number {
+    if (score >= 90) return 3;
+    if (score >= 80) return 2;
+    if (score >= 70) return 1;
+    return 0;
+  }
+
+  /**
    * Reset all state.
    */
   public reset(): void {
+    this.stopPolling();
     this.operatorId = null;
     this.operatorStatus = null;
     this.currentDirective = null;
@@ -362,6 +567,14 @@ export class SystemState {
     this.isEnding = false;
     this.error = null;
     this.dashboard = null;
+    this.publicMetrics = null;
+    this.reluctanceMetrics = null;
+    this.newsArticles = [];
+    this.activeProtests = [];
+    this.exposureRisk = null;
+    this.lastAwarenessTier = 0;
+    this.lastAngerTier = 0;
+    this.lastReluctanceStage = 0;
     this.notify();
   }
 

@@ -173,7 +173,7 @@ class Directive(Base):
     week_number: Mapped[int] = mapped_column(Integer, index=True)
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text)  # Official justification
-    internal_memo: Mapped[str] = mapped_column(Text)  # What it really means
+    internal_memo: Mapped[str | None] = mapped_column(Text, nullable=True)  # What it really means
     required_domains: Mapped[list] = mapped_column(JSON)  # Array of DomainType strings
     target_criteria: Mapped[dict] = mapped_column(JSON)  # How to identify targets
     flag_quota: Mapped[int] = mapped_column(Integer)

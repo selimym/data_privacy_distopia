@@ -13,7 +13,7 @@ import type { PublicMetricsRead } from '../../types/system';
 import { getSystemAudioManager } from '../../audio/SystemAudioManager';
 
 export interface PublicMetricsDisplayConfig {
-  metrics: PublicMetricsRead;
+  metrics?: PublicMetricsRead;  // Optional - may not be loaded yet
   onTierCrossed?: (metric: 'awareness' | 'anger', tier: number) => void;
 }
 
@@ -50,8 +50,8 @@ export class PublicMetricsDisplay {
 
   constructor(config: PublicMetricsDisplayConfig) {
     this.config = config;
-    this.lastAwarenessTier = config.metrics.awareness_tier;
-    this.lastAngerTier = config.metrics.anger_tier;
+    this.lastAwarenessTier = config.metrics?.awareness_tier ?? 0;
+    this.lastAngerTier = config.metrics?.anger_tier ?? 0;
     this.container = this.createDisplay();
   }
 
@@ -64,6 +64,17 @@ export class PublicMetricsDisplay {
   }
 
   private getDisplayHTML(): string {
+    // Handle loading state
+    if (!this.config.metrics) {
+      return `
+        <div class="metrics-header">
+          <h3>PUBLIC BACKLASH METRICS</h3>
+          <div class="classification-badge">INTELLIGENCE</div>
+        </div>
+        <div class="metrics-loading">Loading metrics...</div>
+      `;
+    }
+
     const { international_awareness, public_anger, awareness_tier, anger_tier } = this.config.metrics;
 
     return `

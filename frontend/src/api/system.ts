@@ -18,6 +18,15 @@ import type {
   SystemDashboard,
   SystemDashboardWithCases,
   SystemStartResponse,
+  PublicMetricsRead,
+  ReluctanceMetricsRead,
+  NewsArticleRead,
+  ProtestRead,
+  ExposureRiskRead,
+  OperatorDataRead,
+  SystemActionRequest,
+  ActionResultRead,
+  AvailableActionsRead,
 } from '../types/system';
 
 const API_BASE = '/api';
@@ -299,6 +308,127 @@ export async function acknowledgeEnding(
 
   if (!response.ok) {
     const message = await parseErrorResponse(response, 'Failed to acknowledge ending');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get public metrics (international awareness, public anger).
+ */
+export async function getPublicMetrics(operatorId: string): Promise<PublicMetricsRead> {
+  const response = await fetch(`${API_BASE}/system/metrics/public?operator_id=${operatorId}`);
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to load public metrics');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get reluctance metrics (operator hesitation tracking).
+ */
+export async function getReluctanceMetrics(operatorId: string): Promise<ReluctanceMetricsRead> {
+  const response = await fetch(`${API_BASE}/system/metrics/reluctance?operator_id=${operatorId}`);
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to load reluctance metrics');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get recent news articles.
+ */
+export async function getRecentNews(operatorId: string, limit: number = 10): Promise<NewsArticleRead[]> {
+  const params = new URLSearchParams({
+    operator_id: operatorId,
+    limit: limit.toString(),
+  });
+
+  const response = await fetch(`${API_BASE}/system/news/recent?${params}`);
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to load news articles');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get active protests requiring attention.
+ */
+export async function getActiveProtests(operatorId: string): Promise<ProtestRead[]> {
+  const response = await fetch(`${API_BASE}/system/protests/active?operator_id=${operatorId}`);
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to load protests');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get operator exposure risk status.
+ */
+export async function getExposureRisk(operatorId: string): Promise<ExposureRiskRead> {
+  const response = await fetch(`${API_BASE}/system/operator/exposure-risk?operator_id=${operatorId}`);
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to load exposure risk');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get operator's personal data (for exposure events).
+ */
+export async function getOperatorData(operatorId: string): Promise<OperatorDataRead> {
+  const response = await fetch(`${API_BASE}/system/operator/data?operator_id=${operatorId}`);
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to load operator data');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get available actions for the current directive.
+ */
+export async function getAvailableActions(operatorId: string): Promise<AvailableActionsRead> {
+  const response = await fetch(`${API_BASE}/system/actions/available?operator_id=${operatorId}`);
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to load available actions');
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+/**
+ * Execute a system action (ICE raid, press ban, etc.).
+ */
+export async function executeAction(request: SystemActionRequest): Promise<ActionResultRead> {
+  const response = await fetch(`${API_BASE}/system/actions/execute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const message = await parseErrorResponse(response, 'Failed to execute action');
     throw new Error(message);
   }
 
