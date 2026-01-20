@@ -181,7 +181,7 @@ class TestEndingCalculation:
             operator_code="OP-SUSPENDED",
             current_directive_id=directive_chain[0].id,
             status=OperatorStatus.SUSPENDED,
-            compliance_score=35.0,
+            compliance_score=45.0,
             total_flags_submitted=2,
             total_reviews_completed=20,
             hesitation_incidents=8,
