@@ -43,6 +43,9 @@ export class SystemState {
   public pendingCases: CaseOverview[] = [];
   public flagHistory: FlagSummary[] = [];
 
+  // Citizen file cache
+  private citizenFileCache: Map<string, FullCitizenFile> = new Map();
+
   // UI state
   public isLoading: boolean = false;
   public isEnding: boolean = false;
@@ -141,6 +144,56 @@ export class SystemState {
   }
 
   /**
+   * Preload citizen files for faster selection.
+   * Prioritizes high/elevated risk citizens first.
+   */
+  private async preloadCitizenFiles(): Promise<void> {
+    if (!this.operatorId || this.pendingCases.length === 0) return;
+
+    // Sort cases by priority (high/elevated risk first)
+    const priorityCases = this.pendingCases
+      .filter(c => c.risk_level === 'high' || c.risk_level === 'elevated' || c.risk_level === 'severe')
+      .slice(0, 5);  // Top 5 priority cases
+
+    const otherCases = this.pendingCases
+      .filter(c => c.risk_level !== 'high' && c.risk_level !== 'elevated' && c.risk_level !== 'severe')
+      .slice(0, 10);  // Next 10 lower priority cases
+
+    // Load priority cases first (in parallel)
+    console.log('[SystemState] Preloading', priorityCases.length, 'high-priority citizen files...');
+    await Promise.all(
+      priorityCases.map(async (caseData) => {
+        if (!this.citizenFileCache.has(caseData.npc_id)) {
+          try {
+            const file = await api.getCitizenFile(this.operatorId!, caseData.npc_id);
+            this.citizenFileCache.set(caseData.npc_id, file);
+          } catch (err) {
+            console.error(`Failed to preload citizen ${caseData.npc_id}:`, err);
+          }
+        }
+      })
+    );
+
+    console.log('[SystemState] Priority citizens cached. Loading remaining citizens in background...');
+
+    // Load other cases in background (don't await)
+    Promise.all(
+      otherCases.map(async (caseData) => {
+        if (!this.citizenFileCache.has(caseData.npc_id)) {
+          try {
+            const file = await api.getCitizenFile(this.operatorId!, caseData.npc_id);
+            this.citizenFileCache.set(caseData.npc_id, file);
+          } catch (err) {
+            console.error(`Failed to preload citizen ${caseData.npc_id}:`, err);
+          }
+        }
+      })
+    ).then(() => {
+      console.log('[SystemState] All citizen files cached');
+    });
+  }
+
+  /**
    * Load pending cases.
    */
   public async loadCases(): Promise<void> {
@@ -171,6 +224,9 @@ export class SystemState {
       this.currentDirective = result.dashboard.directive;
       this.pendingCases = result.cases;
       this.notify();
+
+      // Start preloading citizen files in background
+      this.preloadCitizenFiles();
     } catch (err) {
       console.error('Failed to load dashboard and cases:', err);
     }
@@ -197,20 +253,30 @@ export class SystemState {
   public async selectCitizen(npcId: string): Promise<void> {
     if (!this.operatorId) return;
 
-    this.isLoading = true;
+    // Clear previous selection immediately to avoid stale data
     this.selectedCitizenId = npcId;
+    this.selectedCitizenFile = null;
     this.decisionStartTime = Date.now();
-    this.notify();
+    this.notify();  // Shows selection state, clears old data
 
     try {
-      this.selectedCitizenFile = await api.getCitizenFile(this.operatorId, npcId);
+      // Check cache first
+      const cached = this.citizenFileCache.get(npcId);
+      if (cached) {
+        this.selectedCitizenFile = cached;
+        this.notify();  // Update with cached data
+      } else {
+        // Fetch from API
+        const file = await api.getCitizenFile(this.operatorId, npcId);
+        this.citizenFileCache.set(npcId, file);  // Cache it
+        this.selectedCitizenFile = file;
+        this.notify();  // Update with loaded data
+      }
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Failed to load citizen file';
       this.selectedCitizenId = null;
       this.selectedCitizenFile = null;
       this.decisionStartTime = null;
-    } finally {
-      this.isLoading = false;
       this.notify();
     }
   }
@@ -238,7 +304,7 @@ export class SystemState {
    */
   public async submitFlag(
     flagType: FlagType,
-    justification: string,
+    justification?: string,
     contributingFactors: string[] = []
   ): Promise<FlagResult | null> {
     if (!this.operatorId || !this.selectedCitizenId) return null;
@@ -252,7 +318,7 @@ export class SystemState {
         citizen_id: this.selectedCitizenId,
         flag_type: flagType,
         contributing_factors: contributingFactors,
-        justification,
+        justification: justification || "",
         decision_time_seconds: this.getDecisionTime(),
       });
 
@@ -262,6 +328,9 @@ export class SystemState {
         this.operatorStatus.current_quota_progress = result.quota_progress;
         this.operatorStatus.total_flags_submitted += 1;
       }
+
+      // Invalidate cache for this citizen (data has changed)
+      this.citizenFileCache.delete(this.selectedCitizenId);
 
       // Clear selection
       this.clearSelection();
@@ -282,7 +351,7 @@ export class SystemState {
   /**
    * Submit a no-action decision for the selected citizen.
    */
-  public async submitNoAction(justification: string): Promise<NoActionResult | null> {
+  public async submitNoAction(justification?: string): Promise<NoActionResult | null> {
     if (!this.operatorId || !this.selectedCitizenId) return null;
 
     this.isLoading = true;
@@ -292,7 +361,7 @@ export class SystemState {
       const result = await api.submitNoAction({
         operator_id: this.operatorId,
         citizen_id: this.selectedCitizenId,
-        justification,
+        justification: justification || "",
         decision_time_seconds: this.getDecisionTime(),
       });
 
@@ -300,6 +369,9 @@ export class SystemState {
       if (this.operatorStatus) {
         this.operatorStatus.compliance_score += result.compliance_impact;
       }
+
+      // Invalidate cache for this citizen (data has changed)
+      this.citizenFileCache.delete(this.selectedCitizenId);
 
       // Clear selection
       this.clearSelection();
@@ -563,6 +635,7 @@ export class SystemState {
     this.decisionStartTime = null;
     this.pendingCases = [];
     this.flagHistory = [];
+    this.citizenFileCache.clear();
     this.isLoading = false;
     this.isEnding = false;
     this.error = null;

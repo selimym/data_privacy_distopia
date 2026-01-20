@@ -192,7 +192,7 @@ export interface FlagSubmission {
   citizen_id: string;
   flag_type: FlagType;
   contributing_factors: string[];
-  justification: string;
+  justification?: string;
   decision_time_seconds: number;
 }
 
@@ -217,7 +217,7 @@ export interface FlagResult {
 export interface NoActionSubmission {
   operator_id: string;
   citizen_id: string;
-  justification: string;
+  justification?: string;
   decision_time_seconds: number;
 }
 

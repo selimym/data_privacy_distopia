@@ -733,13 +733,37 @@ export class SystemDashboardScene extends Phaser.Scene {
     if (!panel) return;
 
     const file = systemState.selectedCitizenFile;
-    if (!file) {
+    const selectedId = systemState.selectedCitizenId;
+
+    // No citizen selected - hide panel
+    if (!selectedId) {
       panel.style.display = 'none';
       this.stopDecisionTimer();
       return;
     }
 
+    // Citizen selected but data not loaded yet - show loading state
+    if (!file) {
+      panel.style.display = 'block';
+      // Only re-render if we're loading a different citizen
+      if (panel.dataset.citizenId !== selectedId) {
+        panel.dataset.citizenId = selectedId;
+        panel.innerHTML = '<div class="citizen-file-loading">Loading citizen file...</div>';
+      }
+      return;
+    }
+
+    // Citizen data loaded
     panel.style.display = 'block';
+
+    // Don't re-render if same citizen (prevents form state destruction during polling)
+    if (panel.dataset.citizenId === file.identity.npc_id) {
+      // Same citizen - just update timer, don't destroy form
+      return;
+    }
+
+    // Different citizen or first render - full re-render
+    panel.dataset.citizenId = file.identity.npc_id;
     panel.innerHTML = this.getCitizenFileHTML(file);
     this.setupCitizenFilePanelListeners(panel);
     this.initializeMessagesPanel(panel, file);
@@ -785,22 +809,30 @@ export class SystemDashboardScene extends Phaser.Scene {
       </div>
 
       <div class="citizen-actions">
-        <div class="action-section flag-section">
-          <h4>Flag Citizen</h4>
-          <select class="flag-type-select">
-            <option value="">Select flag type...</option>
-            <option value="monitoring">Monitoring - Enhanced surveillance</option>
-            <option value="restriction">Restriction - Limit freedoms</option>
-            <option value="intervention">Intervention - Active measures</option>
-            <option value="detention">Detention - Immediate custody</option>
-          </select>
-          <textarea class="flag-justification" placeholder="Enter justification for flag..."></textarea>
-          <button class="btn-submit-flag" disabled>Submit Flag</button>
+        <div class="action-justification-section">
+          <h4>Decision Notes (Optional)</h4>
+          <textarea
+            class="decision-justification"
+            placeholder="Add optional notes about your decision..."
+            rows="3"></textarea>
         </div>
-        <div class="action-section no-action-section">
-          <h4>No Action Required</h4>
-          <textarea class="no-action-justification" placeholder="Why is no action appropriate?"></textarea>
-          <button class="btn-no-action">Mark No Action</button>
+
+        <div class="action-buttons">
+          <div class="flag-section">
+            <h4>Flag Citizen</h4>
+            <select class="flag-type-select">
+              <option value="">Select flag type...</option>
+              <option value="monitoring">Monitoring - Enhanced surveillance</option>
+              <option value="restriction">Restriction - Limit freedoms</option>
+              <option value="intervention">Intervention - Active measures</option>
+              <option value="detention">Detention - Immediate custody</option>
+            </select>
+            <button class="btn-submit-flag" disabled>Submit Flag</button>
+          </div>
+
+          <div class="no-action-section">
+            <button class="btn-no-action">No Action Required</button>
+          </div>
         </div>
       </div>
     `;
@@ -979,38 +1011,40 @@ export class SystemDashboardScene extends Phaser.Scene {
       });
     });
 
-    // Flag type selection
+    // Get unified justification textarea
+    const justificationTextarea = panel.querySelector('.decision-justification') as HTMLTextAreaElement;
+
+    // Flag submission section
     const flagSelect = panel.querySelector('.flag-type-select') as HTMLSelectElement;
-    const flagJustification = panel.querySelector('.flag-justification') as HTMLTextAreaElement;
     const submitFlagBtn = panel.querySelector('.btn-submit-flag') as HTMLButtonElement;
 
+    // Update flag button state (only requires flag type selection)
     const updateFlagButton = () => {
-      submitFlagBtn.disabled = !flagSelect.value || !flagJustification.value.trim();
+      submitFlagBtn.disabled = !flagSelect.value;
     };
 
     flagSelect?.addEventListener('change', updateFlagButton);
-    flagJustification?.addEventListener('input', updateFlagButton);
 
-    // Submit flag
+    // Flag submission
     submitFlagBtn?.addEventListener('click', async () => {
-      const flagType = flagSelect.value as 'monitoring' | 'restriction' | 'intervention' | 'detention';
-      const justification = flagJustification.value.trim();
+      if (!flagSelect.value) return;
 
-      if (flagType && justification) {
-        getSystemAudioManager().play('flag_submit');
-        const result = await systemState.submitFlag(flagType, justification);
-        if (result) {
-          this.showFlagResult(result);
-        }
+      const justification = justificationTextarea?.value.trim() || undefined;
+      getSystemAudioManager().play('flag_submit');
+      const result = await systemState.submitFlag(
+        flagSelect.value as FlagType,
+        justification,
+        [] // contributing factors
+      );
+      if (result) {
+        this.showFlagResult(result);
       }
     });
 
-    // No action
-    const noActionJustification = panel.querySelector('.no-action-justification') as HTMLTextAreaElement;
+    // No-action submission (always enabled)
     const noActionBtn = panel.querySelector('.btn-no-action');
-
     noActionBtn?.addEventListener('click', async () => {
-      const justification = noActionJustification.value.trim() || 'No action deemed necessary';
+      const justification = justificationTextarea?.value.trim() || undefined;
       await systemState.submitNoAction(justification);
     });
   }

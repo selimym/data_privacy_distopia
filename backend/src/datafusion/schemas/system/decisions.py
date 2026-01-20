@@ -16,7 +16,7 @@ class FlagSubmission(BaseModel):
     citizen_id: UUID
     flag_type: str = Field(description="monitoring, restriction, intervention, detention")
     contributing_factors: list[str] = Field(description="Factor keys from risk assessment")
-    justification: str = Field(min_length=10, description="Operator's stated reason")
+    justification: str = Field(default="", description="Operator's stated reason (optional)")
     decision_time_seconds: float = Field(description="Time spent on decision")
 
 
@@ -48,7 +48,7 @@ class NoActionSubmission(BaseModel):
     operator_id: UUID
     citizen_id: UUID
     justification: str = Field(
-        min_length=20, description="REQUIRED: Explain why no action taken"
+        default="", description="Explain why no action taken (optional)"
     )
     decision_time_seconds: float
 
