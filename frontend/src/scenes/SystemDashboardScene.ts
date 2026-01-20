@@ -1168,6 +1168,7 @@ export class SystemDashboardScene extends Phaser.Scene {
       this.scene.start('WorldScene', {
         showCinematic: true,
         cinematicQueue: [cinematicData],
+        sessionId: this.sessionId,
       });
     } catch (error) {
       console.error('Failed to show cinematic:', error);
@@ -1249,6 +1250,7 @@ export class SystemDashboardScene extends Phaser.Scene {
           this.scene.start('WorldScene', {
             showCinematic: true,
             cinematicQueue,
+            sessionId: this.sessionId,
           });
 
           // Advance to next directive after cinematics
@@ -1321,6 +1323,7 @@ export class SystemDashboardScene extends Phaser.Scene {
     this.scene.start('WorldScene', {
       showCinematic: true,
       cinematicQueue: cinematics,
+      sessionId: this.sessionId,
     });
   }
 

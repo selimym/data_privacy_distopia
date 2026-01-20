@@ -74,7 +74,7 @@ export class WorldScene extends Phaser.Scene {
     super({ key: 'WorldScene' });
   }
 
-  init(data?: { startInAbuseMode?: boolean; showCinematic?: boolean; cinematicQueue?: CinematicData[] }) {
+  init(data?: { startInAbuseMode?: boolean; showCinematic?: boolean; cinematicQueue?: CinematicData[]; sessionId?: string }) {
     // Handle abuse mode initialization
     if (data?.startInAbuseMode) {
       this.isAbuseModeActive = true;
@@ -84,6 +84,10 @@ export class WorldScene extends Phaser.Scene {
     if (data?.showCinematic && data?.cinematicQueue) {
       this.cinematicMode = true;
       this.cinematicQueue = data.cinematicQueue;
+      // Store sessionId for returning to SystemDashboardScene
+      if (data.sessionId) {
+        this.currentSessionId = data.sessionId;
+      }
     }
   }
 
