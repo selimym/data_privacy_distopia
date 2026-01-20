@@ -19,7 +19,8 @@ Educational game demonstrating data privacy risks through two modes:
 ## Commands
 
 ```bash
-make dev                  # Run both backend (port 8000) and frontend (port 5173)
+make dev                  # Kill existing servers, then run backend (8000) and frontend (5173)
+make kill-dev             # Stop all backend and frontend dev servers
 make test                 # Run backend tests (pytest)
 make seed-db              # Generate test data (50 citizens)
 make install              # Install dependencies

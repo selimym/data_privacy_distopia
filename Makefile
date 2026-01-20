@@ -1,6 +1,8 @@
-.PHONY: dev dev-backend dev-frontend test seed-db install install-backend install-frontend clean
+.PHONY: dev dev-backend dev-frontend test seed-db install install-backend install-frontend clean kill-dev
 
 dev:
+	@echo "Stopping any existing dev servers..."
+	@make kill-dev
 	@echo "Starting backend and frontend in parallel..."
 	@make -j2 dev-backend dev-frontend
 
@@ -40,3 +42,10 @@ clean:
 	rm -rf frontend/dist
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
+
+kill-dev:
+	@echo "Stopping dev servers..."
+	@-bash -c 'pgrep -f "uvicorn datafusion.main:app" | xargs -r kill -TERM 2>/dev/null' || true
+	@-bash -c 'pgrep -f "vite.*bin/vite" | xargs -r kill -TERM 2>/dev/null' || true
+	@sleep 1
+	@echo "Dev servers stopped."
