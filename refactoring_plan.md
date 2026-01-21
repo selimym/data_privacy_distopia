@@ -62,13 +62,13 @@ Port the data model definitions. These are already 80% done in `frontend/src/typ
 
 | Python File | TypeScript File | Status | Notes |
 |-------------|-----------------|--------|-------|
-| [models/npc.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/models/npc.py) | [types/npc.ts](file:///home/selim/data_privacy_distopia_antigravity/frontend/src/types/npc.ts) | ✅ Partial | Add `Role` enum, complete fields |
-| [models/health.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/models/health.py) | `types/health.ts` | ❌ New | `Severity` enum, condition/medication/visit types |
-| [models/finance.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/models/finance.py) | `types/finance.ts` | ❌ New | `AccountType`, `DebtType`, `EmploymentStatus`, `TransactionCategory` |
-| [models/judicial.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/models/judicial.py) | `types/judicial.ts` | ❌ New | `CrimeType`, arrests, charges, sentences |
-| [models/location.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/models/location.py) | `types/location.ts` | ❌ New | Location records, check-ins |
-| [models/social.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/models/social.py) | `types/social.ts` | ❌ New | Posts, relationships, platforms |
-| [models/system_mode.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/models/system_mode.py) | [types/system.ts](file:///home/selim/data_privacy_distopia_antigravity/frontend/src/types/system.ts) | ✅ Complete | Already comprehensive |
+| [models/npc.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/models/npc.py) | [types/npc.ts](file:///home/selim/data_privacy_distopia/frontend/src/types/npc.ts) | ✅ Partial | Add `Role` enum, complete fields |
+| [models/health.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/models/health.py) | `types/health.ts` | ❌ New | `Severity` enum, condition/medication/visit types |
+| [models/finance.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/models/finance.py) | `types/finance.ts` | ❌ New | `AccountType`, `DebtType`, `EmploymentStatus`, `TransactionCategory` |
+| [models/judicial.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/models/judicial.py) | `types/judicial.ts` | ❌ New | `CrimeType`, arrests, charges, sentences |
+| [models/location.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/models/location.py) | `types/location.ts` | ❌ New | Location records, check-ins |
+| [models/social.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/models/social.py) | `types/social.ts` | ❌ New | Posts, relationships, platforms |
+| [models/system_mode.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/models/system_mode.py) | [types/system.ts](file:///home/selim/data_privacy_distopia/frontend/src/types/system.ts) | ✅ Complete | Already comprehensive |
 
 #### Deliverables
 -  Create `frontend/src/types/health.ts`
@@ -88,17 +88,17 @@ Move all JSON data files to the frontend `public/` directory. These are game con
 
 | Backend Data File | Frontend Location | Size |
 |-------------------|-------------------|------|
-| [data/reference/health.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/reference/health.json) | `public/data/reference/health.json` | 2.4KB |
-| [data/reference/finance.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/reference/finance.json) | `public/data/reference/finance.json` | 1.4KB |
-| [data/reference/judicial.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/reference/judicial.json) | `public/data/reference/judicial.json` | 3.3KB |
-| [data/reference/social.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/reference/social.json) | `public/data/reference/social.json` | 7.4KB |
-| [data/config/risk_factors.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/config/risk_factors.json) | `public/data/config/risk_factors.json` | 2.4KB |
-| [data/config/keywords.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/config/keywords.json) | `public/data/config/keywords.json` | 1.6KB |
-| [data/config/correlation_alerts.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/config/correlation_alerts.json) | `public/data/config/correlation_alerts.json` | 1.4KB |
-| [data/directives.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/directives.json) | `public/data/directives.json` | 4.6KB |
-| [data/outcomes.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/outcomes.json) | `public/data/outcomes.json` | 7.0KB |
-| [data/inference_rules.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/inference_rules.json) | `public/data/inference_rules.json` | 21.2KB |
-| [data/messages.json](file:///home/selim/data_privacy_distopia_antigravity/backend/data/messages.json) | `public/data/messages.json` | 6.4KB |
+| [data/reference/health.json](file:///home/selim/data_privacy_distopia/backend/data/reference/health.json) | `public/data/reference/health.json` | 2.4KB |
+| [data/reference/finance.json](file:///home/selim/data_privacy_distopia/backend/data/reference/finance.json) | `public/data/reference/finance.json` | 1.4KB |
+| [data/reference/judicial.json](file:///home/selim/data_privacy_distopia/backend/data/reference/judicial.json) | `public/data/reference/judicial.json` | 3.3KB |
+| [data/reference/social.json](file:///home/selim/data_privacy_distopia/backend/data/reference/social.json) | `public/data/reference/social.json` | 7.4KB |
+| [data/config/risk_factors.json](file:///home/selim/data_privacy_distopia/backend/data/config/risk_factors.json) | `public/data/config/risk_factors.json` | 2.4KB |
+| [data/config/keywords.json](file:///home/selim/data_privacy_distopia/backend/data/config/keywords.json) | `public/data/config/keywords.json` | 1.6KB |
+| [data/config/correlation_alerts.json](file:///home/selim/data_privacy_distopia/backend/data/config/correlation_alerts.json) | `public/data/config/correlation_alerts.json` | 1.4KB |
+| [data/directives.json](file:///home/selim/data_privacy_distopia/backend/data/directives.json) | `public/data/directives.json` | 4.6KB |
+| [data/outcomes.json](file:///home/selim/data_privacy_distopia/backend/data/outcomes.json) | `public/data/outcomes.json` | 7.0KB |
+| [data/inference_rules.json](file:///home/selim/data_privacy_distopia/backend/data/inference_rules.json) | `public/data/inference_rules.json` | 21.2KB |
+| [data/messages.json](file:///home/selim/data_privacy_distopia/backend/data/messages.json) | `public/data/messages.json` | 6.4KB |
 
 **Total: ~59KB** (negligible for static hosting)
 
@@ -117,14 +117,14 @@ Port Python generators to TypeScript using [Faker.js](https://fakerjs.dev/) inst
 
 | Python Generator | TypeScript File | Lines | Complexity | faker.js Coverage |
 |------------------|-----------------|-------|------------|-------------------|
-| [generators/identity.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/generators/identity.py) | `generators/identity.ts` | 80 | Low | ✅ Full |
-| [generators/health.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/generators/health.py) | `generators/health.ts` | 107 | Low | ✅ Full |
-| [generators/finance.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/generators/finance.py) | `generators/finance.ts` | 247 | Medium | ✅ Full |
-| [generators/judicial.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/generators/judicial.py) | `generators/judicial.ts` | ~300 | Medium | ✅ Full |
-| [generators/location.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/generators/location.py) | `generators/location.ts` | ~260 | Medium | ✅ Full |
-| [generators/social.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/generators/social.py) | `generators/social.ts` | 120 | Low | ✅ Full |
-| [generators/messages.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/generators/messages.py) | `generators/messages.ts` | ~570 | High | ⚠️ Partial (custom logic) |
-| [generators/system_seed_data.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/generators/system_seed_data.py) | `generators/system-seed.ts` | 190 | Medium | N/A (game-specific) |
+| [generators/identity.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/generators/identity.py) | `generators/identity.ts` | 80 | Low | ✅ Full |
+| [generators/health.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/generators/health.py) | `generators/health.ts` | 107 | Low | ✅ Full |
+| [generators/finance.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/generators/finance.py) | `generators/finance.ts` | 247 | Medium | ✅ Full |
+| [generators/judicial.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/generators/judicial.py) | `generators/judicial.ts` | ~300 | Medium | ✅ Full |
+| [generators/location.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/generators/location.py) | `generators/location.ts` | ~260 | Medium | ✅ Full |
+| [generators/social.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/generators/social.py) | `generators/social.ts` | 120 | Low | ✅ Full |
+| [generators/messages.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/generators/messages.py) | `generators/messages.ts` | ~570 | High | ⚠️ Partial (custom logic) |
+| [generators/system_seed_data.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/generators/system_seed_data.py) | `generators/system-seed.ts` | 190 | Medium | N/A (game-specific) |
 
 #### Key Mappings
 
@@ -179,24 +179,24 @@ graph TD
 
 | Python Service | TS File | Lines | Complexity | DB Deps | Notes |
 |----------------|---------|-------|------------|---------|-------|
-| [content_loader.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/content_loader.py) | `services/content-loader.ts` | 82 | Low | None | Already simple, just fetch JSON |
-| [inference_engine.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/inference_engine.py) | `services/inference-engine.ts` | 347 | Medium | None | Pure logic, rule evaluation |
-| [inference_rules.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/inference_rules.py) | `services/inference-rules.ts` | 69 | Low | None | Rule definitions |
-| [severity_scoring.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/severity_scoring.py) | `services/severity-scoring.ts` | 95 | Low | None | Action severity calc |
-| [risk_scoring.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/risk_scoring.py) | `services/risk-scoring.ts` | 706 | **High** | Reads NPC data | Core surveillance logic |
-| [public_metrics.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/public_metrics.py) | `services/public-metrics.ts` | 220 | Medium | State updates | Awareness/anger tracking |
-| [reluctance_tracking.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/reluctance_tracking.py) | `services/reluctance-tracking.ts` | 222 | Medium | State updates | Operator reluctance |
-| [operator_tracker.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/operator_tracker.py) | `services/operator-tracker.ts` | 510 | **High** | State updates | Decision tracking |
-| [citizen_outcomes.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/citizen_outcomes.py) | `services/citizen-outcomes.ts` | 360 | Medium | Reads citizen data | Outcome narratives |
-| [time_progression.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/time_progression.py) | `services/time-progression.ts` | 115 | Low | State updates | Week progression |
-| [ending_calculator.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/ending_calculator.py) | `services/ending-calculator.ts` | 932 | **Very High** | Many deps | Game ending logic |
-| [news_system.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/news_system.py) | `services/news-system.ts` | 410 | High | State updates | News generation |
-| [protest_system.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/protest_system.py) | `services/protest-system.ts` | 267 | Medium | State updates | Protest mechanics |
-| [action_execution.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/action_execution.py) | `services/action-execution.ts` | 460 | High | Many deps | Action handling |
-| [event_generation.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/event_generation.py) | `services/event-generation.ts` | 267 | Medium | State updates | Event triggers |
-| [scenario_engine.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/scenario_engine.py) | `services/scenario-engine.ts` | 115 | Low | Reads config | Scenario loading |
-| [content_filter.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/content_filter.py) | `services/content-filter.ts` | 95 | Low | None | Content moderation |
-| [abuse_simulator.py](file:///home/selim/data_privacy_distopia_antigravity/backend/src/datafusion/services/abuse_simulator.py) | `services/abuse-simulator.ts` | 270 | Medium | State updates | Rogue employee mode |
+| [content_loader.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/content_loader.py) | `services/content-loader.ts` | 82 | Low | None | Already simple, just fetch JSON |
+| [inference_engine.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/inference_engine.py) | `services/inference-engine.ts` | 347 | Medium | None | Pure logic, rule evaluation |
+| [inference_rules.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/inference_rules.py) | `services/inference-rules.ts` | 69 | Low | None | Rule definitions |
+| [severity_scoring.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/severity_scoring.py) | `services/severity-scoring.ts` | 95 | Low | None | Action severity calc |
+| [risk_scoring.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/risk_scoring.py) | `services/risk-scoring.ts` | 706 | **High** | Reads NPC data | Core surveillance logic |
+| [public_metrics.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/public_metrics.py) | `services/public-metrics.ts` | 220 | Medium | State updates | Awareness/anger tracking |
+| [reluctance_tracking.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/reluctance_tracking.py) | `services/reluctance-tracking.ts` | 222 | Medium | State updates | Operator reluctance |
+| [operator_tracker.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/operator_tracker.py) | `services/operator-tracker.ts` | 510 | **High** | State updates | Decision tracking |
+| [citizen_outcomes.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/citizen_outcomes.py) | `services/citizen-outcomes.ts` | 360 | Medium | Reads citizen data | Outcome narratives |
+| [time_progression.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/time_progression.py) | `services/time-progression.ts` | 115 | Low | State updates | Week progression |
+| [ending_calculator.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/ending_calculator.py) | `services/ending-calculator.ts` | 932 | **Very High** | Many deps | Game ending logic |
+| [news_system.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/news_system.py) | `services/news-system.ts` | 410 | High | State updates | News generation |
+| [protest_system.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/protest_system.py) | `services/protest-system.ts` | 267 | Medium | State updates | Protest mechanics |
+| [action_execution.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/action_execution.py) | `services/action-execution.ts` | 460 | High | Many deps | Action handling |
+| [event_generation.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/event_generation.py) | `services/event-generation.ts` | 267 | Medium | State updates | Event triggers |
+| [scenario_engine.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/scenario_engine.py) | `services/scenario-engine.ts` | 115 | Low | Reads config | Scenario loading |
+| [content_filter.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/content_filter.py) | `services/content-filter.ts` | 95 | Low | None | Content moderation |
+| [abuse_simulator.py](file:///home/selim/data_privacy_distopia/backend/src/datafusion/services/abuse_simulator.py) | `services/abuse-simulator.ts` | 270 | Medium | State updates | Rogue employee mode |
 
 #### Database Replacement Strategy
 
@@ -230,7 +230,7 @@ Since there's no database, we need a local state store. Options:
 ### Phase 5: State Management Refactor
 **Effort: Medium (~3-4 days) | Priority: HIGH | Dependencies: Phase 4**
 
-Refactor [SystemState.ts](file:///home/selim/data_privacy_distopia_antigravity/frontend/src/state/SystemState.ts) to use local services instead of API calls.
+Refactor [SystemState.ts](file:///home/selim/data_privacy_distopia/frontend/src/state/SystemState.ts) to use local services instead of API calls.
 
 #### Current API Calls to Replace
 
