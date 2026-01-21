@@ -27,6 +27,7 @@ export class ReluctanceWarningPanel {
   private container: HTMLDivElement;
   private config: ReluctanceWarningPanelConfig;
   private currentStage: number;
+  private lastMetricsHash: string;
 
   // Warning stages (thresholds from backend ReluctanceTrackingService)
   private readonly WARNING_STAGES: WarningStageInfo[] = [
@@ -66,7 +67,13 @@ The system is watching. Compliance is mandatory.`,
   constructor(config: ReluctanceWarningPanelConfig) {
     this.config = config;
     this.currentStage = config.metrics ? this.calculateWarningStage(config.metrics.reluctance_score) : 0;
+    this.lastMetricsHash = config.metrics ? this.getMetricsHash(config.metrics) : '';
     this.container = this.createPanel();
+  }
+
+  private getMetricsHash(metrics: ReluctanceMetricsRead): string {
+    // Simple hash to detect metric changes
+    return `${metrics.reluctance_score}-${metrics.warnings_received}-${metrics.actions_taken}-${metrics.actions_required}-${metrics.quota_shortfall}`;
   }
 
   private calculateWarningStage(score: number): number {
@@ -144,7 +151,13 @@ The system is watching. Compliance is mandatory.`,
    * Update panel with new metrics
    */
   public update(metrics: ReluctanceMetricsRead): void {
-    console.log('[ReluctanceWarningPanel] Updating with new metrics:', metrics);
+    // Check if metrics actually changed (prevents ghost clicks from unnecessary DOM updates)
+    const newHash = this.getMetricsHash(metrics);
+    if (newHash === this.lastMetricsHash) {
+      return;  // No changes, skip update
+    }
+    this.lastMetricsHash = newHash;
+
     this.config.metrics = metrics;
     const newStage = this.calculateWarningStage(metrics.reluctance_score);
 
@@ -169,8 +182,7 @@ The system is watching. Compliance is mandatory.`,
         this.container.innerHTML = this.getPanelHTML();
       }
     } else if (newStage > 0) {
-      // Same stage but metrics changed - refresh display
-      console.log('[ReluctanceWarningPanel] Refreshing display (stage unchanged:', newStage, ')');
+      // Same stage but metrics changed - refresh display silently
       this.container.innerHTML = this.getPanelHTML();
     }
   }

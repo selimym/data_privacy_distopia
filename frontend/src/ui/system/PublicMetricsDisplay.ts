@@ -28,6 +28,8 @@ export class PublicMetricsDisplay {
   private config: PublicMetricsDisplayConfig;
   private lastAwarenessTier: number;
   private lastAngerTier: number;
+  private lastAwarenessValue: number;
+  private lastAngerValue: number;
 
   // Tier thresholds (from backend PublicMetricsService)
   private readonly AWARENESS_TIERS: TierInfo[] = [
@@ -52,6 +54,8 @@ export class PublicMetricsDisplay {
     this.config = config;
     this.lastAwarenessTier = config.metrics?.awareness_tier ?? 0;
     this.lastAngerTier = config.metrics?.anger_tier ?? 0;
+    this.lastAwarenessValue = config.metrics?.international_awareness ?? 0;
+    this.lastAngerValue = config.metrics?.public_anger ?? 0;
     this.container = this.createDisplay();
   }
 
@@ -172,26 +176,38 @@ export class PublicMetricsDisplay {
    * Update metrics and check for tier crossings
    */
   public update(newMetrics: PublicMetricsRead): void {
-    console.log('[PublicMetricsDisplay] Updating with new metrics:', newMetrics);
+    // Check if values have actually changed
+    const awarenessChanged = newMetrics.international_awareness !== this.lastAwarenessValue;
+    const angerChanged = newMetrics.public_anger !== this.lastAngerValue;
+    const tierChanged = newMetrics.awareness_tier !== this.lastAwarenessTier || newMetrics.anger_tier !== this.lastAngerTier;
+
+    // Skip update if nothing changed (prevents ghost clicks from unnecessary DOM updates)
+    if (!awarenessChanged && !angerChanged && !tierChanged) {
+      return;
+    }
+
     this.config.metrics = newMetrics;
 
     // Check for tier crossings
     if (newMetrics.awareness_tier > this.lastAwarenessTier) {
       console.log('[PublicMetricsDisplay] Awareness tier crossed:', this.lastAwarenessTier, '->', newMetrics.awareness_tier);
       this.handleTierCrossing('awareness', newMetrics.awareness_tier);
-      this.lastAwarenessTier = newMetrics.awareness_tier;
     }
 
     if (newMetrics.anger_tier > this.lastAngerTier) {
       console.log('[PublicMetricsDisplay] Anger tier crossed:', this.lastAngerTier, '->', newMetrics.anger_tier);
       this.handleTierCrossing('anger', newMetrics.anger_tier);
-      this.lastAngerTier = newMetrics.anger_tier;
     }
 
-    // Update visual
+    // Update stored values
+    this.lastAwarenessTier = newMetrics.awareness_tier;
+    this.lastAngerTier = newMetrics.anger_tier;
+    this.lastAwarenessValue = newMetrics.international_awareness;
+    this.lastAngerValue = newMetrics.public_anger;
+
+    // Update visual only if something changed
     this.container.innerHTML = this.getDisplayHTML();
     this.setupEventListeners(this.container);
-    console.log('[PublicMetricsDisplay] Display updated');
   }
 
   /**

@@ -444,6 +444,9 @@ export class SystemState {
       // This ensures flagged citizens are removed from queue and stats are current
       await this.loadDashboardWithCases();
 
+      // Reload reluctance metrics after flagging (they've been updated)
+      await this.loadReluctanceMetrics();
+
       return result;
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Failed to submit flag';
@@ -486,6 +489,9 @@ export class SystemState {
       // This ensures reviewed citizens are handled properly and stats are current
       await this.loadDashboardWithCases();
 
+      // Reload reluctance metrics after no-action (they've been updated)
+      await this.loadReluctanceMetrics();
+
       return result;
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Failed to submit no-action';
@@ -508,6 +514,10 @@ export class SystemState {
     try {
       this.currentDirective = await api.advanceDirective(this.operatorId);
       await this.loadDashboard();
+
+      // Reload reluctance metrics at the beginning of new week
+      await this.loadReluctanceMetrics();
+
       return true;
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Cannot advance directive';
@@ -659,6 +669,7 @@ export class SystemState {
 
   /**
    * Start polling for metrics updates.
+   * Note: Reluctance metrics are NOT polled - they only update after actions.
    */
   public startMetricsPolling(): void {
     if (this.metricsPollingInterval) return;
@@ -668,10 +679,10 @@ export class SystemState {
     this.loadReluctanceMetrics();
     this.loadExposureRisk();
 
-    // Poll every 5 seconds
+    // Poll public metrics and exposure risk every 5 seconds
+    // Reluctance metrics are NOT polled - they only update after flag/no-action
     this.metricsPollingInterval = window.setInterval(() => {
       this.loadPublicMetrics();
-      this.loadReluctanceMetrics();
       this.loadExposureRisk();
     }, 5000);
   }

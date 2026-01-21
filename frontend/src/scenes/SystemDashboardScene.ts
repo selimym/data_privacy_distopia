@@ -747,9 +747,9 @@ export class SystemDashboardScene extends Phaser.Scene {
     // Citizen selected but data not loaded yet - show loading state
     if (!file) {
       panel.style.display = 'block';
-      // Only re-render if we're loading a different citizen
-      if (panel.dataset.citizenId !== selectedId) {
-        panel.dataset.citizenId = selectedId;
+      // Only re-render loading state if we're loading a different citizen
+      if (panel.dataset.loadingCitizenId !== selectedId) {
+        panel.dataset.loadingCitizenId = selectedId;
         panel.innerHTML = '<div class="citizen-file-loading">Loading citizen file...</div>';
       }
       return;
@@ -758,14 +758,15 @@ export class SystemDashboardScene extends Phaser.Scene {
     // Citizen data loaded
     panel.style.display = 'block';
 
-    // Don't re-render if same citizen (prevents form state destruction during polling)
-    if (panel.dataset.citizenId === file.identity.id) {
-      // Same citizen - just update timer, don't destroy form
+    // Don't re-render if same citizen is already rendered (prevents form state destruction during polling)
+    if (panel.dataset.citizenId === file.identity.id && panel.dataset.citizenId !== panel.dataset.loadingCitizenId) {
+      // Same citizen already fully rendered - just update timer, don't destroy form
       return;
     }
 
     // Different citizen or first render - full re-render
     panel.dataset.citizenId = file.identity.id;
+    delete panel.dataset.loadingCitizenId;
     panel.innerHTML = this.getCitizenFileHTML(file);
     this.setupCitizenFilePanelListeners(panel);
     this.initializeMessagesPanel(panel, file);
