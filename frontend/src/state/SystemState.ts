@@ -35,10 +35,13 @@ export class SystemState {
   public currentTimePeriod: string = 'immediate';  // Track current time period
   private isInitialized: boolean = false;  // Track initialization state
 
+  // Session timing
+  public sessionStartTime: number | null = null;  // Track total session time
+
   // Case selection
   public selectedCitizenId: string | null = null;
   public selectedCitizenFile: FullCitizenFile | null = null;
-  public decisionStartTime: number | null = null;
+  public decisionStartTime: number | null = null;  // Track per-citizen decision time (for hesitation tracking)
 
   // Lists
   public pendingCases: CaseOverview[] = [];
@@ -126,6 +129,9 @@ export class SystemState {
         warnings: [],
       };
       this.currentDirective = response.first_directive;
+
+      // Start session timer
+      this.sessionStartTime = Date.now();
 
       // Load initial data (optimized: single API call)
       await this.loadDashboardWithCases();
@@ -382,10 +388,20 @@ export class SystemState {
 
   /**
    * Get the time elapsed since citizen was selected (in seconds).
+   * Used for tracking hesitation incidents (>30s per citizen).
    */
   public getDecisionTime(): number {
     if (!this.decisionStartTime) return 0;
     return (Date.now() - this.decisionStartTime) / 1000;
+  }
+
+  /**
+   * Get the total session time elapsed (in seconds).
+   * This is the time shown in the dashboard timer.
+   */
+  public getSessionTime(): number {
+    if (!this.sessionStartTime) return 0;
+    return (Date.now() - this.sessionStartTime) / 1000;
   }
 
   /**
@@ -424,8 +440,12 @@ export class SystemState {
       // Clear selection
       this.clearSelection();
 
-      // NOTE: Dashboard refresh deferred - will be refreshed when resuming
-      // session after cinematic (via resumeSession())
+      // Refresh dashboard to update case queue and metrics
+      // This ensures flagged citizens are removed from queue and stats are current
+      await this.loadDashboardWithCases();
+
+      // Reload reluctance metrics after flagging (they've been updated)
+      await this.loadReluctanceMetrics();
 
       return result;
     } catch (err) {
@@ -465,8 +485,12 @@ export class SystemState {
       // Clear selection
       this.clearSelection();
 
-      // NOTE: Dashboard refresh deferred - will be refreshed when resuming
-      // session after cinematic (via resumeSession())
+      // Refresh dashboard to update case queue and metrics
+      // This ensures reviewed citizens are handled properly and stats are current
+      await this.loadDashboardWithCases();
+
+      // Reload reluctance metrics after no-action (they've been updated)
+      await this.loadReluctanceMetrics();
 
       return result;
     } catch (err) {
@@ -490,6 +514,10 @@ export class SystemState {
     try {
       this.currentDirective = await api.advanceDirective(this.operatorId);
       await this.loadDashboard();
+
+      // Reload reluctance metrics at the beginning of new week
+      await this.loadReluctanceMetrics();
+
       return true;
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Cannot advance directive';
@@ -544,12 +572,28 @@ export class SystemState {
     try {
       const newMetrics = await api.getPublicMetrics(this.operatorId);
 
+      // Only log if metrics have actually changed (reduce log spam)
+      const hasChanged = !this.publicMetrics ||
+        this.publicMetrics.international_awareness !== newMetrics.international_awareness ||
+        this.publicMetrics.public_anger !== newMetrics.public_anger;
+
+      if (hasChanged) {
+        console.log('[SystemState] Public metrics updated:', {
+          awareness: newMetrics.international_awareness,
+          anger: newMetrics.public_anger,
+          awareness_tier: newMetrics.awareness_tier,
+          anger_tier: newMetrics.anger_tier,
+        });
+      }
+
       // Check for tier crossings
       if (this.publicMetrics) {
         if (newMetrics.awareness_tier > this.lastAwarenessTier) {
+          console.log('[SystemState] Awareness tier increased:', this.lastAwarenessTier, '->', newMetrics.awareness_tier);
           this.lastAwarenessTier = newMetrics.awareness_tier;
         }
         if (newMetrics.anger_tier > this.lastAngerTier) {
+          console.log('[SystemState] Anger tier increased:', this.lastAngerTier, '->', newMetrics.anger_tier);
           this.lastAngerTier = newMetrics.anger_tier;
         }
       } else {
@@ -558,7 +602,9 @@ export class SystemState {
       }
 
       this.publicMetrics = newMetrics;
-      this.notify();
+      if (hasChanged) {
+        this.notify();
+      }
     } catch (err) {
       console.error('Failed to load public metrics:', err);
     }
@@ -573,14 +619,28 @@ export class SystemState {
     try {
       const newMetrics = await api.getReluctanceMetrics(this.operatorId);
 
+      // Only log if metrics have actually changed (reduce log spam)
+      const hasChanged = !this.reluctanceMetrics ||
+        this.reluctanceMetrics.reluctance_score !== newMetrics.reluctance_score;
+
+      if (hasChanged) {
+        console.log('[SystemState] Reluctance metrics updated:', {
+          score: newMetrics.reluctance_score,
+          stage: this.getReluctanceStage(newMetrics.reluctance_score),
+        });
+      }
+
       // Check for reluctance stage change
       const newStage = this.getReluctanceStage(newMetrics.reluctance_score);
       if (newStage > this.lastReluctanceStage) {
+        console.log('[SystemState] Reluctance stage increased:', this.lastReluctanceStage, '->', newStage);
         this.lastReluctanceStage = newStage;
       }
 
       this.reluctanceMetrics = newMetrics;
-      this.notify();
+      if (hasChanged) {
+        this.notify();
+      }
     } catch (err) {
       console.error('Failed to load reluctance metrics:', err);
     }
@@ -636,6 +696,7 @@ export class SystemState {
 
   /**
    * Start polling for metrics updates.
+   * Note: Reluctance metrics are NOT polled - they only update after actions.
    */
   public startMetricsPolling(): void {
     if (this.metricsPollingInterval) return;
@@ -645,12 +706,12 @@ export class SystemState {
     this.loadReluctanceMetrics();
     this.loadExposureRisk();
 
-    // Poll every 5 seconds
+    // Poll public metrics and exposure risk every 10 seconds (reduced from 5s to minimize log spam)
+    // Reluctance metrics are NOT polled - they only update after flag/no-action
     this.metricsPollingInterval = window.setInterval(() => {
       this.loadPublicMetrics();
-      this.loadReluctanceMetrics();
       this.loadExposureRisk();
-    }, 5000);
+    }, 10000);
   }
 
   /**
@@ -702,6 +763,28 @@ export class SystemState {
   }
 
   /**
+   * Pause public metrics polling temporarily (e.g., during cinematics or user interaction).
+   * Use resumeMetricsPolling() to restart.
+   */
+  public pauseMetricsPolling(): void {
+    if (this.metricsPollingInterval) {
+      console.log('[SystemState] Pausing metrics polling');
+      window.clearInterval(this.metricsPollingInterval);
+      this.metricsPollingInterval = null;
+    }
+  }
+
+  /**
+   * Resume public metrics polling after being paused.
+   */
+  public resumeMetricsPolling(): void {
+    if (!this.metricsPollingInterval) {
+      console.log('[SystemState] Resuming metrics polling');
+      this.startMetricsPolling();
+    }
+  }
+
+  /**
    * Get reluctance stage (1, 2, or 3) from score.
    */
   private getReluctanceStage(score: number): number {
@@ -719,6 +802,7 @@ export class SystemState {
     this.operatorId = null;
     this.operatorStatus = null;
     this.currentDirective = null;
+    this.sessionStartTime = null;
     this.selectedCitizenId = null;
     this.selectedCitizenFile = null;
     this.decisionStartTime = null;

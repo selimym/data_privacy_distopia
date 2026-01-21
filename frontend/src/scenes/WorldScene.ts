@@ -405,14 +405,17 @@ export class WorldScene extends Phaser.Scene {
       console.warn(`Some tilesets failed to load (${missingTilesets.length}/${tilesets.length}). This is expected if assets haven't been added yet.`);
     }
 
+    // Filter out null tilesets for createLayer (TypeScript requirement)
+    const validTilesets = tilesets.filter((t): t is Phaser.Tilemaps.Tileset => t !== null);
+
     // Create all tile layers (must match layer names in Tiled map)
     // Note: If layers don't exist in the map, createLayer will return null
-    this.floorLayer = this.map.createLayer('1_Floor', tilesets, 0, 0)!;
-    this.wallsLayer = this.map.createLayer('2_Walls_Base', tilesets, 0, 0)!;
-    this.furnitureLowLayer = this.map.createLayer('3_Furniture_Low', tilesets, 0, 0)!;
-    this.furnitureMidLayer = this.map.createLayer('4_Furniture_Mid', tilesets, 0, 0)!;
-    this.furnitureHighLayer = this.map.createLayer('5_Furniture_High', tilesets, 0, 0)!;
-    this.objectsLayer = this.map.createLayer('6_Objects', tilesets, 0, 0)!;
+    this.floorLayer = this.map.createLayer('1_Floor', validTilesets, 0, 0)!;
+    this.wallsLayer = this.map.createLayer('2_Walls_Base', validTilesets, 0, 0)!;
+    this.furnitureLowLayer = this.map.createLayer('3_Furniture_Low', validTilesets, 0, 0)!;
+    this.furnitureMidLayer = this.map.createLayer('4_Furniture_Mid', validTilesets, 0, 0)!;
+    this.furnitureHighLayer = this.map.createLayer('5_Furniture_High', validTilesets, 0, 0)!;
+    this.objectsLayer = this.map.createLayer('6_Objects', validTilesets, 0, 0)!;
 
     // Set depth for proper rendering order
     // Floor and walls below player

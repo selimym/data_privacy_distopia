@@ -9,6 +9,7 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from datafusion.models.system_mode import CitizenFlag, Operator
 from datafusion.schemas.outcomes import CitizenOutcome
@@ -54,8 +55,12 @@ class TimeProgressionService:
         Returns:
             List of CitizenOutcome objects to display cinematically
         """
-        # Get operator
-        operator_result = await self.db.execute(select(Operator).where(Operator.id == operator_id))
+        # Get operator with eager-loaded directive
+        operator_result = await self.db.execute(
+            select(Operator)
+            .options(selectinload(Operator.current_directive))
+            .where(Operator.id == operator_id)
+        )
         operator = operator_result.scalar_one_or_none()
         if not operator:
             raise ValueError(f"Operator {operator_id} not found")
