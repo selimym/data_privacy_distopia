@@ -85,7 +85,7 @@ from datafusion.schemas.system import (
 from datafusion.schemas.system import (
     ArticleType as ArticleTypeSchema,
 )
-from datafusion.services.action_execution import execute_action
+from datafusion.services.action_execution import execute_action, submit_no_action as submit_no_action_service
 from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator
 from datafusion.services.operator_data_tracker import (
     get_exposure_risk_level,
@@ -1249,7 +1249,7 @@ async def submit_no_action_new(
 
     Increases operator's reluctance score and can lead to termination.
     """
-    result = await submit_no_action(
+    result = await submit_no_action_service(
         operator_id=operator_id,
         citizen_id=citizen_id,
         justification=justification,
