@@ -8,6 +8,7 @@ systems monitor everyone, including those who run them.
 Educational purpose: Shows how authoritarian systems create
 self-perpetuating cycles of fear and compliance.
 """
+
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -84,9 +85,7 @@ class OperatorTracker:
         """Initialize with database session."""
         self.db = db
 
-    async def record_decision(
-        self, operator_id: UUID, decision: FlagDecision
-    ) -> None:
+    async def record_decision(self, operator_id: UUID, decision: FlagDecision) -> None:
         """
         Record a flagging decision and update operator metrics.
 
@@ -238,9 +237,7 @@ class OperatorTracker:
             next_review=next_review,
         )
 
-    async def generate_operator_risk_assessment(
-        self, operator_id: UUID
-    ) -> OperatorRiskAssessment:
+    async def generate_operator_risk_assessment(self, operator_id: UUID) -> OperatorRiskAssessment:
         """
         Generate a risk assessment for the operator themselves.
 
@@ -305,11 +302,9 @@ class OperatorTracker:
             factors.append(
                 OperatorContributingFactor(
                     factor_key="ideological_sympathy",
-                    factor_name=self.OPERATOR_RISK_FACTORS["ideological_sympathy"][
-                        "name"
-                    ],
+                    factor_name=self.OPERATOR_RISK_FACTORS["ideological_sympathy"]["name"],
                     weight=weight,
-                    evidence=f"Non-action rate of {skip_rate*100:.0f}% suggests sympathy with flagged targets",
+                    evidence=f"Non-action rate of {skip_rate * 100:.0f}% suggests sympathy with flagged targets",
                 )
             )
             risk_score += weight
@@ -405,9 +400,7 @@ class OperatorTracker:
         flags_submitted = flags_result.scalar() or 0
 
         progress_percent = (
-            (flags_submitted / directive.flag_quota * 100)
-            if directive.flag_quota > 0
-            else 0.0
+            (flags_submitted / directive.flag_quota * 100) if directive.flag_quota > 0 else 0.0
         )
 
         return QuotaProgress(
@@ -423,9 +416,7 @@ class OperatorTracker:
 
     async def _get_operator(self, operator_id: UUID) -> Operator:
         """Get operator by ID."""
-        result = await self.db.execute(
-            select(Operator).where(Operator.id == operator_id)
-        )
+        result = await self.db.execute(select(Operator).where(Operator.id == operator_id))
         operator = result.scalar_one_or_none()
         if not operator:
             raise ValueError(f"Operator {operator_id} not found")
@@ -481,9 +472,7 @@ class OperatorTracker:
     async def _get_rejection_rate(self, operator_id: UUID) -> float:
         """Get rate of rejected flags."""
         total_result = await self.db.execute(
-            select(func.count(CitizenFlag.id)).where(
-                CitizenFlag.operator_id == operator_id
-            )
+            select(func.count(CitizenFlag.id)).where(CitizenFlag.operator_id == operator_id)
         )
         total = total_result.scalar() or 0
 

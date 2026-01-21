@@ -198,9 +198,7 @@ async def test_get_inferences_with_scariness_filter(client, test_npc_with_health
     all_inferences = response_all.json()["inferences"]
 
     # Filter to scariness <= 3
-    response_filtered = await client.get(
-        f"/api/inferences/{npc_id}?domains=health&max_scariness=3"
-    )
+    response_filtered = await client.get(f"/api/inferences/{npc_id}?domains=health&max_scariness=3")
     filtered_inferences = response_filtered.json()["inferences"]
 
     # Should have fewer inferences
@@ -260,9 +258,7 @@ async def test_preview_new_inferences(client, test_npc_with_health):
     npc_id = str(test_npc_with_health.id)
 
     # Preview what would happen if we enable health domain
-    response = await client.get(
-        f"/api/inferences/{npc_id}/preview?new_domain=health"
-    )
+    response = await client.get(f"/api/inferences/{npc_id}/preview?new_domain=health")
 
     assert response.status_code == 200
     data = response.json()

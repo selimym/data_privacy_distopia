@@ -5,6 +5,7 @@ Generates realistic private messages and flags them based on keywords
 and sentiment analysis. Educational purpose: Shows how mass message
 surveillance works and why it's dangerous.
 """
+
 import random
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
@@ -217,7 +218,9 @@ class MessageGenerator:
             timestamp = datetime.now(UTC) - timedelta(days=days_ago)
 
             # Choose message category based on profile
-            weights = self._get_message_weights(has_mental_health, has_financial_stress, is_activist)
+            weights = self._get_message_weights(
+                has_mental_health, has_financial_stress, is_activist
+            )
             category = random.choices(list(weights.keys()), weights=list(weights.values()))[0]
 
             # Generate message content
@@ -227,9 +230,7 @@ class MessageGenerator:
             recipient_name, recipient_relationship = self._generate_recipient(npc)
 
             # Analyze message
-            sentiment, detected_keywords, is_flagged, flag_reasons = self._analyze_message(
-                content
-            )
+            sentiment, detected_keywords, is_flagged, flag_reasons = self._analyze_message(content)
 
             message = Message(
                 message_record_id=message_record.id,
@@ -435,7 +436,12 @@ class MessageGenerator:
             ("Meeting with pharma lobbyists went well. They're on board.", 0.4, [], 6),
             ("Make sure the surveillance bill passes. Our donors expect results.", 0.2, [], 14),
             ("Delete this after reading. Can't have it in discovery.", -0.3, ["delete this"], 9),
-            ("The protesters are getting louder. We need to shut this down.", 0.1, ["protesters"], 4),
+            (
+                "The protesters are getting louder. We need to shut this down.",
+                0.1,
+                ["protesters"],
+                4,
+            ),
             (
                 "Tell the committee I'll vote yes on the privacy reduction measure.",
                 0.3,
@@ -564,9 +570,7 @@ class MessageGenerator:
             flag_reasons.append(f"Contains keywords: {', '.join(detected_keywords[:3])}")
 
         # Flag if mentions encryption/privacy tools
-        if any(
-            word in content.lower() for word in ["encrypt", "vpn", "secure app", "burner"]
-        ):
+        if any(word in content.lower() for word in ["encrypt", "vpn", "secure app", "burner"]):
             flag_reasons.append("Privacy tool discussion")
 
         # Flag if discusses organizing/protests

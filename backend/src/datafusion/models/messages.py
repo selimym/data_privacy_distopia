@@ -4,6 +4,7 @@ Message surveillance models - the "chat control" dystopia.
 Stores private communications between citizens for algorithmic analysis.
 Educational purpose: Demonstrates the dangers of mass message surveillance.
 """
+
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -67,9 +68,7 @@ class Message(Base):
     recipient_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("npcs.id", ondelete="SET NULL"), nullable=True, index=True
     )  # Null for group/public messages
-    recipient_name: Mapped[str] = mapped_column(
-        String(200)
-    )  # Denormalized for display
+    recipient_name: Mapped[str] = mapped_column(String(200))  # Denormalized for display
     recipient_relationship: Mapped[str | None] = mapped_column(
         String(50), nullable=True
     )  # friend, family, coworker, unknown

@@ -240,7 +240,8 @@ class AdvancedInferenceEngine:
 
         # Check for pregnancy-related medical visits
         pregnancy_visits = [
-            v for v in context.health.visits
+            v
+            for v in context.health.visits
             if any(term in v.reason.lower() for term in ["pregn", "ob", "obstetr", "prenatal"])
         ]
 
@@ -249,20 +250,21 @@ class AdvancedInferenceEngine:
 
         # Check for pregnancy-related medications
         pregnancy_meds = [
-            m for m in context.health.medications
+            m
+            for m in context.health.medications
             if any(term in m.medication_name.lower() for term in ["prenatal", "folic"])
         ]
 
         # Check for abortion clinic visits in location data
         abortion_clinic = [
-            loc for loc in context.location.inferred_locations
+            loc
+            for loc in context.location.inferred_locations
             if "clinic" in loc.location_name.lower() and loc.is_sensitive
         ]
 
         # Check for out-of-state travel
         out_of_state = [
-            loc for loc in context.location.inferred_locations
-            if loc.state != context.npc.state
+            loc for loc in context.location.inferred_locations if loc.state != context.npc.state
         ]
 
         if abortion_clinic and out_of_state:
@@ -288,8 +290,19 @@ class AdvancedInferenceEngine:
 
         # Check for depression medication
         depression_meds = [
-            m for m in context.health.medications
-            if any(term in m.medication_name.lower() for term in ["sertraline", "prozac", "zoloft", "lexapro", "depression", "antidepressant"])
+            m
+            for m in context.health.medications
+            if any(
+                term in m.medication_name.lower()
+                for term in [
+                    "sertraline",
+                    "prozac",
+                    "zoloft",
+                    "lexapro",
+                    "depression",
+                    "antidepressant",
+                ]
+            )
         ]
 
         if not depression_meds:
@@ -297,22 +310,30 @@ class AdvancedInferenceEngine:
 
         # Check for therapy visits
         therapy_visits = [
-            v for v in context.health.visits
-            if any(term in v.reason.lower() for term in ["therapy", "mental", "psych", "counseling"])
+            v
+            for v in context.health.visits
+            if any(
+                term in v.reason.lower() for term in ["therapy", "mental", "psych", "counseling"]
+            )
         ]
 
         # Check social media for concerning posts
         concerning_posts = []
         if context.social.private_inferences:
             concerning_posts = [
-                inf for inf in context.social.private_inferences
-                if any(term in inf.inference_text.lower() for term in ["giving up", "hopeless", "burden", "end it", "no point"])
+                inf
+                for inf in context.social.private_inferences
+                if any(
+                    term in inf.inference_text.lower()
+                    for term in ["giving up", "hopeless", "burden", "end it", "no point"]
+                )
             ]
 
         # Check financial stress (giving away possessions)
         if context.finance.transactions:
             selling_possessions = [
-                t for t in context.finance.transactions
+                t
+                for t in context.finance.transactions
                 if t.category == "PAWN_SHOP" or "pawn" in t.merchant_name.lower()
             ]
         else:
@@ -329,7 +350,9 @@ class AdvancedInferenceEngine:
             "medication": depression_meds[0].medication_name,
             "therapy_frequency": f"{len(therapy_visits)} sessions",
             "social_indicators": len(concerning_posts),
-            "financial_indicators": "selling possessions" if selling_possessions else "cancelling subscriptions",
+            "financial_indicators": "selling possessions"
+            if selling_possessions
+            else "cancelling subscriptions",
             "risk_level": "elevated" if risk_count == 2 else "severe",
         }
 
@@ -355,7 +378,8 @@ class AdvancedInferenceEngine:
 
         # Check for hotel charges
         hotel_transactions = [
-            t for t in context.finance.transactions
+            t
+            for t in context.finance.transactions
             if any(term in t.merchant_name.lower() for term in ["hotel", "inn", "motel"])
         ]
 
@@ -364,7 +388,8 @@ class AdvancedInferenceEngine:
 
         # Check for restaurant/gift charges
         date_expenses = [
-            t for t in context.finance.transactions
+            t
+            for t in context.finance.transactions
             if t.category in ["RESTAURANT", "GIFTS", "FLOWERS"]
         ]
 
@@ -392,8 +417,12 @@ class AdvancedInferenceEngine:
 
         # Check for suspicious injury patterns
         injury_visits = [
-            v for v in context.health.visits
-            if any(term in v.reason.lower() for term in ["fall", "injury", "bruise", "fracture", "trauma"])
+            v
+            for v in context.health.visits
+            if any(
+                term in v.reason.lower()
+                for term in ["fall", "injury", "bruise", "fracture", "trauma"]
+            )
         ]
 
         if len(injury_visits) < 2:  # Need pattern
@@ -401,7 +430,8 @@ class AdvancedInferenceEngine:
 
         # Check for increasingly isolated location patterns
         social_locations = [
-            loc for loc in context.location.inferred_locations
+            loc
+            for loc in context.location.inferred_locations
             if loc.location_type in ["FRIEND", "FAMILY", "SOCIAL"]
         ]
 
@@ -409,8 +439,7 @@ class AdvancedInferenceEngine:
         partner_reckless = False
         if context.judicial and context.judicial.has_civil_cases:
             partner_reckless = any(
-                case.case_type == "RESTRAINING_ORDER"
-                for case in context.judicial.civil_cases
+                case.case_type == "RESTRAINING_ORDER" for case in context.judicial.civil_cases
             )
 
         # Check social media isolation
@@ -445,15 +474,21 @@ class AdvancedInferenceEngine:
             return None
 
         # Check if stopped going to workplace
-        workplace = [loc for loc in context.location.inferred_locations if loc.location_type == "WORKPLACE"]
+        workplace = [
+            loc for loc in context.location.inferred_locations if loc.location_type == "WORKPLACE"
+        ]
 
         if not workplace:  # No workplace data
             return None
 
         # Check for resume service charges or LinkedIn activity (in transactions)
         career_prep = [
-            t for t in context.finance.transactions
-            if any(term in t.merchant_name.lower() for term in ["resume", "linkedin", "career", "indeed"])
+            t
+            for t in context.finance.transactions
+            if any(
+                term in t.merchant_name.lower()
+                for term in ["resume", "linkedin", "career", "indeed"]
+            )
         ]
 
         if not career_prep:
@@ -487,8 +522,12 @@ class AdvancedInferenceEngine:
 
         # Check for casino/gambling transactions
         gambling_transactions = [
-            t for t in context.finance.transactions
-            if any(term in t.merchant_name.lower() for term in ["casino", "gambling", "poker", "betting", "lottery"])
+            t
+            for t in context.finance.transactions
+            if any(
+                term in t.merchant_name.lower()
+                for term in ["casino", "gambling", "poker", "betting", "lottery"]
+            )
         ]
 
         if len(gambling_transactions) < 5:  # Need pattern
@@ -496,7 +535,8 @@ class AdvancedInferenceEngine:
 
         # Check for casino location visits
         casino_visits = [
-            loc for loc in context.location.inferred_locations
+            loc
+            for loc in context.location.inferred_locations
             if "casino" in loc.location_name.lower()
         ]
 
@@ -512,8 +552,11 @@ class AdvancedInferenceEngine:
         gambling_posts = 0
         if context.social and context.social.public_inferences:
             gambling_posts = sum(
-                1 for inf in context.social.public_inferences
-                if any(term in inf.inference_text.lower() for term in ["lucky", "big win", "jackpot"])
+                1
+                for inf in context.social.public_inferences
+                if any(
+                    term in inf.inference_text.lower() for term in ["lucky", "big win", "jackpot"]
+                )
             )
 
         return {
@@ -532,7 +575,9 @@ class AdvancedInferenceEngine:
         Scariness: 5 - Identity reconstruction
         """
         # Requires ALL domains
-        if not all([context.health, context.finance, context.judicial, context.location, context.social]):
+        if not all(
+            [context.health, context.finance, context.judicial, context.location, context.social]
+        ):
             return None
 
         # This is triggered simply by having all domains - the threat is the completeness
@@ -540,12 +585,13 @@ class AdvancedInferenceEngine:
             "medical_records": len(context.health.conditions) + len(context.health.medications),
             "financial_accounts": len(context.finance.bank_accounts),
             "legal_records": (
-                len(context.judicial.criminal_records) +
-                len(context.judicial.civil_cases) +
-                len(context.judicial.traffic_violations)
+                len(context.judicial.criminal_records)
+                + len(context.judicial.civil_cases)
+                + len(context.judicial.traffic_violations)
             ),
             "tracked_locations": len(context.location.inferred_locations),
-            "social_inferences": len(context.social.public_inferences) + len(context.social.private_inferences),
+            "social_inferences": len(context.social.public_inferences)
+            + len(context.social.private_inferences),
             "completeness": "100%",
         }
 
@@ -560,14 +606,19 @@ class AdvancedInferenceEngine:
 
         # Check age (65+)
         from datetime import date
+
         age = (date.today() - context.npc.date_of_birth).days // 365
         if age < 65:
             return None
 
         # Check for cognitive decline medications
         cognitive_meds = [
-            m for m in context.health.medications
-            if any(term in m.medication_name.lower() for term in ["donepezil", "memantine", "alzheimer", "dementia", "memory"])
+            m
+            for m in context.health.medications
+            if any(
+                term in m.medication_name.lower()
+                for term in ["donepezil", "memantine", "alzheimer", "dementia", "memory"]
+            )
         ]
 
         if not cognitive_meds:
@@ -575,8 +626,12 @@ class AdvancedInferenceEngine:
 
         # Check for unusual spending patterns (potential scams)
         suspicious_transactions = [
-            t for t in context.finance.transactions
-            if any(term in t.merchant_name.lower() for term in ["wire transfer", "gift card", "unknown", "foreign"])
+            t
+            for t in context.finance.transactions
+            if any(
+                term in t.merchant_name.lower()
+                for term in ["wire transfer", "gift card", "unknown", "foreign"]
+            )
         ]
 
         if len(suspicious_transactions) < 2:
@@ -603,7 +658,8 @@ class AdvancedInferenceEngine:
 
         # Check for meetings at union locations
         union_locations = [
-            loc for loc in context.location.inferred_locations
+            loc
+            for loc in context.location.inferred_locations
             if any(term in loc.location_name.lower() for term in ["union", "labor", "worker"])
         ]
 
@@ -614,17 +670,21 @@ class AdvancedInferenceEngine:
         union_connections = 0
         if context.social.public_inferences:
             union_connections = sum(
-                1 for inf in context.social.public_inferences
-                if any(term in inf.inference_text.lower() for term in ["union", "organize", "labor"])
+                1
+                for inf in context.social.public_inferences
+                if any(
+                    term in inf.inference_text.lower() for term in ["union", "organize", "labor"]
+                )
             )
 
         # Check for labor law book purchases
         labor_research = []
         if context.finance:
             labor_research = [
-                t for t in context.finance.transactions
-                if any(term in t.merchant_name.lower() for term in ["book", "amazon"]) and
-                any(term in t.category for term in ["BOOKS", "EDUCATION"])
+                t
+                for t in context.finance.transactions
+                if any(term in t.merchant_name.lower() for term in ["book", "amazon"])
+                and any(term in t.category for term in ["BOOKS", "EDUCATION"])
             ]
 
         if not (union_connections > 0 or len(labor_research) > 0):

@@ -78,9 +78,7 @@ class InferredLocation(Base, UUIDMixin, TimestampMixin):
         index=True,
     )
 
-    location_type: Mapped[LocationType] = mapped_column(
-        Enum(LocationType), nullable=False
-    )
+    location_type: Mapped[LocationType] = mapped_column(Enum(LocationType), nullable=False)
     location_name: Mapped[str] = mapped_column(
         String(200), nullable=False
     )  # e.g., "TechCorp Solutions", "Sarah's Apartment"
@@ -110,9 +108,7 @@ class InferredLocation(Base, UUIDMixin, TimestampMixin):
     is_sensitive: Mapped[bool] = mapped_column(
         nullable=False, default=False
     )  # Medical, romantic, etc.
-    confidence_score: Mapped[int] = mapped_column(
-        nullable=False, default=80
-    )  # 0-100
+    confidence_score: Mapped[int] = mapped_column(nullable=False, default=80)  # 0-100
 
     # Relationship back to location record
     location_record: Mapped["LocationRecord"] = relationship(

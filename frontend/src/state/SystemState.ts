@@ -14,6 +14,11 @@ import type {
   NoActionResult,
   OperatorStatus,
   SystemDashboard,
+  PublicMetricsRead,
+  ReluctanceMetricsRead,
+  NewsArticleRead,
+  ProtestRead,
+  ExposureRiskRead,
 } from '../types/system';
 
 export type SystemStateListener = () => void;
@@ -38,6 +43,9 @@ export class SystemState {
   public pendingCases: CaseOverview[] = [];
   public flagHistory: FlagSummary[] = [];
 
+  // Citizen file cache
+  private citizenFileCache: Map<string, FullCitizenFile> = new Map();
+
   // UI state
   public isLoading: boolean = false;
   public isEnding: boolean = false;
@@ -45,6 +53,21 @@ export class SystemState {
 
   // Dashboard data
   public dashboard: SystemDashboard | null = null;
+
+  // New metrics (Phase 7-8)
+  public publicMetrics: PublicMetricsRead | null = null;
+  public reluctanceMetrics: ReluctanceMetricsRead | null = null;
+  public newsArticles: NewsArticleRead[] = [];
+  public activeProtests: ProtestRead[] = [];
+  public exposureRisk: ExposureRiskRead | null = null;
+  public lastAwarenessTier: number = 0;
+  public lastAngerTier: number = 0;
+  public lastReluctanceStage: number = 0;
+
+  // Polling intervals
+  private metricsPollingInterval: number | null = null;
+  private protestPollingInterval: number | null = null;
+  private newsPollingInterval: number | null = null;
 
   // Listeners for state changes
   private listeners: Set<SystemStateListener> = new Set();
@@ -91,6 +114,11 @@ export class SystemState {
 
       // Load initial data (optimized: single API call)
       await this.loadDashboardWithCases();
+
+      // Start polling for metrics, protests, and news
+      this.startMetricsPolling();
+      this.startProtestPolling();
+      this.startNewsPolling();
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Failed to initialize';
     } finally {
@@ -116,6 +144,56 @@ export class SystemState {
   }
 
   /**
+   * Preload citizen files for faster selection.
+   * Prioritizes high/elevated risk citizens first.
+   */
+  private async preloadCitizenFiles(): Promise<void> {
+    if (!this.operatorId || this.pendingCases.length === 0) return;
+
+    // Sort cases by priority (high/elevated risk first)
+    const priorityCases = this.pendingCases
+      .filter(c => c.risk_level === 'high' || c.risk_level === 'elevated' || c.risk_level === 'severe')
+      .slice(0, 5);  // Top 5 priority cases
+
+    const otherCases = this.pendingCases
+      .filter(c => c.risk_level !== 'high' && c.risk_level !== 'elevated' && c.risk_level !== 'severe')
+      .slice(0, 10);  // Next 10 lower priority cases
+
+    // Load priority cases first (in parallel)
+    console.log('[SystemState] Preloading', priorityCases.length, 'high-priority citizen files...');
+    await Promise.all(
+      priorityCases.map(async (caseData) => {
+        if (!this.citizenFileCache.has(caseData.npc_id)) {
+          try {
+            const file = await api.getCitizenFile(this.operatorId!, caseData.npc_id);
+            this.citizenFileCache.set(caseData.npc_id, file);
+          } catch (err) {
+            console.error(`Failed to preload citizen ${caseData.npc_id}:`, err);
+          }
+        }
+      })
+    );
+
+    console.log('[SystemState] Priority citizens cached. Loading remaining citizens in background...');
+
+    // Load other cases in background (don't await)
+    Promise.all(
+      otherCases.map(async (caseData) => {
+        if (!this.citizenFileCache.has(caseData.npc_id)) {
+          try {
+            const file = await api.getCitizenFile(this.operatorId!, caseData.npc_id);
+            this.citizenFileCache.set(caseData.npc_id, file);
+          } catch (err) {
+            console.error(`Failed to preload citizen ${caseData.npc_id}:`, err);
+          }
+        }
+      })
+    ).then(() => {
+      console.log('[SystemState] All citizen files cached');
+    });
+  }
+
+  /**
    * Load pending cases.
    */
   public async loadCases(): Promise<void> {
@@ -137,12 +215,18 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
+      console.log('[SystemState] Loading dashboard and cases for operator:', this.operatorId);
       const result = await api.getDashboardWithCases(this.operatorId, 50);
+      console.log('[SystemState] Received dashboard with', result.cases.length, 'cases');
+      console.log('[SystemState] Cases:', result.cases);
       this.dashboard = result.dashboard;
       this.operatorStatus = result.dashboard.operator;
       this.currentDirective = result.dashboard.directive;
       this.pendingCases = result.cases;
       this.notify();
+
+      // Start preloading citizen files in background
+      this.preloadCitizenFiles();
     } catch (err) {
       console.error('Failed to load dashboard and cases:', err);
     }
@@ -169,20 +253,30 @@ export class SystemState {
   public async selectCitizen(npcId: string): Promise<void> {
     if (!this.operatorId) return;
 
-    this.isLoading = true;
+    // Clear previous selection immediately to avoid stale data
     this.selectedCitizenId = npcId;
+    this.selectedCitizenFile = null;
     this.decisionStartTime = Date.now();
-    this.notify();
+    this.notify();  // Shows selection state, clears old data
 
     try {
-      this.selectedCitizenFile = await api.getCitizenFile(this.operatorId, npcId);
+      // Check cache first
+      const cached = this.citizenFileCache.get(npcId);
+      if (cached) {
+        this.selectedCitizenFile = cached;
+        this.notify();  // Update with cached data
+      } else {
+        // Fetch from API
+        const file = await api.getCitizenFile(this.operatorId, npcId);
+        this.citizenFileCache.set(npcId, file);  // Cache it
+        this.selectedCitizenFile = file;
+        this.notify();  // Update with loaded data
+      }
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Failed to load citizen file';
       this.selectedCitizenId = null;
       this.selectedCitizenFile = null;
       this.decisionStartTime = null;
-    } finally {
-      this.isLoading = false;
       this.notify();
     }
   }
@@ -210,7 +304,7 @@ export class SystemState {
    */
   public async submitFlag(
     flagType: FlagType,
-    justification: string,
+    justification?: string,
     contributingFactors: string[] = []
   ): Promise<FlagResult | null> {
     if (!this.operatorId || !this.selectedCitizenId) return null;
@@ -224,7 +318,7 @@ export class SystemState {
         citizen_id: this.selectedCitizenId,
         flag_type: flagType,
         contributing_factors: contributingFactors,
-        justification,
+        justification: justification || "",
         decision_time_seconds: this.getDecisionTime(),
       });
 
@@ -234,6 +328,9 @@ export class SystemState {
         this.operatorStatus.current_quota_progress = result.quota_progress;
         this.operatorStatus.total_flags_submitted += 1;
       }
+
+      // Invalidate cache for this citizen (data has changed)
+      this.citizenFileCache.delete(this.selectedCitizenId);
 
       // Clear selection
       this.clearSelection();
@@ -254,7 +351,7 @@ export class SystemState {
   /**
    * Submit a no-action decision for the selected citizen.
    */
-  public async submitNoAction(justification: string): Promise<NoActionResult | null> {
+  public async submitNoAction(justification?: string): Promise<NoActionResult | null> {
     if (!this.operatorId || !this.selectedCitizenId) return null;
 
     this.isLoading = true;
@@ -264,7 +361,7 @@ export class SystemState {
       const result = await api.submitNoAction({
         operator_id: this.operatorId,
         citizen_id: this.selectedCitizenId,
-        justification,
+        justification: justification || "",
         decision_time_seconds: this.getDecisionTime(),
       });
 
@@ -272,6 +369,9 @@ export class SystemState {
       if (this.operatorStatus) {
         this.operatorStatus.compliance_score += result.compliance_impact;
       }
+
+      // Invalidate cache for this citizen (data has changed)
+      this.citizenFileCache.delete(this.selectedCitizenId);
 
       // Clear selection
       this.clearSelection();
@@ -347,9 +447,186 @@ export class SystemState {
   }
 
   /**
+   * Load public metrics (awareness, anger).
+   */
+  public async loadPublicMetrics(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      const newMetrics = await api.getPublicMetrics(this.operatorId);
+
+      // Check for tier crossings
+      if (this.publicMetrics) {
+        if (newMetrics.awareness_tier > this.lastAwarenessTier) {
+          this.lastAwarenessTier = newMetrics.awareness_tier;
+        }
+        if (newMetrics.anger_tier > this.lastAngerTier) {
+          this.lastAngerTier = newMetrics.anger_tier;
+        }
+      } else {
+        this.lastAwarenessTier = newMetrics.awareness_tier;
+        this.lastAngerTier = newMetrics.anger_tier;
+      }
+
+      this.publicMetrics = newMetrics;
+      this.notify();
+    } catch (err) {
+      console.error('Failed to load public metrics:', err);
+    }
+  }
+
+  /**
+   * Load reluctance metrics.
+   */
+  public async loadReluctanceMetrics(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      const newMetrics = await api.getReluctanceMetrics(this.operatorId);
+
+      // Check for reluctance stage change
+      const newStage = this.getReluctanceStage(newMetrics.reluctance_score);
+      if (newStage > this.lastReluctanceStage) {
+        this.lastReluctanceStage = newStage;
+      }
+
+      this.reluctanceMetrics = newMetrics;
+      this.notify();
+    } catch (err) {
+      console.error('Failed to load reluctance metrics:', err);
+    }
+  }
+
+  /**
+   * Load news articles.
+   */
+  public async loadNews(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      this.newsArticles = await api.getRecentNews(this.operatorId, 10);
+      this.notify();
+    } catch (err) {
+      console.error('Failed to load news:', err);
+    }
+  }
+
+  /**
+   * Load active protests.
+   */
+  public async loadActiveProtests(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      const protests = await api.getActiveProtests(this.operatorId);
+
+      // Only update if protests changed (to avoid unnecessary re-renders)
+      const protestsChanged = JSON.stringify(this.activeProtests) !== JSON.stringify(protests);
+      if (protestsChanged) {
+        this.activeProtests = protests;
+        this.notify();
+      }
+    } catch (err) {
+      console.error('Failed to load protests:', err);
+    }
+  }
+
+  /**
+   * Load exposure risk status.
+   */
+  public async loadExposureRisk(): Promise<void> {
+    if (!this.operatorId) return;
+
+    try {
+      this.exposureRisk = await api.getExposureRisk(this.operatorId);
+      this.notify();
+    } catch (err) {
+      console.error('Failed to load exposure risk:', err);
+    }
+  }
+
+  /**
+   * Start polling for metrics updates.
+   */
+  public startMetricsPolling(): void {
+    if (this.metricsPollingInterval) return;
+
+    // Initial load
+    this.loadPublicMetrics();
+    this.loadReluctanceMetrics();
+    this.loadExposureRisk();
+
+    // Poll every 5 seconds
+    this.metricsPollingInterval = window.setInterval(() => {
+      this.loadPublicMetrics();
+      this.loadReluctanceMetrics();
+      this.loadExposureRisk();
+    }, 5000);
+  }
+
+  /**
+   * Start polling for protests.
+   */
+  public startProtestPolling(): void {
+    if (this.protestPollingInterval) return;
+
+    // Initial load
+    this.loadActiveProtests();
+
+    // Poll every 10 seconds
+    this.protestPollingInterval = window.setInterval(() => {
+      this.loadActiveProtests();
+    }, 10000);
+  }
+
+  /**
+   * Start polling for news.
+   */
+  public startNewsPolling(): void {
+    if (this.newsPollingInterval) return;
+
+    // Initial load
+    this.loadNews();
+
+    // Poll every 15 seconds
+    this.newsPollingInterval = window.setInterval(() => {
+      this.loadNews();
+    }, 15000);
+  }
+
+  /**
+   * Stop all polling.
+   */
+  public stopPolling(): void {
+    if (this.metricsPollingInterval) {
+      window.clearInterval(this.metricsPollingInterval);
+      this.metricsPollingInterval = null;
+    }
+    if (this.protestPollingInterval) {
+      window.clearInterval(this.protestPollingInterval);
+      this.protestPollingInterval = null;
+    }
+    if (this.newsPollingInterval) {
+      window.clearInterval(this.newsPollingInterval);
+      this.newsPollingInterval = null;
+    }
+  }
+
+  /**
+   * Get reluctance stage (1, 2, or 3) from score.
+   */
+  private getReluctanceStage(score: number): number {
+    if (score >= 90) return 3;
+    if (score >= 80) return 2;
+    if (score >= 70) return 1;
+    return 0;
+  }
+
+  /**
    * Reset all state.
    */
   public reset(): void {
+    this.stopPolling();
     this.operatorId = null;
     this.operatorStatus = null;
     this.currentDirective = null;
@@ -358,10 +635,19 @@ export class SystemState {
     this.decisionStartTime = null;
     this.pendingCases = [];
     this.flagHistory = [];
+    this.citizenFileCache.clear();
     this.isLoading = false;
     this.isEnding = false;
     this.error = null;
     this.dashboard = null;
+    this.publicMetrics = null;
+    this.reluctanceMetrics = null;
+    this.newsArticles = [];
+    this.activeProtests = [];
+    this.exposureRisk = null;
+    this.lastAwarenessTier = 0;
+    this.lastAngerTier = 0;
+    this.lastReluctanceStage = 0;
     this.notify();
   }
 

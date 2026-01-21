@@ -120,9 +120,7 @@ async def get_npcs_batch(
         return []
 
     # Single query with WHERE id IN (...)
-    result = await db.execute(
-        select(NPC).where(NPC.id.in_(request.npc_ids))
-    )
+    result = await db.execute(select(NPC).where(NPC.id.in_(request.npc_ids)))
     npcs = result.scalars().all()
 
     # Convert domains list to set of DomainType enums (empty set if None)
@@ -134,10 +132,7 @@ async def get_npcs_batch(
             raise HTTPException(status_code=400, detail=f"Invalid domain type: {e}")
 
     # Build response for each NPC
-    return [
-        await _build_npc_with_domains(npc, domains_set, db)
-        for npc in npcs
-    ]
+    return [await _build_npc_with_domains(npc, domains_set, db) for npc in npcs]
 
 
 @router.get(
@@ -237,9 +232,7 @@ async def _build_npc_with_domains(
     )
 
 
-async def _get_health_data(
-    npc_id: UUID, db: AsyncSession
-) -> HealthRecordFiltered | None:
+async def _get_health_data(npc_id: UUID, db: AsyncSession) -> HealthRecordFiltered | None:
     """Fetch health record with all related data for an NPC using eager loading."""
     health_query = select(HealthRecord).where(HealthRecord.npc_id == npc_id)
 
@@ -266,9 +259,7 @@ async def _get_health_data(
     return HealthRecordFiltered.from_health_record(health_read, filter_sensitive=False)
 
 
-async def _get_finance_data(
-    npc_id: UUID, db: AsyncSession
-) -> FinanceRecordFiltered | None:
+async def _get_finance_data(npc_id: UUID, db: AsyncSession) -> FinanceRecordFiltered | None:
     """Fetch finance record with all related data for an NPC using eager loading."""
     finance_query = select(FinanceRecord).where(FinanceRecord.npc_id == npc_id)
 
@@ -296,9 +287,7 @@ async def _get_finance_data(
     return FinanceRecordFiltered.model_validate(finance_read)
 
 
-async def _get_judicial_data(
-    npc_id: UUID, db: AsyncSession
-) -> JudicialRecordFiltered | None:
+async def _get_judicial_data(npc_id: UUID, db: AsyncSession) -> JudicialRecordFiltered | None:
     """Fetch judicial record with all related data for an NPC using eager loading."""
     judicial_query = select(JudicialRecord).where(JudicialRecord.npc_id == npc_id)
 
@@ -315,9 +304,13 @@ async def _get_judicial_data(
         has_criminal_record=judicial_record.has_criminal_record,
         has_civil_cases=judicial_record.has_civil_cases,
         has_traffic_violations=judicial_record.has_traffic_violations,
-        criminal_records=[CriminalRecordRead.model_validate(c) for c in judicial_record.criminal_records],
+        criminal_records=[
+            CriminalRecordRead.model_validate(c) for c in judicial_record.criminal_records
+        ],
         civil_cases=[CivilCaseRead.model_validate(c) for c in judicial_record.civil_cases],
-        traffic_violations=[TrafficViolationRead.model_validate(t) for t in judicial_record.traffic_violations],
+        traffic_violations=[
+            TrafficViolationRead.model_validate(t) for t in judicial_record.traffic_violations
+        ],
         created_at=judicial_record.created_at,
         updated_at=judicial_record.updated_at,
     )
@@ -325,9 +318,7 @@ async def _get_judicial_data(
     return JudicialRecordFiltered.model_validate(judicial_read)
 
 
-async def _get_location_data(
-    npc_id: UUID, db: AsyncSession
-) -> LocationRecordFiltered | None:
+async def _get_location_data(npc_id: UUID, db: AsyncSession) -> LocationRecordFiltered | None:
     """Fetch location record with all related data for an NPC using eager loading."""
     location_query = select(LocationRecord).where(LocationRecord.npc_id == npc_id)
 
@@ -343,7 +334,9 @@ async def _get_location_data(
         npc_id=location_record.npc_id,
         tracking_enabled=location_record.tracking_enabled,
         data_retention_days=location_record.data_retention_days,
-        inferred_locations=[InferredLocationRead.model_validate(i) for i in location_record.inferred_locations],
+        inferred_locations=[
+            InferredLocationRead.model_validate(i) for i in location_record.inferred_locations
+        ],
         created_at=location_record.created_at,
         updated_at=location_record.updated_at,
     )
@@ -351,9 +344,7 @@ async def _get_location_data(
     return LocationRecordFiltered.model_validate(location_read)
 
 
-async def _get_social_data(
-    npc_id: UUID, db: AsyncSession
-) -> SocialMediaRecordFiltered | None:
+async def _get_social_data(npc_id: UUID, db: AsyncSession) -> SocialMediaRecordFiltered | None:
     """Fetch social media record with all related data for an NPC using eager loading."""
     social_query = select(SocialMediaRecord).where(SocialMediaRecord.npc_id == npc_id)
 
@@ -374,8 +365,12 @@ async def _get_social_data(
         post_frequency=social_record.post_frequency,
         uses_end_to_end_encryption=social_record.uses_end_to_end_encryption,
         encryption_explanation=social_record.encryption_explanation,
-        public_inferences=[PublicInferenceRead.model_validate(p) for p in social_record.public_inferences],
-        private_inferences=[PrivateInferenceRead.model_validate(p) for p in social_record.private_inferences],
+        public_inferences=[
+            PublicInferenceRead.model_validate(p) for p in social_record.public_inferences
+        ],
+        private_inferences=[
+            PrivateInferenceRead.model_validate(p) for p in social_record.private_inferences
+        ],
         created_at=social_record.created_at,
         updated_at=social_record.updated_at,
     )

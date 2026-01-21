@@ -388,13 +388,6 @@ export class SystemEndingScene extends Phaser.Scene {
               <span class="example-status">Status: Active. Expanding.</span>
             </div>
 
-            <div class="example-item">
-              <h3>SOCIAL CREDIT (China)</h3>
-              <p>Restricts travel, employment, and services based on behavior scores. Similar systems proposed in democratic nations.</p>
-              <span class="example-status">Status: Active.</span>
-            </div>
-          </div>
-
           <p class="realworld-call-to-action">
             The laws being debated right now determine which future we get.
           </p>

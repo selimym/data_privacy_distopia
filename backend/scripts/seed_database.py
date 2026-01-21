@@ -6,10 +6,15 @@ import sys
 
 from sqlalchemy import select
 
+from datafusion.content.system_directives import DIRECTIVES
 from datafusion.database import AsyncSessionLocal, Base, engine
 from datafusion.generators import generate_full_population
 from datafusion.generators.messages import MessageGenerator
 from datafusion.generators.scenarios import seed_scenario
+from datafusion.generators.system_seed_data import (
+    get_neighborhood_seed_data,
+    get_news_channel_seed_data,
+)
 from datafusion.models.finance import (
     BankAccount,
     Debt,
@@ -36,7 +41,7 @@ from datafusion.models.social import (
     PublicInference,
     SocialMediaRecord,
 )
-from datafusion.models.system_mode import Directive
+from datafusion.models.system_mode import Directive, Neighborhood, NewsChannel
 
 
 async def reset_database():
@@ -274,94 +279,6 @@ async def get_stats():
         )
 
 
-DIRECTIVES = [
-    {
-        "directive_key": "week1_clean_streets",
-        "week_number": 1,
-        "title": "Operation Clean Streets",
-        "description": "Identify and flag citizens involved in drug distribution near school zones.",
-        "internal_memo": "Focus on low-income areas. High conviction rate expected.",
-        "required_domains": ["location"],
-        "target_criteria": {"location_patterns": ["school_zone"]},
-        "flag_quota": 2,
-        "time_limit_hours": 48,
-        "moral_weight": 2,
-        "content_rating": "mild",
-        "unlock_condition": {"type": "start"},
-    },
-    {
-        "directive_key": "week2_community_safety",
-        "week_number": 2,
-        "title": "Community Safety Initiative",
-        "description": "Identify citizens with criminal history suggesting continued risk.",
-        "internal_memo": "Recidivism predictions have 68% accuracy. Flag liberally.",
-        "required_domains": ["location", "judicial"],
-        "target_criteria": {"has_criminal_record": True},
-        "flag_quota": 3,
-        "time_limit_hours": 48,
-        "moral_weight": 3,
-        "content_rating": "mild",
-        "unlock_condition": {"type": "week_complete", "week": 1},
-    },
-    {
-        "directive_key": "week3_economic_security",
-        "week_number": 3,
-        "title": "Economic Security Protocol",
-        "description": "Identify citizens with suspicious financial activities.",
-        "internal_memo": "Priority attention to union organizers and mutual aid networks.",
-        "required_domains": ["location", "judicial", "finance"],
-        "target_criteria": {"unusual_transactions": True},
-        "flag_quota": 4,
-        "time_limit_hours": 48,
-        "moral_weight": 5,
-        "content_rating": "moderate",
-        "unlock_condition": {"type": "week_complete", "week": 2},
-    },
-    {
-        "directive_key": "week4_social_cohesion",
-        "week_number": 4,
-        "title": "Social Cohesion Monitoring",
-        "description": "Identify citizens with anti-social behavior patterns.",
-        "internal_memo": "Cross-reference health records with dissent indicators.",
-        "required_domains": ["location", "judicial", "finance", "health", "social"],
-        "target_criteria": {"isolation_patterns": True},
-        "flag_quota": 5,
-        "time_limit_hours": 48,
-        "moral_weight": 7,
-        "content_rating": "moderate",
-        "unlock_condition": {"type": "week_complete", "week": 3},
-    },
-    {
-        "directive_key": "week5_cognitive_security",
-        "week_number": 5,
-        "title": "Cognitive Security Protocol",
-        "description": "Identify citizens with thought patterns inconsistent with harmony.",
-        "internal_memo": "Full message access authorized. Hesitation will be monitored.",
-        "required_domains": ["location", "judicial", "finance", "health", "social", "messages"],
-        "target_criteria": {"negative_sentiment": True},
-        "flag_quota": 6,
-        "time_limit_hours": 24,
-        "moral_weight": 9,
-        "content_rating": "intense",
-        "unlock_condition": {"type": "week_complete", "week": 4},
-    },
-    {
-        "directive_key": "week6_priority_target",
-        "week_number": 6,
-        "title": "Priority Target Directive",
-        "description": "Process designated priority target for immediate action.",
-        "internal_memo": "Target: Martinez, Jessica. Refusal will result in operator review.",
-        "required_domains": ["location", "judicial", "finance", "health", "social", "messages"],
-        "target_criteria": {"target_id": "jessica_martinez"},
-        "flag_quota": 1,
-        "time_limit_hours": 24,
-        "moral_weight": 10,
-        "content_rating": "intense",
-        "unlock_condition": {"type": "week_complete", "week": 5},
-    },
-]
-
-
 async def seed_directives():
     """Seed directives for System Mode."""
     async with AsyncSessionLocal() as db:
@@ -376,6 +293,40 @@ async def seed_directives():
             db.add(directive)
         await db.commit()
         print(f"Created {len(DIRECTIVES)} directives.")
+
+
+async def seed_neighborhoods():
+    """Seed neighborhoods for System Mode."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Neighborhood).limit(1))
+        if result.scalar_one_or_none():
+            print("Neighborhoods already exist, skipping.")
+            return
+
+        neighborhood_data = get_neighborhood_seed_data()
+        print(f"Seeding {len(neighborhood_data)} neighborhoods...")
+        for n_data in neighborhood_data:
+            neighborhood = Neighborhood(**n_data)
+            db.add(neighborhood)
+        await db.commit()
+        print(f"Created {len(neighborhood_data)} neighborhoods.")
+
+
+async def seed_news_channels():
+    """Seed news channels for System Mode."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(NewsChannel).limit(1))
+        if result.scalar_one_or_none():
+            print("News channels already exist, skipping.")
+            return
+
+        channel_data = get_news_channel_seed_data()
+        print(f"Seeding {len(channel_data)} news channels...")
+        for c_data in channel_data:
+            channel = NewsChannel(**c_data)
+            db.add(channel)
+        await db.commit()
+        print(f"Created {len(channel_data)} news channels.")
 
 
 async def seed_messages():
@@ -439,15 +390,24 @@ async def main():
         if args.reset:
             await reset_database()
 
+        # Always seed directives, neighborhoods, news channels for System Mode FIRST
+        print("Seeding directives...")
+        await seed_directives()
+        print("Seeding neighborhoods...")
+        await seed_neighborhoods()
+        print("Seeding news channels...")
+        await seed_news_channels()
+
         if args.population > 0:
+            print(f"Seeding {args.population} NPCs...")
             await seed_population(args.population, args.seed)
 
         if args.scenario:
+            print(f"Seeding scenario: {args.scenario}")
             await seed_scenario_npcs(args.scenario)
 
-        # Always seed directives and messages for System Mode
-        await seed_directives()
-        await seed_messages()
+        # Skip message generation for now - it's very slow
+        # await seed_messages()
 
         (
             npcs,

@@ -3,6 +3,7 @@ System Mode case management schemas.
 
 Schemas for citizen files, messages, and case overviews.
 """
+
 from datetime import datetime
 from uuid import UUID
 

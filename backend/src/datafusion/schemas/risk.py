@@ -4,6 +4,7 @@ Risk assessment schemas for System Mode.
 These schemas represent the algorithmic surveillance system that
 scores citizens based on their data across all domains.
 """
+
 import enum
 from datetime import datetime
 from uuid import UUID
@@ -87,9 +88,7 @@ class RiskAssessment(BaseModel):
     contributing_factors: list[ContributingFactor] = Field(
         description="Individual factors that contributed to score"
     )
-    correlation_alerts: list[CorrelationAlert] = Field(
-        description="Cross-domain patterns detected"
-    )
+    correlation_alerts: list[CorrelationAlert] = Field(description="Cross-domain patterns detected")
     recommended_actions: list[RecommendedAction] = Field(
         description="Suggested actions based on assessment"
     )

@@ -98,9 +98,7 @@ class ContentFilter:
             return None
 
         warnings = {
-            ContentRating.CAUTIONARY: (
-                "⚠️ Cautionary: This content depicts privacy concerns."
-            ),
+            ContentRating.CAUTIONARY: ("⚠️ Cautionary: This content depicts privacy concerns."),
             ContentRating.SERIOUS: (
                 "⚠️ Serious: This content depicts significant privacy violations "
                 "with realistic consequences."

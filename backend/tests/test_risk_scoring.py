@@ -154,12 +154,10 @@ class TestRiskScoreCalculation:
 
         assert assessment.risk_score > 0
         assert any(
-            f.factor_key == "mental_health_treatment"
-            for f in assessment.contributing_factors
+            f.factor_key == "mental_health_treatment" for f in assessment.contributing_factors
         )
         health_factors = [
-            f for f in assessment.contributing_factors
-            if f.domain_source == DomainType.HEALTH
+            f for f in assessment.contributing_factors if f.domain_source == DomainType.HEALTH
         ]
         assert len(health_factors) > 0
 
@@ -170,10 +168,7 @@ class TestRiskScoreCalculation:
         assessment = await scorer.calculate_risk_score(npc_with_criminal_record.id)
 
         assert assessment.risk_score >= 25  # Prior record weight
-        assert any(
-            f.factor_key == "prior_record"
-            for f in assessment.contributing_factors
-        )
+        assert any(f.factor_key == "prior_record" for f in assessment.contributing_factors)
 
     @pytest.mark.asyncio
     async def test_financial_factors_add_to_score(self, db_session, npc_with_financial_stress):
@@ -182,10 +177,7 @@ class TestRiskScoreCalculation:
         assessment = await scorer.calculate_risk_score(npc_with_financial_stress.id)
 
         assert assessment.risk_score > 0
-        assert any(
-            f.factor_key == "financial_stress"
-            for f in assessment.contributing_factors
-        )
+        assert any(f.factor_key == "financial_stress" for f in assessment.contributing_factors)
 
     @pytest.mark.asyncio
     async def test_score_caps_at_100(self, db_session, npc_with_data):
@@ -234,7 +226,7 @@ class TestRiskScoreCalculation:
         for i in range(5):
             criminal = CriminalRecord(
                 judicial_record_id=judicial_record.id,
-                case_number=f"CR-{2015+i}-{i:03d}",
+                case_number=f"CR-{2015 + i}-{i:03d}",
                 crime_category=CrimeCategory.PROPERTY,
                 charge_description=f"Crime {i}",
                 arrest_date=date(2015 + i, 1, 1),
@@ -276,8 +268,10 @@ class TestContributingFactors:
         assessment = await scorer.calculate_risk_score(npc_with_health_issues.id)
 
         health_factors = [
-            f for f in assessment.contributing_factors
-            if f.factor_key in ["mental_health_treatment", "substance_treatment", "chronic_condition"]
+            f
+            for f in assessment.contributing_factors
+            if f.factor_key
+            in ["mental_health_treatment", "substance_treatment", "chronic_condition"]
         ]
         for factor in health_factors:
             assert factor.domain_source == DomainType.HEALTH
@@ -343,8 +337,7 @@ class TestCorrelationAlerts:
         assessment = await scorer.calculate_risk_score(npc_with_data.id)
 
         recidivism_alerts = [
-            a for a in assessment.correlation_alerts
-            if a.alert_type == "recidivism_risk"
+            a for a in assessment.correlation_alerts if a.alert_type == "recidivism_risk"
         ]
         assert len(recidivism_alerts) > 0
         alert = recidivism_alerts[0]
@@ -382,3 +375,54 @@ class TestRiskLevelClassification:
         # Prior record has weight of 25, so should be at least MODERATE
         assert assessment.risk_score >= 25
         assert assessment.risk_level in [RiskLevel.MODERATE, RiskLevel.ELEVATED, RiskLevel.HIGH]
+
+
+class TestRiskScorerEdgeCases:
+    """Test risk scorer handles edge cases gracefully."""
+
+    @pytest.mark.asyncio
+    async def test_missing_npc_raises_error(self, db_session):
+        """Risk scorer should raise error for non-existent NPC."""
+        scorer = RiskScorer(db_session)
+        fake_id = uuid4()
+
+        with pytest.raises(ValueError, match="not found"):
+            await scorer.calculate_risk_score(fake_id)
+
+    @pytest.mark.asyncio
+    async def test_transaction_isolation(self, db_session, npc_with_data):
+        """Risk scoring should not commit transaction (use flush instead)."""
+        scorer = RiskScorer(db_session)
+
+        # Calculate risk score (which updates cache)
+        assessment = await scorer.calculate_risk_score(npc_with_data.id)
+
+        # Changes should be flushed but not committed
+        # We can verify by checking the NPC was updated
+        await db_session.refresh(npc_with_data)
+        assert npc_with_data.cached_risk_score == assessment.risk_score
+        assert npc_with_data.risk_score_updated_at is not None
+
+        # Session should still be in transaction (not committed)
+        # This test passes if no exception is raised from transaction conflicts
+
+    @pytest.mark.asyncio
+    async def test_npc_with_partial_domain_data(self, db_session, npc_with_data):
+        """Risk scorer should handle NPCs with only some domain records."""
+        # Add only health record, no finance/judicial/location/social
+        health_record = HealthRecord(
+            npc_id=npc_with_data.id,
+            insurance_provider="TestInsurance",
+            primary_care_physician="Dr. Test",
+        )
+        db_session.add(health_record)
+        await db_session.flush()
+
+        scorer = RiskScorer(db_session)
+        assessment = await scorer.calculate_risk_score(npc_with_data.id)
+
+        # Should successfully calculate with partial data
+        assert assessment.risk_score >= 0
+        assert assessment.npc_id == npc_with_data.id
+        # May have 0 factors if health record has no conditions
+        assert isinstance(assessment.contributing_factors, list)

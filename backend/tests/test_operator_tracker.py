@@ -143,7 +143,9 @@ class TestHesitationDetection:
     """Test hesitation detection."""
 
     @pytest.mark.asyncio
-    async def test_hesitation_detected_on_slow_decision(self, db_session, operator, directive, test_npc):
+    async def test_hesitation_detected_on_slow_decision(
+        self, db_session, operator, directive, test_npc
+    ):
         """Decisions taking >30s should count as hesitation."""
         tracker = OperatorTracker(db_session)
 
@@ -229,7 +231,9 @@ class TestOperatorRiskAssessment:
     """Test operator risk assessment generation."""
 
     @pytest.mark.asyncio
-    async def test_risk_assessment_for_good_operator(self, db_session, operator, directive, test_npc):
+    async def test_risk_assessment_for_good_operator(
+        self, db_session, operator, directive, test_npc
+    ):
         """Good operator should have low risk assessment."""
         tracker = OperatorTracker(db_session)
 

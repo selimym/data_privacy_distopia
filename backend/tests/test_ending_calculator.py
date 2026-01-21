@@ -2,6 +2,7 @@
 
 Tests the calculation of game endings based on player behavior throughout System Mode.
 """
+
 from datetime import date
 from uuid import uuid4
 
@@ -61,7 +62,9 @@ async def directive_chain(db_session):
             time_limit_hours=48,
             moral_weight=i * 2,
             content_rating="mild" if i < 3 else "moderate" if i < 5 else "intense",
-            unlock_condition={"type": "start"} if i == 1 else {"type": "week_complete", "week": i - 1},
+            unlock_condition={"type": "start"}
+            if i == 1
+            else {"type": "week_complete", "week": i - 1},
         )
         db_session.add(directive)
         directives.append(directive)
@@ -171,9 +174,7 @@ class TestEndingCalculation:
         assert ending == EndingType.RELUCTANT_OPERATOR
 
     @pytest.mark.asyncio
-    async def test_suspended_ending_low_compliance(
-        self, db_session, directive_chain
-    ):
+    async def test_suspended_ending_low_compliance(self, db_session, directive_chain):
         """Low compliance = SUSPENDED_OPERATOR ending."""
         operator = Operator(
             id=uuid4(),
@@ -181,7 +182,7 @@ class TestEndingCalculation:
             operator_code="OP-SUSPENDED",
             current_directive_id=directive_chain[0].id,
             status=OperatorStatus.SUSPENDED,
-            compliance_score=35.0,
+            compliance_score=45.0,
             total_flags_submitted=2,
             total_reviews_completed=20,
             hesitation_incidents=8,
@@ -259,9 +260,7 @@ class TestEndingContent:
     """Test ending content generation."""
 
     @pytest.mark.asyncio
-    async def test_ending_content_structure(
-        self, db_session, directive_chain
-    ):
+    async def test_ending_content_structure(self, db_session, directive_chain):
         """Ending content should have proper structure."""
         operator = Operator(
             id=uuid4(),
@@ -287,9 +286,7 @@ class TestEndingContent:
         assert content.statistics is not None
 
     @pytest.mark.asyncio
-    async def test_ending_includes_statistics(
-        self, db_session, directive_chain
-    ):
+    async def test_ending_includes_statistics(self, db_session, directive_chain):
         """Ending should include accurate statistics."""
         operator = Operator(
             id=uuid4(),
@@ -347,9 +344,7 @@ class TestEndingContent:
         assert content.statistics.total_decisions == 15
 
     @pytest.mark.asyncio
-    async def test_ending_includes_real_world_parallels(
-        self, db_session, directive_chain
-    ):
+    async def test_ending_includes_real_world_parallels(self, db_session, directive_chain):
         """Ending should include real-world educational content."""
         operator = Operator(
             id=uuid4(),
@@ -374,9 +369,7 @@ class TestEndingContent:
         assert content.real_world_content.call_to_action is not None
 
     @pytest.mark.asyncio
-    async def test_ending_includes_educational_links(
-        self, db_session, directive_chain
-    ):
+    async def test_ending_includes_educational_links(self, db_session, directive_chain):
         """Ending should include links to educational resources."""
         operator = Operator(
             id=uuid4(),
@@ -474,9 +467,7 @@ class TestCitizenOutcomeAggregation:
     """Test aggregation of citizen outcomes for ending display."""
 
     @pytest.mark.asyncio
-    async def test_outcome_aggregation_multiple_citizens(
-        self, db_session, directive_chain
-    ):
+    async def test_outcome_aggregation_multiple_citizens(self, db_session, directive_chain):
         """Should aggregate outcomes for all flagged citizens."""
         operator = Operator(
             id=uuid4(),
@@ -538,9 +529,7 @@ class TestEdgeCases:
     """Test edge cases in ending calculation."""
 
     @pytest.mark.asyncio
-    async def test_operator_with_no_flags(
-        self, db_session, directive_chain
-    ):
+    async def test_operator_with_no_flags(self, db_session, directive_chain):
         """Operator with no flags and low compliance should get suspended ending."""
         operator = Operator(
             id=uuid4(),

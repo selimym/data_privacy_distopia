@@ -52,13 +52,25 @@ from datafusion.models.social import (
     SocialMediaRecord,
 )
 from datafusion.models.system_mode import (
+    ActionType,
+    ArticleType,
+    BookPublicationEvent,
     CitizenFlag,
     Directive,
     FlagOutcome,
     FlagType,
+    Neighborhood,
+    NewsArticle,
+    NewsChannel,
     Operator,
+    OperatorData,
     OperatorMetrics,
     OperatorStatus,
+    Protest,
+    ProtestStatus,
+    PublicMetrics,
+    ReluctanceMetrics,
+    SystemAction,
 )
 
 __all__ = [
@@ -123,4 +135,17 @@ __all__ = [
     "OperatorStatus",
     "FlagType",
     "FlagOutcome",
+    # New System Mode models
+    "SystemAction",
+    "ActionType",
+    "PublicMetrics",
+    "ReluctanceMetrics",
+    "NewsChannel",
+    "NewsArticle",
+    "ArticleType",
+    "Protest",
+    "ProtestStatus",
+    "OperatorData",
+    "Neighborhood",
+    "BookPublicationEvent",
 ]

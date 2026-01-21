@@ -3,6 +3,7 @@ Service-level tests for RiskScorer.
 
 Tests the RiskScorer service in isolation with various data scenarios.
 """
+
 from datetime import date
 from decimal import Decimal
 
@@ -161,7 +162,9 @@ class TestRiskScorerService:
 
         for score, expected_level in test_cases:
             level = scorer._classify_risk_level(score)
-            assert level.value == expected_level, f"Score {score} should be {expected_level}, got {level.value}"
+            assert level.value == expected_level, (
+                f"Score {score} should be {expected_level}, got {level.value}"
+            )
 
     async def test_criminal_record_factor(self, db_session: AsyncSession, test_npc):
         """Criminal record should contribute to risk score."""

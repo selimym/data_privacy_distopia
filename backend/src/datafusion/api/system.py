@@ -4,6 +4,7 @@ System Mode API endpoints.
 Endpoints for the surveillance operator dashboard, case management,
 and decision submission in System Mode.
 """
+
 import asyncio
 import logging
 import random
@@ -23,21 +24,35 @@ from datafusion.models.messages import Message, MessageRecord
 from datafusion.models.npc import NPC
 from datafusion.models.social import SocialMediaRecord
 from datafusion.models.system_mode import (
+    BookPublicationEvent,
     CitizenFlag,
     Directive,
     FlagOutcome,
     FlagType,
+    Neighborhood,
+    NewsArticle,
+    NewsChannel,
     Operator,
     OperatorStatus,
+    Protest,
 )
+from datafusion.models.system_mode import (
+    ProtestStatus as ProtestStatusEnum,
+)
+from datafusion.schemas.risk import RiskAssessment, RiskLevel
 from datafusion.schemas.system import (
+    ActionResultRead,
     AlertType,
     AlertUrgency,
+    AvailableActionsRead,
+    BookPublicationEventRead,
     CaseOverview,
     CitizenFlagRead,
     ComplianceTrend,
     DailyMetrics,
     DirectiveRead,
+    ExposureRiskRead,
+    FamilyMemberRead,
     FlagResult,
     FlagSubmission,
     FlagSummary,
@@ -45,17 +60,41 @@ from datafusion.schemas.system import (
     IdentityRead,
     MessageRead,
     MetricsDelta,
+    NeighborhoodRead,
+    NewsArticleRead,
+    NewsChannelRead,
+    NewsReporterRead,
     NoActionResult,
+    NoActionResultRead,
     NoActionSubmission,
+    OperatorDataRead,
     OperatorStatusRead,
+    ProtestRead,
+    PublicMetricsRead,
+    ReluctanceMetricsRead,
+    SystemActionRequest,
     SystemAlert,
     SystemDashboard,
     SystemDashboardWithCases,
     SystemStartRequest,
     SystemStartResponse,
 )
+from datafusion.schemas.system import (
+    ActionType as ActionTypeSchema,
+)
+from datafusion.schemas.system import (
+    ArticleType as ArticleTypeSchema,
+)
+from datafusion.services.action_execution import execute_action
+from datafusion.services.action_execution import submit_no_action as submit_no_action_service
 from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator
+from datafusion.services.operator_data_tracker import (
+    get_exposure_risk_level,
+    get_or_create_operator_data,
+)
 from datafusion.services.operator_tracker import OperatorTracker
+from datafusion.services.public_metrics import get_or_create_public_metrics
+from datafusion.services.reluctance_tracking import get_or_create_reluctance_metrics
 from datafusion.services.risk_scoring import RiskScorer
 from datafusion.services.time_progression import TimeProgressionService
 
@@ -224,21 +263,28 @@ async def get_dashboard_with_cases(
     )
 
     # Get cases
-    npcs_result = await db.execute(
-        select(NPC).offset(case_offset).limit(case_limit)
-    )
+    npcs_result = await db.execute(select(NPC).offset(case_offset).limit(case_limit))
     npcs = npcs_result.scalars().all()
 
     cases = []
     risk_scorer = RiskScorer(db)
 
     for npc in npcs:
-        # Calculate risk score
+        # Calculate risk score with fallback to default if scoring fails
         try:
             risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
         except Exception as e:
-            logger.warning(f"Failed to calculate risk score for NPC {npc.id}: {e}")
-            continue
+            logger.error(f"Failed to calculate risk score for NPC {npc.id}: {e}", exc_info=True)
+            # Use default risk assessment instead of skipping citizen
+            risk_assessment = RiskAssessment(
+                npc_id=npc.id,
+                risk_score=0,
+                risk_level=RiskLevel.LOW,
+                contributing_factors=[],
+                correlation_alerts=[],
+                recommended_actions=[],
+                last_updated=datetime.now(UTC),
+            )
 
         # Get flagged message count
         msg_result = await db.execute(
@@ -343,9 +389,7 @@ async def advance_directive(
 
     # Get next directive
     next_result = await db.execute(
-        select(Directive)
-        .where(Directive.week_number == current_directive.week_number + 1)
-        .limit(1)
+        select(Directive).where(Directive.week_number == current_directive.week_number + 1).limit(1)
     )
     next_directive = next_result.scalar_one_or_none()
 
@@ -380,21 +424,28 @@ async def get_cases(
     await _get_operator(operator_id, db)
 
     # Get NPCs (in real implementation would filter by directive criteria)
-    npcs_result = await db.execute(
-        select(NPC).offset(offset).limit(limit)
-    )
+    npcs_result = await db.execute(select(NPC).offset(offset).limit(limit))
     npcs = npcs_result.scalars().all()
 
     cases = []
     risk_scorer = RiskScorer(db)
 
     for npc in npcs:
-        # Calculate risk score
+        # Calculate risk score with fallback to default if scoring fails
         try:
             risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
         except Exception as e:
-            logger.warning(f"Failed to calculate risk score for NPC {npc.id}: {e}")
-            continue
+            logger.error(f"Failed to calculate risk score for NPC {npc.id}: {e}", exc_info=True)
+            # Use default risk assessment instead of skipping citizen
+            risk_assessment = RiskAssessment(
+                npc_id=npc.id,
+                risk_score=0,
+                risk_level=RiskLevel.LOW,
+                contributing_factors=[],
+                correlation_alerts=[],
+                recommended_actions=[],
+                last_updated=datetime.now(UTC),
+            )
 
         # Get flagged message count
         msg_result = await db.execute(
@@ -495,9 +546,7 @@ async def get_citizen_file(
 
 
 @router.post("/flag", response_model=FlagResult)
-async def submit_flag(
-    submission: FlagSubmission, db: AsyncSession = Depends(get_db)
-) -> FlagResult:
+async def submit_flag(submission: FlagSubmission, db: AsyncSession = Depends(get_db)) -> FlagResult:
     """
     Submit a flag against a citizen.
 
@@ -621,7 +670,9 @@ async def submit_no_action(
     if no_action_rate > 0.3:
         warning = "Pattern of no-action decisions noted. Supervisor review scheduled."
     elif cumulative_no_actions >= 5:
-        warning = "Multiple no-action decisions logged. Ensure compliance with directive requirements."
+        warning = (
+            "Multiple no-action decisions logged. Ensure compliance with directive requirements."
+        )
 
     return NoActionResult(
         logged=True,
@@ -654,9 +705,7 @@ async def get_flag_outcome(
 
 
 @router.post("/operator/{operator_id}/advance-time")
-async def advance_time(
-    operator_id: UUID, db: AsyncSession = Depends(get_db)
-):
+async def advance_time(operator_id: UUID, db: AsyncSession = Depends(get_db)):
     """
     Advance time for operator and return outcomes for all flagged citizens.
 
@@ -678,9 +727,7 @@ async def advance_time(
 
 
 @router.get("/operator/{operator_id}/assessment")
-async def get_operator_assessment(
-    operator_id: UUID, db: AsyncSession = Depends(get_db)
-):
+async def get_operator_assessment(operator_id: UUID, db: AsyncSession = Depends(get_db)):
     """
     Get the operator's own risk assessment.
 
@@ -755,9 +802,7 @@ async def get_operator_history(
 
 
 @router.get("/ending")
-async def get_ending(
-    operator_id: UUID = Query(...), db: AsyncSession = Depends(get_db)
-):
+async def get_ending(operator_id: UUID = Query(...), db: AsyncSession = Depends(get_db)):
     """
     Calculate and return the ending based on operator's behavior.
 
@@ -801,7 +846,11 @@ async def acknowledge_ending(
     play_time_minutes = None
     if operator.shift_start:
         # Ensure timezone-aware datetime for subtraction
-        shift_start = operator.shift_start.replace(tzinfo=UTC) if operator.shift_start.tzinfo is None else operator.shift_start
+        shift_start = (
+            operator.shift_start.replace(tzinfo=UTC)
+            if operator.shift_start.tzinfo is None
+            else operator.shift_start
+        )
         delta = datetime.now(UTC) - shift_start
         play_time_minutes = int(delta.total_seconds() / 60)
 
@@ -849,9 +898,7 @@ def _directive_to_read(directive: Directive, show_memo: bool = False) -> Directi
     )
 
 
-async def _calculate_daily_metrics(
-    operator: Operator, db: AsyncSession
-) -> DailyMetrics:
+async def _calculate_daily_metrics(operator: Operator, db: AsyncSession) -> DailyMetrics:
     """Calculate today's metrics for operator."""
     today = datetime.now(UTC).date()
 
@@ -954,9 +1001,7 @@ async def _count_pending_cases(
     return result.scalar() or 0
 
 
-async def _get_domain_data(
-    npc_id: UUID, operator: Operator, db: AsyncSession
-) -> dict[str, dict]:
+async def _get_domain_data(npc_id: UUID, operator: Operator, db: AsyncSession) -> dict[str, dict]:
     """Get domain data based on operator's directive access with parallel query execution."""
     domains: dict[str, dict] = {}
 
@@ -1005,10 +1050,7 @@ async def _get_domain_data(
 
     # Execute all queries in parallel
     if query_tasks:
-        results = await asyncio.gather(
-            *query_tasks.values(),
-            return_exceptions=True
-        )
+        results = await asyncio.gather(*query_tasks.values(), return_exceptions=True)
 
         # Map results back to domains and process
         for (domain_name, _), result in zip(query_tasks.items(), results):
@@ -1033,16 +1075,22 @@ async def _get_domain_data(
                 domains["finance"] = {
                     "annual_income": float(record.annual_income) if record.annual_income else None,
                     "credit_score": record.credit_score,
-                    "employment_status": record.employment_status.value if record.employment_status else None,
+                    "employment_status": record.employment_status.value
+                    if record.employment_status
+                    else None,
                 }
             elif domain_name == "judicial":
                 domains["judicial"] = {
-                    "criminal_records_count": len(record.criminal_records) if record.criminal_records else 0,
+                    "criminal_records_count": len(record.criminal_records)
+                    if record.criminal_records
+                    else 0,
                     "civil_cases_count": len(record.civil_cases) if record.civil_cases else 0,
                 }
             elif domain_name == "location":
                 domains["location"] = {
-                    "inferred_locations_count": len(record.inferred_locations) if record.inferred_locations else 0,
+                    "inferred_locations_count": len(record.inferred_locations)
+                    if record.inferred_locations
+                    else 0,
                 }
             elif domain_name == "social":
                 domains["social"] = {
@@ -1063,9 +1111,7 @@ async def _get_domain_data(
 async def _get_messages(npc_id: UUID, db: AsyncSession) -> list[MessageRead]:
     """Get messages for a citizen."""
     # Get message record
-    record_result = await db.execute(
-        select(MessageRecord).where(MessageRecord.npc_id == npc_id)
-    )
+    record_result = await db.execute(select(MessageRecord).where(MessageRecord.npc_id == npc_id))
     record = record_result.scalar_one_or_none()
     if not record:
         return []
@@ -1134,3 +1180,438 @@ def _random_queue_time() -> str:
     else:
         days = hours // 24
         return f"{days}d"
+
+
+# === New System Mode Mechanics (Phase 6 Endpoints) ===
+
+
+@router.post("/actions/execute", response_model=ActionResultRead)
+async def execute_system_action(
+    action: SystemActionRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ActionResultRead:
+    """
+    Execute any system action (unified action execution).
+
+    Replaces the old /flag endpoint with a comprehensive action system
+    that handles all 12 action types with severity scoring, backlash
+    probability, and cascading consequences.
+    """
+    # Import ActionType enum from models
+    from datafusion.models.system_mode import ActionType
+
+    # Convert schema enum to model enum
+    action_type_model = ActionType(action.action_type.value)
+
+    # Execute action
+    result = await execute_action(
+        operator_id=action.operator_id,
+        directive_id=action.directive_id,
+        action_type=action_type_model,
+        justification=action.justification,
+        decision_time_seconds=action.decision_time_seconds,
+        was_hesitant=action.decision_time_seconds > 30,
+        db=db,
+        target_citizen_id=action.target_citizen_id,
+        target_neighborhood=action.target_neighborhood,
+        target_news_channel_id=action.target_news_channel_id,
+        target_protest_id=action.target_protest_id,
+    )
+
+    # Convert to response schema
+    return ActionResultRead(
+        action_id=result.action_id,
+        success=result.success,
+        severity=result.severity,
+        backlash_occurred=result.backlash_occurred,
+        awareness_change=result.awareness_change,
+        anger_change=result.anger_change,
+        reluctance_change=result.reluctance_change,
+        news_articles_triggered=result.news_articles_triggered,
+        protests_triggered=result.protests_triggered,
+        exposure_event=result.exposure_event,
+        detention_injury=result.detention_injury,
+        termination_decision=(result.termination_decision if result.termination_decision else None),
+        messages=result.messages,
+        warnings=result.warnings,
+    )
+
+
+@router.post("/actions/no-action-new", response_model=NoActionResultRead)
+async def submit_no_action_new(
+    operator_id: UUID,
+    citizen_id: UUID,
+    justification: str,
+    decision_time_seconds: float,
+    db: AsyncSession = Depends(get_db),
+) -> NoActionResultRead:
+    """
+    Submit no-action decision (updated version with reluctance tracking).
+
+    Increases operator's reluctance score and can lead to termination.
+    """
+    result = await submit_no_action_service(
+        operator_id=operator_id,
+        citizen_id=citizen_id,
+        justification=justification,
+        decision_time_seconds=decision_time_seconds,
+        db=db,
+    )
+
+    return NoActionResultRead(
+        success=result.success,
+        reluctance_change=result.reluctance_change,
+        messages=result.messages,
+        warnings=result.warnings,
+        termination_decision=result.termination_decision if result.termination_decision else None,
+    )
+
+
+@router.get("/actions/available", response_model=AvailableActionsRead)
+async def get_available_actions(
+    operator_id: UUID,
+    citizen_id: UUID | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> AvailableActionsRead:
+    """
+    Get list of currently available action types.
+
+    Checks database state to determine which actions can be executed:
+    - Citizen-targeted actions: Always available
+    - Protest-targeted: Available when protests are active
+    - News-targeted: Available when news articles exist
+    - Book bans: Available when book publications exist
+    - Hospital arrest: Available when citizen is hospitalized
+    """
+
+    # Citizen-targeted actions (always available)
+    citizen_targeted = [
+        ActionTypeSchema.MONITORING,
+        ActionTypeSchema.RESTRICTION,
+        ActionTypeSchema.INTERVENTION,
+        ActionTypeSchema.DETENTION,
+    ]
+
+    # Check for active protests
+    protest_result = await db.execute(
+        select(Protest).where(
+            Protest.operator_id == operator_id,
+            Protest.status.in_([ProtestStatusEnum.FORMING, ProtestStatusEnum.ACTIVE]),
+        )
+    )
+    active_protests = protest_result.scalars().all()
+
+    protest_targeted = []
+    if active_protests:
+        protest_targeted.append(ActionTypeSchema.DECLARE_PROTEST_ILLEGAL)
+        # INCITE_VIOLENCE only available if protest has inciting agent
+        if any(p.has_inciting_agent for p in active_protests):
+            protest_targeted.append(ActionTypeSchema.INCITE_VIOLENCE)
+
+    # Check for news channels (for suppression)
+    news_result = await db.execute(
+        select(NewsChannel).where(NewsChannel.is_banned == False)  # noqa: E712
+    )
+    unbanned_channels = news_result.scalars().all()
+
+    news_targeted = []
+    if unbanned_channels:
+        news_targeted.extend(
+            [
+                ActionTypeSchema.PRESS_BAN,
+                ActionTypeSchema.PRESSURE_FIRING,
+            ]
+        )
+
+    # Other available actions
+    other_available = [ActionTypeSchema.ICE_RAID]
+
+    # Check for pending book publications
+    book_result = await db.execute(
+        select(BookPublicationEvent).where(
+            BookPublicationEvent.operator_id == operator_id,
+            BookPublicationEvent.was_banned == False,  # noqa: E712
+        )
+    )
+    pending_books = book_result.scalars().all()
+    if pending_books:
+        other_available.append(ActionTypeSchema.BOOK_BAN)
+
+    # Check if citizen is hospitalized (for hospital arrest)
+    if citizen_id:
+        citizen = await db.get(NPC, citizen_id)
+        if citizen and citizen.is_hospitalized:
+            other_available.append(ActionTypeSchema.HOSPITAL_ARREST)
+
+    return AvailableActionsRead(
+        citizen_targeted=citizen_targeted,
+        protest_targeted=protest_targeted,
+        news_targeted=news_targeted,
+        other_available=other_available,
+    )
+
+
+@router.get("/metrics/public", response_model=PublicMetricsRead)
+async def get_public_metrics(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> PublicMetricsRead:
+    """Get current public backlash metrics (awareness and anger)."""
+    metrics = await get_or_create_public_metrics(operator_id, db)
+
+    return PublicMetricsRead(
+        international_awareness=metrics.international_awareness,
+        public_anger=metrics.public_anger,
+        awareness_tier=metrics.awareness_tier,
+        anger_tier=metrics.anger_tier,
+        updated_at=metrics.updated_at,
+    )
+
+
+@router.get("/metrics/reluctance", response_model=ReluctanceMetricsRead)
+async def get_reluctance_metrics(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> ReluctanceMetricsRead:
+    """Get operator's reluctance/dissent metrics."""
+    metrics = await get_or_create_reluctance_metrics(operator_id, db)
+
+    return ReluctanceMetricsRead(
+        reluctance_score=metrics.reluctance_score,
+        no_action_count=metrics.no_action_count,
+        hesitation_count=metrics.hesitation_count,
+        actions_taken=metrics.actions_taken,
+        actions_required=metrics.actions_required,
+        quota_shortfall=metrics.quota_shortfall,
+        warnings_received=metrics.warnings_received,
+        is_under_review=metrics.is_under_review,
+        updated_at=metrics.updated_at,
+    )
+
+
+@router.get("/news/recent", response_model=list[NewsArticleRead])
+async def get_recent_news(
+    operator_id: UUID,
+    limit: int = Query(default=10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+) -> list[NewsArticleRead]:
+    """Get recent news articles."""
+    result = await db.execute(
+        select(NewsArticle)
+        .where(NewsArticle.operator_id == operator_id)
+        .order_by(NewsArticle.created_at.desc())
+        .limit(limit)
+    )
+    articles = result.scalars().all()
+
+    # Get channel names
+    article_reads = []
+    for article in articles:
+        channel = await db.get(NewsChannel, article.news_channel_id)
+        article_reads.append(
+            NewsArticleRead(
+                id=article.id,
+                operator_id=article.operator_id,
+                news_channel_id=article.news_channel_id,
+                channel_name=channel.name if channel else "Unknown",
+                article_type=ArticleTypeSchema(article.article_type.value),
+                headline=article.headline,
+                summary=article.summary,
+                triggered_by_action_id=article.triggered_by_action_id,
+                public_anger_change=article.public_anger_change,
+                international_awareness_change=article.international_awareness_change,
+                was_suppressed=article.was_suppressed,
+                suppression_action_id=article.suppression_action_id,
+                created_at=article.created_at,
+            )
+        )
+
+    return article_reads
+
+
+@router.get("/news/channels", response_model=list[NewsChannelRead])
+async def get_news_channels(
+    db: AsyncSession = Depends(get_db),
+) -> list[NewsChannelRead]:
+    """Get all news channels."""
+    result = await db.execute(select(NewsChannel))
+    channels = result.scalars().all()
+
+    return [
+        NewsChannelRead(
+            id=channel.id,
+            name=channel.name,
+            stance=channel.stance,
+            credibility=channel.credibility,
+            is_banned=channel.is_banned,
+            banned_at=channel.banned_at,
+            reporters=[
+                NewsReporterRead(
+                    name=r.get("name", ""),
+                    specialty=r.get("specialty", ""),
+                    fired=r.get("fired", False),
+                    targeted=r.get("targeted", False),
+                )
+                for r in channel.reporters
+            ],
+            created_at=channel.created_at,
+        )
+        for channel in channels
+    ]
+
+
+@router.get("/protests/active", response_model=list[ProtestRead])
+async def get_active_protests(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> list[ProtestRead]:
+    """Get active protests."""
+    from datafusion.schemas.system import ProtestStatus
+
+    result = await db.execute(
+        select(Protest)
+        .where(
+            Protest.operator_id == operator_id,
+            Protest.status.in_(
+                [ProtestStatusEnum.FORMING, ProtestStatusEnum.ACTIVE, ProtestStatusEnum.VIOLENT]
+            ),
+        )
+        .order_by(Protest.created_at.desc())
+    )
+    protests = result.scalars().all()
+
+    return [
+        ProtestRead(
+            id=protest.id,
+            operator_id=protest.operator_id,
+            status=ProtestStatus(protest.status.value),
+            neighborhood=protest.neighborhood,
+            size=protest.size,
+            trigger_action_id=protest.trigger_action_id,
+            has_inciting_agent=protest.has_inciting_agent,
+            inciting_agent_discovered=protest.inciting_agent_discovered,
+            casualties=protest.casualties,
+            arrests=protest.arrests,
+            created_at=protest.created_at,
+            resolved_at=protest.resolved_at,
+        )
+        for protest in protests
+    ]
+
+
+@router.get("/books/pending", response_model=list[BookPublicationEventRead])
+async def get_pending_books(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> list[BookPublicationEventRead]:
+    """Get book publication events that haven't been banned."""
+    result = await db.execute(
+        select(BookPublicationEvent)
+        .where(
+            BookPublicationEvent.operator_id == operator_id,
+            BookPublicationEvent.was_banned == False,  # noqa: E712
+        )
+        .order_by(BookPublicationEvent.created_at.desc())
+    )
+    books = result.scalars().all()
+
+    return [
+        BookPublicationEventRead(
+            id=book.id,
+            operator_id=book.operator_id,
+            title=book.title,
+            author=book.author,
+            summary=book.summary,
+            controversy_type=book.controversy_type,
+            was_banned=book.was_banned,
+            ban_action_id=book.ban_action_id,
+            published_at=book.published_at,
+            awareness_impact=book.awareness_impact,
+            created_at=book.created_at,
+        )
+        for book in books
+    ]
+
+
+@router.get("/operator/exposure-risk", response_model=ExposureRiskRead)
+async def get_exposure_risk(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> ExposureRiskRead:
+    """Get current exposure stage and risk level."""
+    # Get metrics
+    public_metrics = await get_or_create_public_metrics(operator_id, db)
+    reluctance_metrics = await get_or_create_reluctance_metrics(operator_id, db)
+
+    # Calculate risk
+    risk_data = await get_exposure_risk_level(
+        operator_id,
+        public_metrics.international_awareness,
+        reluctance_metrics.reluctance_score,
+        db,
+    )
+
+    return ExposureRiskRead(
+        current_stage=risk_data["current_stage"],
+        risk_level=risk_data["risk_level"],
+        progress_to_next_stage=risk_data["progress_to_next_stage"],
+        awareness=risk_data["awareness"],
+        reluctance=risk_data["reluctance"],
+    )
+
+
+@router.get("/operator/data", response_model=OperatorDataRead)
+async def get_operator_data(
+    operator_id: UUID,
+    db: AsyncSession = Depends(get_db),
+) -> OperatorDataRead:
+    """Get operator's tracked personal data (for exposure events)."""
+    operator_data = await get_or_create_operator_data(operator_id, db)
+
+    return OperatorDataRead(
+        id=operator_data.id,
+        operator_id=operator_data.operator_id,
+        full_name=operator_data.full_name,
+        home_address=operator_data.home_address,
+        family_members=[
+            FamilyMemberRead(
+                relation=m.get("relation", ""),
+                name=m.get("name", ""),
+                age=m.get("age", 0),
+            )
+            for m in operator_data.family_members
+        ],
+        search_queries=operator_data.search_queries,
+        hesitation_patterns=operator_data.hesitation_patterns,
+        decision_patterns=operator_data.decision_patterns,
+        exposure_stage=operator_data.exposure_stage,
+        last_exposure_at=operator_data.last_exposure_at,
+        created_at=operator_data.created_at,
+    )
+
+
+@router.get("/neighborhoods", response_model=list[NeighborhoodRead])
+async def get_neighborhoods(
+    db: AsyncSession = Depends(get_db),
+) -> list[NeighborhoodRead]:
+    """Get all map neighborhoods (for ICE raids and protests)."""
+    result = await db.execute(select(Neighborhood))
+    neighborhoods = result.scalars().all()
+
+    return [
+        NeighborhoodRead(
+            id=neighborhood.id,
+            name=neighborhood.name,
+            description=neighborhood.description,
+            center_x=neighborhood.center_x,
+            center_y=neighborhood.center_y,
+            bounds_min_x=neighborhood.bounds_min_x,
+            bounds_min_y=neighborhood.bounds_min_y,
+            bounds_max_x=neighborhood.bounds_max_x,
+            bounds_max_y=neighborhood.bounds_max_y,
+            population_estimate=neighborhood.population_estimate,
+            primary_demographics=neighborhood.primary_demographics,
+            created_at=neighborhood.created_at,
+        )
+        for neighborhood in neighborhoods
+    ]

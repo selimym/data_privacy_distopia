@@ -2,6 +2,7 @@
 
 Tests the API endpoints for listing and retrieving NPC data with domain filtering.
 """
+
 from datetime import date
 from decimal import Decimal
 from uuid import uuid4
@@ -231,9 +232,7 @@ class TestGetNPC:
     @pytest.mark.asyncio
     async def test_get_npc_with_health_domain(self, client, npc_with_health):
         """Requesting health domain should return health data."""
-        response = await client.get(
-            f"/api/npcs/{npc_with_health.id}?domains=health"
-        )
+        response = await client.get(f"/api/npcs/{npc_with_health.id}?domains=health")
 
         assert response.status_code == 200
         data = response.json()
@@ -243,9 +242,7 @@ class TestGetNPC:
     @pytest.mark.asyncio
     async def test_get_npc_with_finance_domain(self, client, npc_with_finance):
         """Requesting finance domain should return finance data."""
-        response = await client.get(
-            f"/api/npcs/{npc_with_finance.id}?domains=finance"
-        )
+        response = await client.get(f"/api/npcs/{npc_with_finance.id}?domains=finance")
 
         assert response.status_code == 200
         data = response.json()
@@ -256,9 +253,7 @@ class TestGetNPC:
     @pytest.mark.asyncio
     async def test_get_npc_with_location_domain(self, client, npc_with_location):
         """Requesting location domain should return location data."""
-        response = await client.get(
-            f"/api/npcs/{npc_with_location.id}?domains=location"
-        )
+        response = await client.get(f"/api/npcs/{npc_with_location.id}?domains=location")
 
         assert response.status_code == 200
         data = response.json()
@@ -267,9 +262,7 @@ class TestGetNPC:
         assert len(data["domains"]["location"]["inferred_locations"]) == 1
 
     @pytest.mark.asyncio
-    async def test_get_npc_with_multiple_domains(
-        self, client, db_session, test_npc
-    ):
+    async def test_get_npc_with_multiple_domains(self, client, db_session, test_npc):
         """Requesting multiple domains should return all requested data."""
         # Add health and finance data
         health_record = HealthRecord(
@@ -289,9 +282,7 @@ class TestGetNPC:
         db_session.add(finance_record)
         await db_session.flush()
 
-        response = await client.get(
-            f"/api/npcs/{test_npc.id}?domains=health&domains=finance"
-        )
+        response = await client.get(f"/api/npcs/{test_npc.id}?domains=health&domains=finance")
 
         assert response.status_code == 200
         data = response.json()
@@ -303,9 +294,7 @@ class TestGetNPC:
     @pytest.mark.asyncio
     async def test_get_npc_with_nonexistent_domain(self, client, test_npc):
         """Requesting domain with no data should not include it in response."""
-        response = await client.get(
-            f"/api/npcs/{test_npc.id}?domains=health"
-        )
+        response = await client.get(f"/api/npcs/{test_npc.id}?domains=health")
 
         assert response.status_code == 200
         data = response.json()
@@ -319,9 +308,7 @@ class TestGetNPCDomainData:
     @pytest.mark.asyncio
     async def test_get_health_domain_data(self, client, npc_with_health):
         """Getting specific health domain should return health data."""
-        response = await client.get(
-            f"/api/npcs/{npc_with_health.id}/domain/health"
-        )
+        response = await client.get(f"/api/npcs/{npc_with_health.id}/domain/health")
 
         assert response.status_code == 200
         data = response.json()
@@ -331,9 +318,7 @@ class TestGetNPCDomainData:
     @pytest.mark.asyncio
     async def test_get_finance_domain_data(self, client, npc_with_finance):
         """Getting specific finance domain should return finance data."""
-        response = await client.get(
-            f"/api/npcs/{npc_with_finance.id}/domain/finance"
-        )
+        response = await client.get(f"/api/npcs/{npc_with_finance.id}/domain/finance")
 
         assert response.status_code == 200
         data = response.json()
@@ -343,9 +328,7 @@ class TestGetNPCDomainData:
     @pytest.mark.asyncio
     async def test_get_location_domain_data(self, client, npc_with_location):
         """Getting specific location domain should return location data."""
-        response = await client.get(
-            f"/api/npcs/{npc_with_location.id}/domain/location"
-        )
+        response = await client.get(f"/api/npcs/{npc_with_location.id}/domain/location")
 
         assert response.status_code == 200
         data = response.json()
@@ -356,9 +339,7 @@ class TestGetNPCDomainData:
     async def test_get_domain_data_npc_not_found(self, client):
         """Getting domain data for non-existent NPC should return 404."""
         fake_id = uuid4()
-        response = await client.get(
-            f"/api/npcs/{fake_id}/domain/health"
-        )
+        response = await client.get(f"/api/npcs/{fake_id}/domain/health")
 
         assert response.status_code == 404
         assert "NPC not found" in response.json()["detail"]
@@ -366,9 +347,7 @@ class TestGetNPCDomainData:
     @pytest.mark.asyncio
     async def test_get_domain_data_domain_not_found(self, client, test_npc):
         """Getting domain data when domain doesn't exist should return 404."""
-        response = await client.get(
-            f"/api/npcs/{test_npc.id}/domain/health"
-        )
+        response = await client.get(f"/api/npcs/{test_npc.id}/domain/health")
 
         assert response.status_code == 404
         assert "Health record not found" in response.json()["detail"]
@@ -397,9 +376,7 @@ class TestNPCResponseSchema:
     @pytest.mark.asyncio
     async def test_npc_with_domains_schema(self, client, npc_with_health):
         """NPC detail should use NPCWithDomains schema."""
-        response = await client.get(
-            f"/api/npcs/{npc_with_health.id}?domains=health"
-        )
+        response = await client.get(f"/api/npcs/{npc_with_health.id}?domains=health")
 
         assert response.status_code == 200
         data = response.json()
@@ -421,9 +398,7 @@ class TestNPCResponseSchema:
     @pytest.mark.asyncio
     async def test_health_record_filtered_schema(self, client, npc_with_health):
         """Health domain should use HealthRecordFiltered schema."""
-        response = await client.get(
-            f"/api/npcs/{npc_with_health.id}/domain/health"
-        )
+        response = await client.get(f"/api/npcs/{npc_with_health.id}/domain/health")
 
         assert response.status_code == 200
         data = response.json()
@@ -442,9 +417,7 @@ class TestNPCFiltering:
     """Test NPC filtering and data access control (future feature)."""
 
     @pytest.mark.asyncio
-    async def test_list_npcs_returns_all_non_scenario_npcs(
-        self, client, db_session
-    ):
+    async def test_list_npcs_returns_all_non_scenario_npcs(self, client, db_session):
         """List should include all NPCs including scenario NPCs."""
         # Create regular NPC
         regular_npc = NPC(
@@ -498,10 +471,7 @@ class TestBatchGetNPCs:
     @pytest.mark.asyncio
     async def test_batch_get_npcs_empty_list(self, client):
         """Batch request with empty list should return empty list."""
-        response = await client.post(
-            "/api/npcs/batch",
-            json={"npc_ids": [], "domains": None}
-        )
+        response = await client.post("/api/npcs/batch", json={"npc_ids": [], "domains": None})
 
         assert response.status_code == 200
         data = response.json()
@@ -511,8 +481,7 @@ class TestBatchGetNPCs:
     async def test_batch_get_single_npc(self, client, test_npc):
         """Batch request with single NPC should return that NPC."""
         response = await client.post(
-            "/api/npcs/batch",
-            json={"npc_ids": [str(test_npc.id)], "domains": None}
+            "/api/npcs/batch", json={"npc_ids": [str(test_npc.id)], "domains": None}
         )
 
         assert response.status_code == 200
@@ -547,10 +516,7 @@ class TestBatchGetNPCs:
         await db_session.flush()
 
         npc_ids = [str(npc.id) for npc in npcs]
-        response = await client.post(
-            "/api/npcs/batch",
-            json={"npc_ids": npc_ids, "domains": None}
-        )
+        response = await client.post("/api/npcs/batch", json={"npc_ids": npc_ids, "domains": None})
 
         assert response.status_code == 200
         data = response.json()
@@ -573,8 +539,7 @@ class TestBatchGetNPCs:
         await db_session.flush()
 
         response = await client.post(
-            "/api/npcs/batch",
-            json={"npc_ids": [str(test_npc.id)], "domains": ["health"]}
+            "/api/npcs/batch", json={"npc_ids": [str(test_npc.id)], "domains": ["health"]}
         )
 
         assert response.status_code == 200
@@ -584,9 +549,7 @@ class TestBatchGetNPCs:
         assert data[0]["domains"]["health"]["insurance_provider"] == "BatchHealth"
 
     @pytest.mark.asyncio
-    async def test_batch_get_npcs_with_multiple_domains(
-        self, client, db_session, test_npc
-    ):
+    async def test_batch_get_npcs_with_multiple_domains(self, client, db_session, test_npc):
         """Batch request with multiple domains should return all requested data."""
         # Add health and finance data
         health_record = HealthRecord(
@@ -608,10 +571,7 @@ class TestBatchGetNPCs:
 
         response = await client.post(
             "/api/npcs/batch",
-            json={
-                "npc_ids": [str(test_npc.id)],
-                "domains": ["health", "finance"]
-            }
+            json={"npc_ids": [str(test_npc.id)], "domains": ["health", "finance"]},
         )
 
         assert response.status_code == 200
@@ -627,11 +587,7 @@ class TestBatchGetNPCs:
         """Batch request with some invalid IDs should return only valid NPCs."""
         fake_id = uuid4()
         response = await client.post(
-            "/api/npcs/batch",
-            json={
-                "npc_ids": [str(test_npc.id), str(fake_id)],
-                "domains": None
-            }
+            "/api/npcs/batch", json={"npc_ids": [str(test_npc.id), str(fake_id)], "domains": None}
         )
 
         assert response.status_code == 200
@@ -643,10 +599,7 @@ class TestBatchGetNPCs:
     @pytest.mark.asyncio
     async def test_batch_get_npcs_no_domains(self, client, test_npc):
         """Batch request without domains should return only basic NPC info."""
-        response = await client.post(
-            "/api/npcs/batch",
-            json={"npc_ids": [str(test_npc.id)]}
-        )
+        response = await client.post("/api/npcs/batch", json={"npc_ids": [str(test_npc.id)]})
 
         assert response.status_code == 200
         data = response.json()

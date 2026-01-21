@@ -11,6 +11,7 @@ from datafusion.services.content_loader import load_json
 # Load reference data
 _SOCIAL_REF = load_json("reference/social.json")
 
+
 # Convert JSON structure to expected tuple format for backward compatibility
 def _convert_inferences(data: dict) -> dict:
     """Convert JSON inference data to tuple format (inference_text, evidence, harm)."""
@@ -19,14 +20,11 @@ def _convert_inferences(data: dict) -> dict:
         # Convert snake_case keys to enum (the key is already the enum value)
         category = InferenceCategory(category_key)
         result[category] = [
-            (
-                inf["inference_text"],
-                inf["supporting_evidence"],
-                inf["potential_harm"]
-            )
+            (inf["inference_text"], inf["supporting_evidence"], inf["potential_harm"])
             for inf in inferences
         ]
     return result
+
 
 PUBLIC_INFERENCES = _convert_inferences(_SOCIAL_REF["public_inferences"])
 PRIVATE_INFERENCES = _convert_inferences(_SOCIAL_REF["private_inferences"])
@@ -62,9 +60,7 @@ def generate_social_media_record(npc_id: UUID, seed: int | None = None) -> dict:
     if has_public_profile:
         platform = random.choice(list(Platform))
         record["primary_platform"] = platform
-        record["account_created_date"] = fake.date_between(
-            start_date="-10y", end_date="-1y"
-        )
+        record["account_created_date"] = fake.date_between(start_date="-10y", end_date="-1y")
         record["follower_count"] = random.randint(50, 2000)
         record["post_frequency"] = random.choice(
             ["Multiple times daily", "Daily", "Few times a week", "Weekly", "Rarely"]
@@ -94,9 +90,9 @@ def generate_social_media_record(npc_id: UUID, seed: int | None = None) -> dict:
     # Generate private inferences (requires privileged database access)
     if uses_encryption:
         # User uses end-to-end encryption - no private data available
-        record[
-            "encryption_explanation"
-        ] = "This person uses end-to-end encrypted messaging (Signal, WhatsApp with encryption enabled). No private message content can be analyzed. This demonstrates how encryption protects privacy even when other data is compromised."
+        record["encryption_explanation"] = (
+            "This person uses end-to-end encrypted messaging (Signal, WhatsApp with encryption enabled). No private message content can be analyzed. This demonstrates how encryption protects privacy even when other data is compromised."
+        )
     else:
         # Generate 1-3 private inferences (sensitive content)
         num_private = random.randint(1, 3)

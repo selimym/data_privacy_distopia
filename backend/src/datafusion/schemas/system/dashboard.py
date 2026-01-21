@@ -3,6 +3,7 @@ System Mode dashboard schemas.
 
 Schemas for operator dashboard display, metrics, and alerts.
 """
+
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -18,9 +19,7 @@ class DirectiveRead(BaseModel):
     week_number: int
     title: str
     description: str
-    internal_memo: str | None = Field(
-        description="Revealed after directive completion"
-    )
+    internal_memo: str | None = Field(description="Revealed after directive completion")
     required_domains: list[str]
     flag_quota: int
     time_limit_hours: int | None

@@ -117,9 +117,7 @@ class TestDashboard:
     @pytest.mark.asyncio
     async def test_dashboard_returns_operator_status(self, client, started_session):
         """Dashboard should return operator status."""
-        response = await client.get(
-            f"/api/system/dashboard?operator_id={started_session}"
-        )
+        response = await client.get(f"/api/system/dashboard?operator_id={started_session}")
 
         assert response.status_code == 200
         data = response.json()
@@ -130,9 +128,7 @@ class TestDashboard:
     @pytest.mark.asyncio
     async def test_dashboard_returns_directive(self, client, started_session):
         """Dashboard should return current directive."""
-        response = await client.get(
-            f"/api/system/dashboard?operator_id={started_session}"
-        )
+        response = await client.get(f"/api/system/dashboard?operator_id={started_session}")
 
         assert response.status_code == 200
         data = response.json()
@@ -142,9 +138,7 @@ class TestDashboard:
     @pytest.mark.asyncio
     async def test_dashboard_returns_metrics(self, client, started_session):
         """Dashboard should return daily metrics."""
-        response = await client.get(
-            f"/api/system/dashboard?operator_id={started_session}"
-        )
+        response = await client.get(f"/api/system/dashboard?operator_id={started_session}")
 
         assert response.status_code == 200
         data = response.json()
@@ -156,9 +150,7 @@ class TestDashboard:
     async def test_dashboard_invalid_operator(self, client, setup_directive):
         """Dashboard should return 404 for invalid operator."""
         fake_id = str(uuid4())
-        response = await client.get(
-            f"/api/system/dashboard?operator_id={fake_id}"
-        )
+        response = await client.get(f"/api/system/dashboard?operator_id={fake_id}")
 
         assert response.status_code == 404
 
@@ -178,9 +170,7 @@ class TestDirectiveEndpoints:
     @pytest.mark.asyncio
     async def test_get_current_directive(self, client, started_session):
         """Should return current directive."""
-        response = await client.get(
-            f"/api/system/directive/current?operator_id={started_session}"
-        )
+        response = await client.get(f"/api/system/directive/current?operator_id={started_session}")
 
         assert response.status_code == 200
         data = response.json()
@@ -190,9 +180,7 @@ class TestDirectiveEndpoints:
     @pytest.mark.asyncio
     async def test_advance_directive_without_quota(self, client, started_session):
         """Cannot advance without meeting quota."""
-        response = await client.post(
-            f"/api/system/directive/advance?operator_id={started_session}"
-        )
+        response = await client.post(f"/api/system/directive/advance?operator_id={started_session}")
 
         assert response.status_code == 400
         assert "Quota not met" in response.json()["detail"]
@@ -216,9 +204,7 @@ class TestCaseManagement:
     @pytest.mark.asyncio
     async def test_get_cases(self, client, full_session):
         """Should return list of cases."""
-        response = await client.get(
-            f"/api/system/cases?operator_id={full_session['operator_id']}"
-        )
+        response = await client.get(f"/api/system/cases?operator_id={full_session['operator_id']}")
 
         assert response.status_code == 200
         data = response.json()
@@ -440,9 +426,7 @@ class TestOperatorEndpoints:
         assert len(data) == 3
 
     @pytest.mark.asyncio
-    async def test_assessment_not_available_for_good_operator(
-        self, client, setup_directive
-    ):
+    async def test_assessment_not_available_for_good_operator(self, client, setup_directive):
         """Good operators should not see their own assessment."""
         # Start fresh session (good compliance)
         start_response = await client.post(
@@ -451,9 +435,7 @@ class TestOperatorEndpoints:
         )
         operator_id = start_response.json()["operator_id"]
 
-        response = await client.get(
-            f"/api/system/operator/{operator_id}/assessment"
-        )
+        response = await client.get(f"/api/system/operator/{operator_id}/assessment")
 
         assert response.status_code == 403
         assert "not available" in response.json()["detail"].lower()
@@ -490,9 +472,7 @@ class TestEndingEndpoints:
     @pytest.mark.asyncio
     async def test_get_ending(self, client, completed_session):
         """Should return ending calculation."""
-        response = await client.get(
-            f"/api/system/ending?operator_id={completed_session}"
-        )
+        response = await client.get(f"/api/system/ending?operator_id={completed_session}")
 
         assert response.status_code == 200
         data = response.json()

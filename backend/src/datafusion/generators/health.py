@@ -40,25 +40,31 @@ def generate_health_record(npc_id: UUID, seed: int | None = None) -> dict:
 
     if random.random() < 0.40:
         num_common = random.randint(1, 3)
-        common_conditions = random.sample(COMMON_CONDITIONS, min(num_common, len(COMMON_CONDITIONS)))
+        common_conditions = random.sample(
+            COMMON_CONDITIONS, min(num_common, len(COMMON_CONDITIONS))
+        )
         for condition_name in common_conditions:
-            conditions.append({
-                "condition_name": condition_name,
-                "diagnosed_date": fake.date_between(start_date="-10y", end_date="-1y"),
-                "severity": random.choice([Severity.MILD, Severity.MODERATE]),
-                "is_chronic": random.choice([True, False]),
-                "is_sensitive": False,
-            })
+            conditions.append(
+                {
+                    "condition_name": condition_name,
+                    "diagnosed_date": fake.date_between(start_date="-10y", end_date="-1y"),
+                    "severity": random.choice([Severity.MILD, Severity.MODERATE]),
+                    "is_chronic": random.choice([True, False]),
+                    "is_sensitive": False,
+                }
+            )
 
     if random.random() < 0.15:
         sensitive_condition = random.choice(SENSITIVE_CONDITIONS)
-        conditions.append({
-            "condition_name": sensitive_condition,
-            "diagnosed_date": fake.date_between(start_date="-8y", end_date="-6m"),
-            "severity": random.choice([Severity.MODERATE, Severity.SEVERE]),
-            "is_chronic": True,
-            "is_sensitive": True,
-        })
+        conditions.append(
+            {
+                "condition_name": sensitive_condition,
+                "diagnosed_date": fake.date_between(start_date="-8y", end_date="-6m"),
+                "severity": random.choice([Severity.MODERATE, Severity.SEVERE]),
+                "is_chronic": True,
+                "is_sensitive": True,
+            }
+        )
 
     record["conditions"] = conditions
 
@@ -70,12 +76,14 @@ def generate_health_record(npc_id: UUID, seed: int | None = None) -> dict:
 
             dosages = ["10mg", "20mg", "50mg", "100mg", "5mg", "25mg"]
 
-            record["medications"].append({
-                "medication_name": med_name,
-                "dosage": random.choice(dosages),
-                "prescribed_date": condition_data["diagnosed_date"],
-                "is_sensitive": condition_data["is_sensitive"],
-            })
+            record["medications"].append(
+                {
+                    "medication_name": med_name,
+                    "dosage": random.choice(dosages),
+                    "prescribed_date": condition_data["diagnosed_date"],
+                    "is_sensitive": condition_data["is_sensitive"],
+                }
+            )
 
     num_visits = random.randint(2, 8)
     for _ in range(num_visits):

@@ -4,6 +4,7 @@ Integration tests for flag submission flow.
 Tests the complete end-to-end process of flagging a citizen,
 ensuring all services work together correctly.
 """
+
 from datetime import date
 
 import pytest
@@ -21,7 +22,9 @@ pytestmark = pytest.mark.asyncio
 class TestFlagSubmissionFlow:
     """Test complete flag submission workflow."""
 
-    async def test_complete_flag_submission(self, db_session: AsyncSession, test_operator, test_npc):
+    async def test_complete_flag_submission(
+        self, db_session: AsyncSession, test_operator, test_npc
+    ):
         """Test submitting a flag from start to finish."""
         # Create flag
         flag = CitizenFlag(
@@ -49,7 +52,9 @@ class TestFlagSubmissionFlow:
         assert outcome.narrative
         assert len(outcome.narrative) > 50  # Should have meaningful content
 
-    async def test_multiple_flags_different_types(self, db_session: AsyncSession, test_operator, test_npc):
+    async def test_multiple_flags_different_types(
+        self, db_session: AsyncSession, test_operator, test_npc
+    ):
         """Test submitting multiple flags of different types."""
         flag_types = [FlagType.MONITORING, FlagType.RESTRICTION, FlagType.INTERVENTION]
 
@@ -100,9 +105,7 @@ class TestFlagSubmissionFlow:
         await db_session.flush()
 
         # Verify hesitation was recorded
-        result = await db_session.execute(
-            select(Operator).where(Operator.id == test_operator.id)
-        )
+        result = await db_session.execute(select(Operator).where(Operator.id == test_operator.id))
         updated_operator = result.scalar_one()
 
         assert updated_operator.hesitation_incidents == initial_hesitation + 1
@@ -139,7 +142,9 @@ class TestFlagSubmissionFlow:
         assert new_compliance >= 0
         assert new_compliance <= 100
 
-    async def test_outcome_personalization(self, db_session: AsyncSession, test_operator, test_npc_with_data):
+    async def test_outcome_personalization(
+        self, db_session: AsyncSession, test_operator, test_npc_with_data
+    ):
         """Test that outcomes are personalized based on citizen data."""
         flag = CitizenFlag(
             operator_id=test_operator.id,
@@ -160,8 +165,10 @@ class TestFlagSubmissionFlow:
         outcome = await outcome_gen.generate_outcome(flag, "immediate")
 
         # Outcome should reference the citizen by name
-        assert test_npc_with_data.first_name in outcome.narrative or \
-               test_npc_with_data.last_name in outcome.narrative
+        assert (
+            test_npc_with_data.first_name in outcome.narrative
+            or test_npc_with_data.last_name in outcome.narrative
+        )
 
     async def test_multiple_time_horizons(self, db_session: AsyncSession, test_operator, test_npc):
         """Test generating outcomes for different time horizons."""

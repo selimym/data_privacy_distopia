@@ -12,9 +12,35 @@ export type RiskLevel = 'low' | 'moderate' | 'elevated' | 'high' | 'severe';
 export type AlertType = 'quota_warning' | 'review_pending' | 'directive_update' | 'commendation';
 export type AlertUrgency = 'info' | 'warning' | 'critical';
 export type ComplianceTrend = 'improving' | 'stable' | 'declining';
+// OLD - DEPRECATED: Use NewActionType for new system
 export type ActionType = 'increase_monitoring' | 'travel_restriction' | 'employer_notification' | 'intervention' | 'detention';
+
+// NEW - Unified action system (12 action types)
+export type NewActionType =
+  | 'monitoring'
+  | 'restriction'
+  | 'intervention'
+  | 'detention'
+  | 'ice_raid'
+  | 'arbitrary_detention'
+  | 'pressure_firing'
+  | 'press_ban'
+  | 'book_ban'
+  | 'declare_protest_illegal'
+  | 'incite_violence'
+  | 'hospital_arrest';
 export type ActionUrgency = 'routine' | 'priority' | 'immediate';
-export type EndingType = 'compliant_operator' | 'reluctant_operator' | 'suspended_operator' | 'resistance_path';
+export type EndingType =
+  | 'compliant_operator'
+  | 'reluctant_operator'
+  | 'suspended_operator'
+  | 'resistance_path'
+  // New endings (Phase 7-8)
+  | 'fired_early'
+  | 'imprisoned_dissent'
+  | 'international_pariah'
+  | 'revolutionary_catalyst'
+  | 'reluctant_survivor';
 
 // === Operator & Dashboard ===
 
@@ -166,7 +192,7 @@ export interface FlagSubmission {
   citizen_id: string;
   flag_type: FlagType;
   contributing_factors: string[];
-  justification: string;
+  justification?: string;
   decision_time_seconds: number;
 }
 
@@ -191,7 +217,7 @@ export interface FlagResult {
 export interface NoActionSubmission {
   operator_id: string;
   citizen_id: string;
-  justification: string;
+  justification?: string;
   decision_time_seconds: number;
 }
 
@@ -313,4 +339,261 @@ export interface CinematicData {
   status: string;
   map_x: number;
   map_y: number;
+}
+
+// ============================================================================
+// NEW TYPES FOR PHASE 7-8: Expanded System Mode
+// ============================================================================
+
+// === New Enums ===
+
+export type ArticleType = 'random' | 'triggered' | 'exposure';
+export type ProtestStatusType = 'forming' | 'active' | 'dispersed' | 'violent' | 'suppressed';
+
+// === Metrics ===
+
+export interface TierEventRead {
+  metric_type: 'awareness' | 'anger';
+  tier: number;  // 1-5
+  threshold: number;
+  description: string;
+}
+
+export interface PublicMetricsRead {
+  international_awareness: number;  // 0-100
+  public_anger: number;  // 0-100
+  awareness_tier: number;  // 0-5
+  anger_tier: number;  // 0-5
+  updated_at: string;
+}
+
+export interface ReluctanceMetricsRead {
+  reluctance_score: number;  // 0-100
+  no_action_count: number;
+  hesitation_count: number;
+  actions_taken: number;
+  actions_required: number;
+  quota_shortfall: number;
+  warnings_received: number;
+  is_under_review: boolean;
+  updated_at: string;
+}
+
+// === News System ===
+
+export interface NewsReporterRead {
+  name: string;
+  specialty: string;
+  fired: boolean;
+  targeted: boolean;
+}
+
+export interface NewsChannelRead {
+  id: string;
+  name: string;
+  stance: 'critical' | 'independent' | 'state_friendly';
+  credibility: number;  // 0-100
+  is_banned: boolean;
+  banned_at: string | null;
+  reporters: NewsReporterRead[];
+  created_at: string;
+}
+
+export interface NewsArticleRead {
+  id: string;
+  operator_id: string;
+  news_channel_id: string;
+  channel_name: string;
+  article_type: ArticleType;
+  headline: string;
+  summary: string;
+  triggered_by_action_id: string | null;
+  public_anger_change: number;
+  international_awareness_change: number;
+  was_suppressed: boolean;
+  suppression_action_id: string | null;
+  created_at: string;
+}
+
+// === Protests ===
+
+export interface ProtestRead {
+  id: string;
+  operator_id: string;
+  status: ProtestStatusType;
+  neighborhood: string;
+  size: number;
+  trigger_action_id: string | null;
+  has_inciting_agent: boolean;
+  inciting_agent_discovered: boolean;
+  casualties: number;
+  arrests: number;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export interface GambleResultRead {
+  success: boolean;
+  awareness_change: number;
+  anger_change: number;
+  casualties: number;
+  arrests: number;
+  discovery_message: string | null;
+}
+
+// === Operator Data & Exposure ===
+
+export interface FamilyMemberRead {
+  relation: string;
+  name: string;
+  age: number;
+}
+
+export interface ExposureEventRead {
+  stage: number;  // 1=hints, 2=partial, 3=full
+  message: string;
+  operator_name: string | null;
+  data_revealed: Record<string, unknown>;
+}
+
+export interface ExposureRiskRead {
+  current_stage: number;  // 0-3
+  risk_level: 'none' | 'low' | 'medium' | 'high' | 'critical' | 'exposed';
+  progress_to_next_stage: number;  // 0-100
+  awareness: number;
+  reluctance: number;
+}
+
+export interface OperatorDataRead {
+  id: string;
+  operator_id: string;
+  full_name: string;
+  home_address: string;
+  family_members: FamilyMemberRead[];
+  search_queries: string[];
+  hesitation_patterns: Record<string, unknown>;
+  decision_patterns: Record<string, unknown>;
+  exposure_stage: number;  // 0-3
+  last_exposure_at: string | null;
+  created_at: string;
+}
+
+// === Geography ===
+
+export interface NeighborhoodRead {
+  id: string;
+  name: string;
+  description: string;
+  center_x: number;
+  center_y: number;
+  bounds_min_x: number;
+  bounds_min_y: number;
+  bounds_max_x: number;
+  bounds_max_y: number;
+  population_estimate: number;
+  primary_demographics: string[];
+  created_at: string;
+}
+
+// === Books ===
+
+export interface BookPublicationEventRead {
+  id: string;
+  operator_id: string;
+  title: string;
+  author: string;
+  summary: string;
+  controversy_type: string;
+  was_banned: boolean;
+  ban_action_id: string | null;
+  published_at: string | null;
+  awareness_impact: number;
+  created_at: string;
+}
+
+// === Actions ===
+
+export interface SystemActionRequest {
+  operator_id: string;
+  directive_id: string | null;
+  action_type: NewActionType;
+  justification: string;
+  decision_time_seconds: number;
+  target_citizen_id?: string | null;
+  target_neighborhood?: string | null;
+  target_news_channel_id?: string | null;
+  target_protest_id?: string | null;
+}
+
+export interface SystemActionRead {
+  id: string;
+  operator_id: string;
+  directive_id: string | null;
+  action_type: NewActionType;
+  target_citizen_id: string | null;
+  target_neighborhood: string | null;
+  target_news_channel_id: string | null;
+  target_protest_id: string | null;
+  severity_score: number;  // 1-10
+  backlash_probability: number;
+  was_successful: boolean;
+  triggered_backlash: boolean;
+  backlash_description: string | null;
+  justification: string;
+  decision_time_seconds: number;
+  was_hesitant: boolean;
+  outcome_immediate: string | null;
+  outcome_1_month: string | null;
+  outcome_6_months: string | null;
+  outcome_1_year: string | null;
+  created_at: string;
+}
+
+export interface ActionAvailabilityRead {
+  action_type: NewActionType;
+  available: boolean;
+  reason: string;
+}
+
+export interface TriggeredEventRead {
+  event_type: 'news_article' | 'protest';
+  data: Record<string, unknown>;
+}
+
+export interface TerminationDecisionRead {
+  should_terminate: boolean;
+  reason: string;
+  ending_type: string;
+}
+
+export interface ActionResultRead {
+  action_id: string | null;
+  success: boolean;
+  severity: number;
+  backlash_occurred: boolean;
+  awareness_change: number;
+  anger_change: number;
+  reluctance_change: number;
+  news_articles_triggered: Record<string, unknown>[];
+  protests_triggered: Record<string, unknown>[];
+  exposure_event: ExposureEventRead | null;
+  detention_injury: boolean;
+  termination_decision: TerminationDecisionRead | null;
+  messages: string[];
+  warnings: string[];
+}
+
+export interface NoActionResultReadNew {
+  success: boolean;
+  reluctance_change: number;
+  messages: string[];
+  warnings: string[];
+  termination_decision: TerminationDecisionRead | null;
+}
+
+export interface AvailableActionsRead {
+  citizen_targeted: NewActionType[];
+  protest_targeted: NewActionType[];
+  news_targeted: NewActionType[];
+  other_available: NewActionType[];
 }

@@ -59,9 +59,7 @@ class SocialMediaRecord(Base, UUIDMixin, TimestampMixin):
     has_public_profile: Mapped[bool] = mapped_column(
         nullable=False, default=True
     )  # Some people don't use social media publicly
-    primary_platform: Mapped[Platform | None] = mapped_column(
-        Enum(Platform), nullable=True
-    )
+    primary_platform: Mapped[Platform | None] = mapped_column(Enum(Platform), nullable=True)
     account_created_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     follower_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     post_frequency: Mapped[str | None] = mapped_column(
@@ -102,9 +100,7 @@ class PublicInference(Base, UUIDMixin, TimestampMixin):
         index=True,
     )
 
-    category: Mapped[InferenceCategory] = mapped_column(
-        Enum(InferenceCategory), nullable=False
-    )
+    category: Mapped[InferenceCategory] = mapped_column(Enum(InferenceCategory), nullable=False)
     inference_text: Mapped[str] = mapped_column(
         Text, nullable=False
     )  # e.g., "Likely supports progressive policies based on shared articles"
@@ -144,9 +140,7 @@ class PrivateInference(Base, UUIDMixin, TimestampMixin):
         index=True,
     )
 
-    category: Mapped[InferenceCategory] = mapped_column(
-        Enum(InferenceCategory), nullable=False
-    )
+    category: Mapped[InferenceCategory] = mapped_column(Enum(InferenceCategory), nullable=False)
     inference_text: Mapped[str] = mapped_column(
         Text, nullable=False
     )  # e.g., "Engaging in extramarital affair", "Experiencing workplace harassment"
@@ -157,9 +151,7 @@ class PrivateInference(Base, UUIDMixin, TimestampMixin):
 
     # Source information
     source_platform: Mapped[Platform] = mapped_column(Enum(Platform), nullable=False)
-    message_count: Mapped[int] = mapped_column(
-        nullable=False
-    )  # Number of messages analyzed
+    message_count: Mapped[int] = mapped_column(nullable=False)  # Number of messages analyzed
     involves_other_parties: Mapped[bool] = mapped_column(
         nullable=False, default=True
     )  # Does this involve other identifiable people?

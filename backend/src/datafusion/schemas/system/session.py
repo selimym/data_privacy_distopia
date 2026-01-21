@@ -3,6 +3,7 @@ System Mode session schemas.
 
 Schemas for starting and initializing System Mode sessions.
 """
+
 from uuid import UUID
 
 from pydantic import BaseModel

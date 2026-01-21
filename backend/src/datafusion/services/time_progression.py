@@ -4,6 +4,7 @@ Time Progression Service for System Mode.
 Manages time advancement and outcome generation for all flagged citizens.
 When directives are completed, time progresses and consequences escalate.
 """
+
 from uuid import UUID
 
 from sqlalchemy import select
@@ -25,11 +26,11 @@ class TimeProgressionService:
     # Map directive week numbers to time periods
     DIRECTIVE_TIME_MAP = {
         1: "immediate",  # Week 1 → immediate outcomes (already shown)
-        2: "1_month",    # Week 2 → 1 month later
-        3: "6_months",   # Week 3 → 6 months later
-        4: "6_months",   # Week 4 → still 6 months
-        5: "1_year",     # Week 5 → 1 year later
-        6: "1_year",     # Week 6 → still 1 year
+        2: "1_month",  # Week 2 → 1 month later
+        3: "6_months",  # Week 3 → 6 months later
+        4: "6_months",  # Week 4 → still 6 months
+        5: "1_year",  # Week 5 → 1 year later
+        6: "1_year",  # Week 6 → still 1 year
     }
 
     def __init__(self, db: AsyncSession):
@@ -54,9 +55,7 @@ class TimeProgressionService:
             List of CitizenOutcome objects to display cinematically
         """
         # Get operator
-        operator_result = await self.db.execute(
-            select(Operator).where(Operator.id == operator_id)
-        )
+        operator_result = await self.db.execute(select(Operator).where(Operator.id == operator_id))
         operator = operator_result.scalar_one_or_none()
         if not operator:
             raise ValueError(f"Operator {operator_id} not found")
@@ -84,9 +83,7 @@ class TimeProgressionService:
         outcomes = []
         for flag in flags:
             try:
-                outcome = await self.outcome_generator.generate_outcome(
-                    flag, new_time_period
-                )
+                outcome = await self.outcome_generator.generate_outcome(flag, new_time_period)
                 outcomes.append(outcome)
             except Exception as e:
                 # Log error but continue with other citizens

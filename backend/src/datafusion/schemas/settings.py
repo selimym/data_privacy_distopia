@@ -9,14 +9,10 @@ from datafusion.schemas.domains import DomainType
 class ContentWarning(BaseModel):
     """Individual content warning for specific content types."""
 
-    warning_type: str = Field(
-        description="Type of content (e.g., 'stalking', 'medical_privacy')"
-    )
+    warning_type: str = Field(description="Type of content (e.g., 'stalking', 'medical_privacy')")
     content_rating: ContentRating = Field(description="Severity rating of this content")
     description: str = Field(description="What this content depicts")
-    appears_in: list[str] = Field(
-        description="Which actions or time skips contain this content"
-    )
+    appears_in: list[str] = Field(description="Which actions or time skips contain this content")
 
 
 class ScenarioWarnings(BaseModel):
@@ -29,9 +25,7 @@ class ScenarioWarnings(BaseModel):
     can_filter_dark_content: bool = Field(
         default=True, description="Whether content filtering is available"
     )
-    educational_purpose: str = Field(
-        description="Why this scenario exists (educational context)"
-    )
+    educational_purpose: str = Field(description="Why this scenario exists (educational context)")
 
 
 class UserSettings(BaseModel):

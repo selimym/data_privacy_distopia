@@ -46,10 +46,18 @@ CIVIL_CASE_DESCRIPTIONS = {
 TRAFFIC_VIOLATION_DESCRIPTIONS = {
     ViolationType.SPEEDING: _JUDICIAL_REF["traffic_violation_descriptions"]["SPEEDING"],
     ViolationType.DUI: _JUDICIAL_REF["traffic_violation_descriptions"]["DUI"],
-    ViolationType.RECKLESS_DRIVING: _JUDICIAL_REF["traffic_violation_descriptions"]["RECKLESS_DRIVING"],
-    ViolationType.RUNNING_RED_LIGHT: _JUDICIAL_REF["traffic_violation_descriptions"]["RUNNING_RED_LIGHT"],
-    ViolationType.ILLEGAL_PARKING: _JUDICIAL_REF["traffic_violation_descriptions"]["ILLEGAL_PARKING"],
-    ViolationType.DRIVING_WITHOUT_LICENSE: _JUDICIAL_REF["traffic_violation_descriptions"]["DRIVING_WITHOUT_LICENSE"],
+    ViolationType.RECKLESS_DRIVING: _JUDICIAL_REF["traffic_violation_descriptions"][
+        "RECKLESS_DRIVING"
+    ],
+    ViolationType.RUNNING_RED_LIGHT: _JUDICIAL_REF["traffic_violation_descriptions"][
+        "RUNNING_RED_LIGHT"
+    ],
+    ViolationType.ILLEGAL_PARKING: _JUDICIAL_REF["traffic_violation_descriptions"][
+        "ILLEGAL_PARKING"
+    ],
+    ViolationType.DRIVING_WITHOUT_LICENSE: _JUDICIAL_REF["traffic_violation_descriptions"][
+        "DRIVING_WITHOUT_LICENSE"
+    ],
     ViolationType.HIT_AND_RUN: _JUDICIAL_REF["traffic_violation_descriptions"]["HIT_AND_RUN"],
     ViolationType.OTHER: _JUDICIAL_REF["traffic_violation_descriptions"]["OTHER"],
 }
@@ -89,9 +97,7 @@ def generate_judicial_record(npc_id: UUID, seed: int | None = None) -> dict:
             ]
 
             arrest_date = fake.date_between(start_date="-15y", end_date="-1y")
-            disposition_date = fake.date_between(
-                start_date=arrest_date, end_date="today"
-            )
+            disposition_date = fake.date_between(start_date=arrest_date, end_date="today")
 
             # Most common dispositions
             disposition = random.choices(
@@ -231,9 +237,7 @@ def generate_judicial_record(npc_id: UUID, seed: int | None = None) -> dict:
 
         for _ in range(num_violations):
             violation_type = random.choice(list(ViolationType))
-            violation_description = random.choice(
-                TRAFFIC_VIOLATION_DESCRIPTIONS[violation_type]
-            )
+            violation_description = random.choice(TRAFFIC_VIOLATION_DESCRIPTIONS[violation_type])
 
             violation_date = fake.date_between(start_date="-5y", end_date="-1m")
             location = f"{fake.street_address()}, {fake.city()}"

@@ -16,12 +16,8 @@ class ScenarioState(BaseModel):
     actions_taken: list[str] = Field(
         default_factory=list, description="Action keys executed in this session"
     )
-    suggested_next: str | None = Field(
-        default=None, description="Suggested next action key"
-    )
-    npcs_discovered: list[str] = Field(
-        default_factory=list, description="NPC IDs interacted with"
-    )
+    suggested_next: str | None = Field(default=None, description="Suggested next action key")
+    npcs_discovered: list[str] = Field(default_factory=list, description="NPC IDs interacted with")
 
 
 class ScenarioPrompt(BaseModel):
@@ -31,7 +27,5 @@ class ScenarioPrompt(BaseModel):
     suggested_action: AbuseActionRead | None = Field(
         default=None, description="Suggested next action"
     )
-    suggested_target: NPCBasicRead | None = Field(
-        default=None, description="Suggested target NPC"
-    )
+    suggested_target: NPCBasicRead | None = Field(default=None, description="Suggested target NPC")
     phase: str = Field(description="Current scenario phase")

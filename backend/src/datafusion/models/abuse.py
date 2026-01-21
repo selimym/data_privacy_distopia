@@ -78,7 +78,9 @@ class AbuseAction(Base):
     __tablename__ = "abuse_actions"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    role_id: Mapped[UUID] = mapped_column(ForeignKey("abuse_roles.id", ondelete="CASCADE"), nullable=False)
+    role_id: Mapped[UUID] = mapped_column(
+        ForeignKey("abuse_roles.id", ondelete="CASCADE"), nullable=False
+    )
     action_key: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -88,7 +90,9 @@ class AbuseAction(Base):
 
     detection_chance: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     is_audit_logged: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    consequence_severity: Mapped[str] = mapped_column(String(20), nullable=False)  # ConsequenceSeverity enum
+    consequence_severity: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # ConsequenceSeverity enum
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -121,9 +125,15 @@ class AbuseExecution(Base):
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     session_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
-    role_id: Mapped[UUID] = mapped_column(ForeignKey("abuse_roles.id", ondelete="CASCADE"), nullable=False)
-    action_id: Mapped[UUID] = mapped_column(ForeignKey("abuse_actions.id", ondelete="CASCADE"), nullable=False)
-    target_npc_id: Mapped[UUID] = mapped_column(ForeignKey("npcs.id", ondelete="CASCADE"), nullable=False)
+    role_id: Mapped[UUID] = mapped_column(
+        ForeignKey("abuse_roles.id", ondelete="CASCADE"), nullable=False
+    )
+    action_id: Mapped[UUID] = mapped_column(
+        ForeignKey("abuse_actions.id", ondelete="CASCADE"), nullable=False
+    )
+    target_npc_id: Mapped[UUID] = mapped_column(
+        ForeignKey("npcs.id", ondelete="CASCADE"), nullable=False
+    )
 
     executed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

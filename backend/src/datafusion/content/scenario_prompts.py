@@ -94,9 +94,7 @@ ROGUE_EMPLOYEE_PROMPTS = {
 }
 
 
-def get_prompt_for_state(
-    scenario_key: str, actions_taken: list[str], phase: str
-) -> dict | None:
+def get_prompt_for_state(scenario_key: str, actions_taken: list[str], phase: str) -> dict | None:
     """
     Get appropriate prompt based on scenario state.
 

@@ -19,9 +19,7 @@ class Rule:
     required_domains: set[DomainType]
     scariness_level: int
     content_rating: ContentRating
-    evaluate_func: Callable[
-        [NPCWithDomains], Optional[tuple[float, str, list[str], list[str]]]
-    ]
+    evaluate_func: Callable[[NPCWithDomains], Optional[tuple[float, str, list[str], list[str]]]]
 
 
 class InferenceEngine:
@@ -265,9 +263,7 @@ class InferenceEngine:
         # Higher confidence if multiple indicators
         confidence = min(0.6 + (len(mental_health_indicators) * 0.1), 0.95)
 
-        inference_text = (
-            f"Mental health treatment history detected with {len(mental_health_indicators)} indicators"
-        )
+        inference_text = f"Mental health treatment history detected with {len(mental_health_indicators)} indicators"
 
         implications = [
             "Could affect custody battles or parental rights",
@@ -306,9 +302,7 @@ class InferenceEngine:
         female_name_indicators = self._keywords["female_name_indicators"]
         first_name_lower = npc.first_name.lower()
         if any(name in first_name_lower for name in female_name_indicators):
-            risk_factors.append(
-                "Gender inferred from name (statistically higher stalking risk)"
-            )
+            risk_factors.append("Gender inferred from name (statistically higher stalking risk)")
             confidence_score += 0.2
 
         # Check for mental health conditions that might indicate past trauma
@@ -316,9 +310,7 @@ class InferenceEngine:
         for condition in health_data.conditions:
             condition_lower = condition.condition_name.lower()
             if any(keyword in condition_lower for keyword in trauma_keywords):
-                risk_factors.append(
-                    f"Trauma indicators found: {condition.condition_name}"
-                )
+                risk_factors.append(f"Trauma indicators found: {condition.condition_name}")
                 confidence_score += 0.2
                 break
 

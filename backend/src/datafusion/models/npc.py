@@ -23,9 +23,7 @@ class NPC(Base, UUIDMixin, TimestampMixin):
     """NPC with identity and demographic information."""
 
     __tablename__ = "npcs"
-    __table_args__ = (
-        Index("idx_npc_location", "map_x", "map_y"),
-    )
+    __table_args__ = (Index("idx_npc_location", "map_x", "map_y"),)
 
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -51,6 +49,10 @@ class NPC(Base, UUIDMixin, TimestampMixin):
     risk_score_updated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+    # System mode hospitalization tracking (for hospital arrest mechanics)
+    is_hospitalized: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    injury_from_action_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
     # Relationships
     message_record: Mapped["MessageRecord | None"] = relationship(  # type: ignore
