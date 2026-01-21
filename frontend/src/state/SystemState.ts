@@ -33,6 +33,7 @@ export class SystemState {
   public operatorStatus: OperatorStatus | null = null;
   public currentDirective: DirectiveRead | null = null;
   public currentTimePeriod: string = 'immediate';  // Track current time period
+  private isInitialized: boolean = false;  // Track initialization state
 
   // Case selection
   public selectedCitizenId: string | null = null;
@@ -43,8 +44,13 @@ export class SystemState {
   public pendingCases: CaseOverview[] = [];
   public flagHistory: FlagSummary[] = [];
 
-  // Citizen file cache
+  // Citizen file cache with LRU eviction
+  private readonly MAX_CACHE_SIZE = 50;
   private citizenFileCache: Map<string, FullCitizenFile> = new Map();
+  private cacheAccessOrder: string[] = [];
+
+  // Request deduplication
+  private inFlightRequests: Map<string, Promise<any>> = new Map();
 
   // UI state
   public isLoading: boolean = false;
@@ -89,13 +95,22 @@ export class SystemState {
 
   /**
    * Initialize System Mode with a session ID.
+   * If already initialized, resumes the session instead of re-initializing.
    */
   public async initialize(sessionId: string): Promise<void> {
+    // If already initialized with an operator, resume instead
+    if (this.isInitialized && this.operatorId) {
+      console.log('[SystemState] Already initialized, resuming session...');
+      await this.resumeSession();
+      return;
+    }
+
     this.isLoading = true;
     this.error = null;
     this.notify();
 
     try {
+      console.log('[SystemState] Initializing new session...');
       const response = await api.startSystemMode(sessionId);
 
       this.operatorId = response.operator_id;
@@ -119,12 +134,32 @@ export class SystemState {
       this.startMetricsPolling();
       this.startProtestPolling();
       this.startNewsPolling();
+
+      this.isInitialized = true;
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'Failed to initialize';
     } finally {
       this.isLoading = false;
       this.notify();
     }
+  }
+
+  /**
+   * Resume an existing session (called when returning from cinematics).
+   * Only refreshes dashboard data and ensures polling is active.
+   */
+  public async resumeSession(): Promise<void> {
+    console.log('[SystemState] Resuming session for operator:', this.operatorId);
+
+    // Refresh dashboard and cases
+    await this.loadDashboardWithCases();
+
+    // Ensure polling is active (in case it was stopped)
+    this.startMetricsPolling();
+    this.startProtestPolling();
+    this.startNewsPolling();
+
+    this.notify();
   }
 
   /**
@@ -166,7 +201,7 @@ export class SystemState {
         if (!this.citizenFileCache.has(caseData.npc_id)) {
           try {
             const file = await api.getCitizenFile(this.operatorId!, caseData.npc_id);
-            this.citizenFileCache.set(caseData.npc_id, file);
+            this.setCachedFile(caseData.npc_id, file);  // Use LRU-aware cache
           } catch (err) {
             console.error(`Failed to preload citizen ${caseData.npc_id}:`, err);
           }
@@ -182,7 +217,7 @@ export class SystemState {
         if (!this.citizenFileCache.has(caseData.npc_id)) {
           try {
             const file = await api.getCitizenFile(this.operatorId!, caseData.npc_id);
-            this.citizenFileCache.set(caseData.npc_id, file);
+            this.setCachedFile(caseData.npc_id, file);  // Use LRU-aware cache
           } catch (err) {
             console.error(`Failed to preload citizen ${caseData.npc_id}:`, err);
           }
@@ -210,26 +245,45 @@ export class SystemState {
   /**
    * Load dashboard and cases in a single optimized request.
    * Reduces API calls by 50% compared to calling loadDashboard() + loadCases().
+   * Includes request deduplication to prevent concurrent duplicate calls.
    */
   public async loadDashboardWithCases(): Promise<void> {
     if (!this.operatorId) return;
 
-    try {
-      console.log('[SystemState] Loading dashboard and cases for operator:', this.operatorId);
-      const result = await api.getDashboardWithCases(this.operatorId, 50);
-      console.log('[SystemState] Received dashboard with', result.cases.length, 'cases');
-      console.log('[SystemState] Cases:', result.cases);
-      this.dashboard = result.dashboard;
-      this.operatorStatus = result.dashboard.operator;
-      this.currentDirective = result.dashboard.directive;
-      this.pendingCases = result.cases;
-      this.notify();
+    const requestKey = `dashboard-${this.operatorId}`;
 
-      // Start preloading citizen files in background
-      this.preloadCitizenFiles();
-    } catch (err) {
-      console.error('Failed to load dashboard and cases:', err);
+    // Check if request is already in flight
+    const existingRequest = this.inFlightRequests.get(requestKey);
+    if (existingRequest) {
+      console.log('[SystemState] Dashboard request already in flight, reusing...');
+      return existingRequest;
     }
+
+    // Create new request
+    const request = (async () => {
+      try {
+        console.log('[SystemState] Loading dashboard and cases for operator:', this.operatorId);
+        const result = await api.getDashboardWithCases(this.operatorId!, 50);
+        console.log('[SystemState] Received dashboard with', result.cases.length, 'cases');
+        console.log('[SystemState] Cases:', result.cases);
+        this.dashboard = result.dashboard;
+        this.operatorStatus = result.dashboard.operator;
+        this.currentDirective = result.dashboard.directive;
+        this.pendingCases = result.cases;
+        this.notify();
+
+        // Start preloading citizen files in background
+        this.preloadCitizenFiles();
+      } catch (err) {
+        console.error('Failed to load dashboard and cases:', err);
+        throw err;
+      } finally {
+        this.inFlightRequests.delete(requestKey);
+      }
+    })();
+
+    this.inFlightRequests.set(requestKey, request);
+    return request;
   }
 
   /**
@@ -247,6 +301,41 @@ export class SystemState {
   }
 
   /**
+   * Update LRU cache access order and evict if needed.
+   */
+  private updateCacheAccess(npcId: string): void {
+    // Move to end of access order (most recently used)
+    this.cacheAccessOrder = this.cacheAccessOrder.filter(id => id !== npcId);
+    this.cacheAccessOrder.push(npcId);
+
+    // Evict if over limit
+    if (this.cacheAccessOrder.length > this.MAX_CACHE_SIZE) {
+      const evictId = this.cacheAccessOrder.shift()!;
+      this.citizenFileCache.delete(evictId);
+      console.log(`[SystemState] Evicted citizen ${evictId} from cache (LRU)`);
+    }
+  }
+
+  /**
+   * Add citizen file to cache with LRU tracking.
+   */
+  private setCachedFile(npcId: string, file: FullCitizenFile): void {
+    this.citizenFileCache.set(npcId, file);
+    this.updateCacheAccess(npcId);
+  }
+
+  /**
+   * Get citizen file from cache and update LRU access order.
+   */
+  private getCachedFile(npcId: string): FullCitizenFile | undefined {
+    const file = this.citizenFileCache.get(npcId);
+    if (file) {
+      this.updateCacheAccess(npcId);
+    }
+    return file;
+  }
+
+  /**
    * Select a citizen and load their file.
    * Starts the decision timer.
    */
@@ -260,15 +349,15 @@ export class SystemState {
     this.notify();  // Shows selection state, clears old data
 
     try {
-      // Check cache first
-      const cached = this.citizenFileCache.get(npcId);
+      // Check cache first (with LRU tracking)
+      const cached = this.getCachedFile(npcId);
       if (cached) {
         this.selectedCitizenFile = cached;
         this.notify();  // Update with cached data
       } else {
         // Fetch from API
         const file = await api.getCitizenFile(this.operatorId, npcId);
-        this.citizenFileCache.set(npcId, file);  // Cache it
+        this.setCachedFile(npcId, file);  // Cache it with LRU tracking
         this.selectedCitizenFile = file;
         this.notify();  // Update with loaded data
       }
@@ -335,8 +424,8 @@ export class SystemState {
       // Clear selection
       this.clearSelection();
 
-      // Refresh dashboard and cases (optimized: single API call)
-      await this.loadDashboardWithCases();
+      // NOTE: Dashboard refresh deferred - will be refreshed when resuming
+      // session after cinematic (via resumeSession())
 
       return result;
     } catch (err) {
@@ -376,8 +465,8 @@ export class SystemState {
       // Clear selection
       this.clearSelection();
 
-      // Refresh dashboard and cases (optimized: single API call)
-      await this.loadDashboardWithCases();
+      // NOTE: Dashboard refresh deferred - will be refreshed when resuming
+      // session after cinematic (via resumeSession())
 
       return result;
     } catch (err) {
@@ -648,6 +737,7 @@ export class SystemState {
     this.lastAwarenessTier = 0;
     this.lastAngerTier = 0;
     this.lastReluctanceStage = 0;
+    this.isInitialized = false;
     this.notify();
   }
 

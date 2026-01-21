@@ -1149,8 +1149,22 @@ export class SystemDashboardScene extends Phaser.Scene {
 
   private async showImmediateCinematic(result: FlagResult) {
     try {
-      // Get NPC data (need map position)
-      const npcData = await getNPC(result.citizen_id);
+      // Try to get map position from cached citizen file first
+      let map_x: number;
+      let map_y: number;
+
+      const cachedFile = systemState.selectedCitizenFile;
+      if (cachedFile && cachedFile.identity.id === result.citizen_id) {
+        // Use cached map coordinates from citizen file
+        map_x = cachedFile.identity.map_x;
+        map_y = cachedFile.identity.map_y;
+      } else {
+        // Fallback: fetch NPC data if not in cache
+        console.warn('[SystemDashboardScene] Citizen file not cached, fetching NPC data...');
+        const npcData = await getNPC(result.citizen_id);
+        map_x = npcData.npc.map_x;
+        map_y = npcData.npc.map_y;
+      }
 
       // Get immediate outcome from the result
       const cinematicData: CinematicData = {
@@ -1159,8 +1173,8 @@ export class SystemDashboardScene extends Phaser.Scene {
         timeSkip: 'immediate',
         narrative: result.immediate_outcome,
         status: this.getStatusForFlagType(result.flag_type),
-        map_x: npcData.npc.map_x,
-        map_y: npcData.npc.map_y,
+        map_x,
+        map_y,
       };
 
       // Transition to WorldScene in cinematic mode

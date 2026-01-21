@@ -173,6 +173,8 @@ export interface IdentityRead {
   city: string;
   state: string;
   zip_code: string;
+  map_x: number;  // Map position for cinematics
+  map_y: number;  // Map position for cinematics
 }
 
 export interface FullCitizenFile {

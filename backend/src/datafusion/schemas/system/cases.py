@@ -62,6 +62,8 @@ class IdentityRead(BaseModel):
     city: str
     state: str
     zip_code: str
+    map_x: int  # Map position for cinematics
+    map_y: int  # Map position for cinematics
 
 
 class FullCitizenFile(BaseModel):
