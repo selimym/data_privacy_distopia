@@ -12,6 +12,8 @@ export enum Severity {
   SEVERE = "severe",
 }
 
+// Note: Severity enum is also exported from health.ts for consistency with Python models
+
 export enum DomainType {
   HEALTH = "health",
   FINANCE = "finance",
@@ -41,6 +43,10 @@ export interface NPCRead extends NPCBase {
   id: string;
   created_at: string;
   updated_at: string;
+  cached_risk_score: number | null;
+  risk_score_updated_at: string | null;
+  is_hospitalized: boolean;
+  injury_from_action_id: string | null;
 }
 
 export interface NPCBasic {

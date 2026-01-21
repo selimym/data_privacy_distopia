@@ -156,10 +156,21 @@ export interface MessageRead {
 
 export interface CitizenFlagRead {
   id: string;
+  operator_id: string;
+  citizen_id: string;
+  directive_id: string;
   flag_type: FlagType;
-  created_at: string;
+  risk_score_at_flag: number;
+  contributing_factors: string[];
   justification: string;
+  decision_time_seconds: number;
+  was_hesitant: boolean;
   outcome: FlagOutcome;
+  created_at: string;
+  updated_at: string;
+  actioned_at: string | null;
+  action_type: string | null;
+  action_justification: string | null;
 }
 
 export interface IdentityRead {

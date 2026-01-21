@@ -1,0 +1,34 @@
+{
+  "correlation_alerts": [
+    {
+      "name": "recidivism_risk",
+      "required_factors": ["financial_stress", "prior_record"],
+      "required_domains": ["finance", "judicial"],
+      "confidence": 0.72,
+      "description": "Financial stress combined with prior record suggests elevated recidivism risk"
+    },
+    {
+      "name": "desperation_indicator",
+      "required_factors_any": ["mental_health_treatment", "substance_treatment"],
+      "required_factors_all": ["financial_stress"],
+      "required_domains": ["health", "finance"],
+      "confidence": 0.65,
+      "description": "Health issues combined with financial stress indicate potential desperation"
+    },
+    {
+      "name": "organizing_activity",
+      "required_factors_any": ["network_centrality", "new_connections_rate"],
+      "required_factors_any_2": ["protest_attendance", "irregular_patterns"],
+      "required_domains": ["social", "location"],
+      "confidence": 0.78,
+      "description": "Social network activity combined with location patterns suggest organizing/mobilization activity"
+    },
+    {
+      "name": "recruitment_vulnerability",
+      "required_factors": ["flagged_connections", "unusual_transactions"],
+      "required_domains": ["social", "finance"],
+      "confidence": 0.68,
+      "description": "Connections to flagged individuals combined with unusual financial activity suggests recruitment vulnerability or involvement"
+    }
+  ]
+}

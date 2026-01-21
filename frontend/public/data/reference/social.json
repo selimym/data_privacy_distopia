@@ -1,0 +1,130 @@
+{
+  "public_inferences": {
+    "political_views": [
+      {
+        "inference_text": "Likely supports progressive policies",
+        "supporting_evidence": "Shared 15 articles about climate change, 'liked' posts about universal healthcare, attended 3 climate protests",
+        "potential_harm": "Could be discriminated against in conservative workplaces, targeted by opposing political groups, excluded from social circles"
+      },
+      {
+        "inference_text": "Appears to hold conservative values",
+        "supporting_evidence": "Regularly shares content from conservative news sources, attended political rally, posted about traditional family values 8 times",
+        "potential_harm": "Could face discrimination in progressive industries, targeted for harassment, excluded from liberal social groups"
+      }
+    ],
+    "religious_beliefs": [
+      {
+        "inference_text": "Practices Christianity - likely evangelical",
+        "supporting_evidence": "Posted 20+ times about church activities, shared Bible verses daily, attended religious conferences",
+        "potential_harm": "Could face discrimination in secular workplaces, targeted by anti-religious groups, excluded from non-religious social circles"
+      },
+      {
+        "inference_text": "Likely atheist or non-religious",
+        "supporting_evidence": "Posted critical content about organized religion 12 times, 'liked' atheist pages, shares scientific/skeptical content",
+        "potential_harm": "Could face discrimination in religious communities, excluded from family events, ostracized in religious areas"
+      }
+    ],
+    "relationship_status": [
+      {
+        "inference_text": "In a committed relationship",
+        "supporting_evidence": "Tagged in 45 photos with same person over 2 years, relationship status shows 'In a relationship', couple photos posted regularly",
+        "potential_harm": "Relationship can be used for manipulation, partner can be targeted, breakup could be weaponized"
+      },
+      {
+        "inference_text": "Recently single after long-term relationship",
+        "supporting_evidence": "Changed relationship status 3 months ago, removed couple photos, posted 'moving on' content, location data shows living alone",
+        "potential_harm": "Vulnerable state can be exploited, emotional manipulation opportunities, potential stalking by ex-partner"
+      }
+    ],
+    "lifestyle": [
+      {
+        "inference_text": "Regular alcohol consumer",
+        "supporting_evidence": "Posted from bars/clubs 15+ times per month, tagged in photos with alcoholic beverages, checked in at breweries",
+        "potential_harm": "Could affect employment in safety-sensitive roles, insurance discrimination, custody battles, social stigma"
+      },
+      {
+        "inference_text": "Fitness enthusiast",
+        "supporting_evidence": "Posted workout content 30+ times, marathon participation, gym check-ins daily, fitness progress photos",
+        "potential_harm": "Generally positive but could be used to infer daily schedule, identify vulnerable locations/times"
+      }
+    ],
+    "interests": [
+      {
+        "inference_text": "Avid gamer",
+        "supporting_evidence": "Posted about gaming 50+ times, joined 10 gaming groups, streaming schedule posted publicly",
+        "potential_harm": "Online harassment opportunities, gaming schedule exposed, potential for swatting or doxxing"
+      }
+    ],
+    "location_habits": [
+      {
+        "inference_text": "Frequents downtown area on weekends",
+        "supporting_evidence": "Checked in at 8 different downtown locations over 3 months, posted photos geotagged downtown",
+        "potential_harm": "Physical stalking enabled, vulnerable locations identified, pattern predictability increases danger"
+      }
+    ]
+  },
+  "private_inferences": {
+    "intimate_content": [
+      {
+        "inference_text": "Exchanging intimate content with contact outside marriage",
+        "supporting_evidence": "23 messages to unknown contact containing romantic/sexual language, photos sent, communication pattern distinct from spouse messages",
+        "potential_harm": "Blackmail material, relationship destruction, reputation damage, potential for revenge porn, extortion leverage"
+      },
+      {
+        "inference_text": "Engaging in online sexual roleplay",
+        "supporting_evidence": "67 messages in private chat with explicit content, recurring patterns, user appears to be hiding this activity",
+        "potential_harm": "Embarrassment if exposed, relationship damage, social reputation destruction, potential blackmail"
+      }
+    ],
+    "personal_crisis": [
+      {
+        "inference_text": "Experiencing suicidal ideation",
+        "supporting_evidence": "15 messages expressing desire to self-harm, hopelessness expressed repeatedly, researching methods",
+        "potential_harm": "Extremely vulnerable state, potential for manipulation, wellness check warranted, privacy violation could worsen crisis"
+      },
+      {
+        "inference_text": "Dealing with addiction issues",
+        "supporting_evidence": "Multiple conversations about substance use, seeking help resources, attempting to hide purchases from family",
+        "potential_harm": "Vulnerable to exploitation, employment risk if exposed, custody issues, social stigma"
+      }
+    ],
+    "harassment": [
+      {
+        "inference_text": "Victim of ongoing harassment/stalking",
+        "supporting_evidence": "18 messages expressing fear of specific individual, discussing safety measures, seeking advice on restraining orders",
+        "potential_harm": "Extremely vulnerable, location data especially dangerous, abuser could use information to locate victim"
+      },
+      {
+        "inference_text": "Experiencing workplace harassment",
+        "supporting_evidence": "27 messages describing hostile work environment, sexual harassment, fear of retaliation from supervisor",
+        "potential_harm": "Could be used to silence victim, perpetrator could retaliate if exposed, legal case evidence"
+      }
+    ],
+    "relationship_status": [
+      {
+        "inference_text": "Planning to leave spouse",
+        "supporting_evidence": "45 messages with friend discussing escape plan, researching divorce lawyers, hiding financial resources",
+        "potential_harm": "Domestic violence risk if discovered, partner could intercept plans, financial abuse opportunities"
+      },
+      {
+        "inference_text": "Having extramarital affair",
+        "supporting_evidence": "80+ messages with affair partner, coordinating secret meetings, expressing guilt and planning to leave spouse",
+        "potential_harm": "Blackmail opportunity, relationship destruction, child custody weapon, social reputation annihilation"
+      }
+    ],
+    "illegal_activity": [
+      {
+        "inference_text": "Discussing tax evasion strategies",
+        "supporting_evidence": "12 messages about hiding income, avoiding tax obligations, using cash transactions",
+        "potential_harm": "Legal prosecution risk, financial fraud evidence, IRS investigation trigger"
+      }
+    ],
+    "financial": [
+      {
+        "inference_text": "Facing bankruptcy",
+        "supporting_evidence": "35 messages discussing inability to pay bills, considering bankruptcy, hiding from creditors",
+        "potential_harm": "Vulnerable to scams, predatory loans, employment discrimination if exposed"
+      }
+    ]
+  }
+}

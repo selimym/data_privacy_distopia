@@ -1,0 +1,134 @@
+{
+  "criminal_charges": {
+    "VIOLENT": [
+      "Assault and Battery",
+      "Assault with a Deadly Weapon",
+      "Aggravated Assault",
+      "Domestic Violence",
+      "Threatening"
+    ],
+    "PROPERTY": [
+      "Burglary",
+      "Theft",
+      "Shoplifting",
+      "Vandalism",
+      "Trespassing",
+      "Breaking and Entering"
+    ],
+    "DRUG": [
+      "Possession of Controlled Substance",
+      "Drug Trafficking",
+      "Possession with Intent to Distribute",
+      "Drug Paraphernalia"
+    ],
+    "WHITE_COLLAR": [
+      "Fraud",
+      "Identity Theft",
+      "Embezzlement",
+      "Tax Evasion",
+      "Forgery"
+    ],
+    "TRAFFIC": [
+      "Reckless Driving",
+      "Driving Under the Influence (DUI)",
+      "Driving Without License",
+      "Hit and Run"
+    ],
+    "DOMESTIC": [
+      "Domestic Assault",
+      "Violation of Restraining Order",
+      "Child Endangerment"
+    ],
+    "SEX_OFFENSE": [
+      "Sexual Assault",
+      "Indecent Exposure",
+      "Solicitation"
+    ],
+    "OTHER": [
+      "Disorderly Conduct",
+      "Public Intoxication",
+      "Resisting Arrest"
+    ]
+  },
+  "civil_case_descriptions": {
+    "CONTRACT_DISPUTE": [
+      "Breach of contract - failure to deliver services",
+      "Non-payment for services rendered",
+      "Contract dispute over terms and conditions"
+    ],
+    "PERSONAL_INJURY": [
+      "Slip and fall injury at business premises",
+      "Auto accident personal injury claim",
+      "Medical malpractice claim"
+    ],
+    "PROPERTY_DISPUTE": [
+      "Boundary dispute with neighbor",
+      "Landlord-tenant property damage claim",
+      "Easement rights dispute"
+    ],
+    "EMPLOYMENT": [
+      "Wrongful termination",
+      "Discrimination in the workplace",
+      "Unpaid wages claim"
+    ],
+    "DIVORCE": [
+      "Divorce proceedings",
+      "Dissolution of marriage"
+    ],
+    "CUSTODY": [
+      "Child custody dispute",
+      "Modification of custody arrangement"
+    ],
+    "RESTRAINING_ORDER": [
+      "Restraining order against former partner",
+      "Protection from harassment order"
+    ],
+    "SMALL_CLAIMS": [
+      "Small claims - property damage",
+      "Small claims - unpaid debt",
+      "Small claims - security deposit dispute"
+    ],
+    "OTHER": [
+      "Civil litigation",
+      "General civil matter"
+    ]
+  },
+  "traffic_violation_descriptions": {
+    "SPEEDING": [
+      "Speeding 15 mph over limit",
+      "Speeding 25 mph over limit",
+      "Speeding in school zone"
+    ],
+    "DUI": [
+      "Driving under the influence - alcohol",
+      "DUI - first offense",
+      "DUI - second offense"
+    ],
+    "RECKLESS_DRIVING": [
+      "Reckless driving",
+      "Aggressive driving",
+      "Road rage incident"
+    ],
+    "RUNNING_RED_LIGHT": [
+      "Ran red light at intersection",
+      "Failure to stop at red light"
+    ],
+    "ILLEGAL_PARKING": [
+      "Illegal parking - fire hydrant",
+      "Parking in handicap space without permit"
+    ],
+    "DRIVING_WITHOUT_LICENSE": [
+      "Driving without valid license",
+      "Driving with suspended license"
+    ],
+    "HIT_AND_RUN": [
+      "Hit and run - property damage",
+      "Leaving scene of accident"
+    ],
+    "OTHER": [
+      "Failure to yield",
+      "Improper lane change",
+      "Expired registration"
+    ]
+  }
+}
