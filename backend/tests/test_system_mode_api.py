@@ -1115,6 +1115,54 @@ class TestOperatorDataEndpoints:
         assert "risk_score" in case
         assert "risk_level" in case
 
+    @pytest.mark.asyncio
+    async def test_dashboard_with_cached_risk_scores(
+        self, client: AsyncClient, test_operator, db_session
+    ):
+        """Test dashboard-with-cases handles cached risk scores with timezone-aware datetimes.
+
+        This is a regression test for timezone-naive/aware datetime comparison bug
+        that caused 500 errors when loading the citizen queue.
+        """
+        # Create citizen with cached risk score and timezone-aware timestamp
+        citizen = NPC(
+            id=uuid4(),
+            first_name="Cached",
+            last_name="Citizen",
+            date_of_birth=date(1990, 5, 20),
+            ssn="111-22-3333",
+            street_address="456 Cache St",
+            city="Cacheville",
+            state="CA",
+            zip_code="90210",
+            sprite_key="citizen_male_01",
+            map_x=15,
+            map_y=15,
+            cached_risk_score=75,
+            risk_score_updated_at=datetime.now(timezone.utc),
+        )
+        db_session.add(citizen)
+        await db_session.flush()
+
+        # Call dashboard endpoint - should not raise TypeError
+        response = await client.get(
+            "/api/system/dashboard-with-cases",
+            params={
+                "operator_id": str(test_operator.id),
+                "case_limit": 50,
+                "case_offset": 0,
+            },
+        )
+
+        # Should succeed without timezone comparison errors
+        assert response.status_code == 200
+        result = response.json()
+        assert "cases" in result
+
+        # Verify the cached citizen appears in the results
+        citizen_ids = [case["npc_id"] for case in result["cases"]]
+        assert str(citizen.id) in citizen_ids
+
 
 # ============================================================================
 # NEIGHBORHOOD TESTS

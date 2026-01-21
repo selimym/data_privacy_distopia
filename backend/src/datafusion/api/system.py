@@ -309,7 +309,8 @@ async def get_dashboard_with_cases(
         use_cached = (
             npc.cached_risk_score is not None
             and npc.risk_score_updated_at is not None
-            and (datetime.now(UTC) - npc.risk_score_updated_at).total_seconds() < 3600
+            and (datetime.now(UTC) - npc.risk_score_updated_at.replace(tzinfo=UTC)).total_seconds()
+            < 3600
         )
 
         if use_cached:
@@ -505,7 +506,8 @@ async def get_cases(
         use_cached = (
             npc.cached_risk_score is not None
             and npc.risk_score_updated_at is not None
-            and (datetime.now(UTC) - npc.risk_score_updated_at).total_seconds() < 3600
+            and (datetime.now(UTC) - npc.risk_score_updated_at.replace(tzinfo=UTC)).total_seconds()
+            < 3600
         )
 
         if use_cached:
