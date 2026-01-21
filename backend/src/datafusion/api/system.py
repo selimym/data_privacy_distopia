@@ -95,7 +95,10 @@ from datafusion.services.operator_data_tracker import (
 )
 from datafusion.services.operator_tracker import OperatorTracker
 from datafusion.services.public_metrics import get_or_create_public_metrics
-from datafusion.services.reluctance_tracking import get_or_create_reluctance_metrics
+from datafusion.services.reluctance_tracking import (
+    get_or_create_reluctance_metrics,
+    update_reluctance_score,
+)
 from datafusion.services.risk_scoring import RiskScorer
 from datafusion.services.time_progression import TimeProgressionService
 
@@ -683,6 +686,24 @@ async def submit_flag(submission: FlagSubmission, db: AsyncSession = Depends(get
     # Recalculate compliance
     tracker = OperatorTracker(db)
     operator.compliance_score = await tracker.calculate_compliance_score(operator.id)
+
+    # Update reluctance metrics based on flagging action
+    # Map flag type to severity score (1-10)
+    severity_map = {
+        FlagType.MONITORING: 4,
+        FlagType.RESTRICTION: 6,
+        FlagType.INTERVENTION: 8,
+        FlagType.DETENTION: 10,
+    }
+    action_severity = severity_map.get(flag_type, 5)
+
+    await update_reluctance_score(
+        operator_id=submission.operator_id,
+        action_taken=True,
+        was_hesitant=was_hesitant,
+        action_severity=action_severity,
+        db=db,
+    )
 
     await db.flush()
 

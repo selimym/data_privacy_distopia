@@ -11,7 +11,8 @@ Reluctance score increases when:
 - Quota shortfall: +5 per missed action
 
 Reluctance score decreases when:
-- Harsh action (severity 7+): -5
+- Any flagging action: -3 (base decrease)
+- Harsh action (severity 7+): -5 (increased decrease)
 - Meeting quota: -2
 """
 
@@ -107,9 +108,14 @@ async def update_reluctance_score(
             delta += (shortfall - metrics.quota_shortfall) * 5
             metrics.quota_shortfall = shortfall
 
-    # Decrease reluctance for harsh compliance
-    if action_taken and action_severity >= 7:
-        delta -= 5  # Harsh action reduces reluctance
+    # Decrease reluctance for ANY flagging action (compliance reduces reluctance)
+    if action_taken:
+        # Base decrease for any flagging action
+        base_decrease = 3
+        # Harsh actions (7+) decrease reluctance more
+        if action_severity >= 7:
+            base_decrease = 5
+        delta -= base_decrease
 
     # Update score (clamped 0-100)
     old_score = metrics.reluctance_score

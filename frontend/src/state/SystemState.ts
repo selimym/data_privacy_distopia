@@ -571,7 +571,20 @@ export class SystemState {
 
     try {
       const newMetrics = await api.getPublicMetrics(this.operatorId);
-      console.log('[SystemState] Loaded public metrics:', newMetrics);
+
+      // Only log if metrics have actually changed (reduce log spam)
+      const hasChanged = !this.publicMetrics ||
+        this.publicMetrics.international_awareness !== newMetrics.international_awareness ||
+        this.publicMetrics.public_anger !== newMetrics.public_anger;
+
+      if (hasChanged) {
+        console.log('[SystemState] Public metrics updated:', {
+          awareness: newMetrics.international_awareness,
+          anger: newMetrics.public_anger,
+          awareness_tier: newMetrics.awareness_tier,
+          anger_tier: newMetrics.anger_tier,
+        });
+      }
 
       // Check for tier crossings
       if (this.publicMetrics) {
@@ -589,7 +602,9 @@ export class SystemState {
       }
 
       this.publicMetrics = newMetrics;
-      this.notify();
+      if (hasChanged) {
+        this.notify();
+      }
     } catch (err) {
       console.error('Failed to load public metrics:', err);
     }
@@ -603,7 +618,17 @@ export class SystemState {
 
     try {
       const newMetrics = await api.getReluctanceMetrics(this.operatorId);
-      console.log('[SystemState] Loaded reluctance metrics:', newMetrics);
+
+      // Only log if metrics have actually changed (reduce log spam)
+      const hasChanged = !this.reluctanceMetrics ||
+        this.reluctanceMetrics.reluctance_score !== newMetrics.reluctance_score;
+
+      if (hasChanged) {
+        console.log('[SystemState] Reluctance metrics updated:', {
+          score: newMetrics.reluctance_score,
+          stage: this.getReluctanceStage(newMetrics.reluctance_score),
+        });
+      }
 
       // Check for reluctance stage change
       const newStage = this.getReluctanceStage(newMetrics.reluctance_score);
@@ -613,7 +638,9 @@ export class SystemState {
       }
 
       this.reluctanceMetrics = newMetrics;
-      this.notify();
+      if (hasChanged) {
+        this.notify();
+      }
     } catch (err) {
       console.error('Failed to load reluctance metrics:', err);
     }
@@ -679,12 +706,12 @@ export class SystemState {
     this.loadReluctanceMetrics();
     this.loadExposureRisk();
 
-    // Poll public metrics and exposure risk every 5 seconds
+    // Poll public metrics and exposure risk every 10 seconds (reduced from 5s to minimize log spam)
     // Reluctance metrics are NOT polled - they only update after flag/no-action
     this.metricsPollingInterval = window.setInterval(() => {
       this.loadPublicMetrics();
       this.loadExposureRisk();
-    }, 5000);
+    }, 10000);
   }
 
   /**
@@ -732,6 +759,28 @@ export class SystemState {
     if (this.newsPollingInterval) {
       window.clearInterval(this.newsPollingInterval);
       this.newsPollingInterval = null;
+    }
+  }
+
+  /**
+   * Pause public metrics polling temporarily (e.g., during cinematics or user interaction).
+   * Use resumeMetricsPolling() to restart.
+   */
+  public pauseMetricsPolling(): void {
+    if (this.metricsPollingInterval) {
+      console.log('[SystemState] Pausing metrics polling');
+      window.clearInterval(this.metricsPollingInterval);
+      this.metricsPollingInterval = null;
+    }
+  }
+
+  /**
+   * Resume public metrics polling after being paused.
+   */
+  public resumeMetricsPolling(): void {
+    if (!this.metricsPollingInterval) {
+      console.log('[SystemState] Resuming metrics polling');
+      this.startMetricsPolling();
     }
   }
 

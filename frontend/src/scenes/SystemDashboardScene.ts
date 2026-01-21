@@ -1189,8 +1189,12 @@ export class SystemDashboardScene extends Phaser.Scene {
         map_y,
       };
 
-      // Transition to WorldScene in cinematic mode
-      this.cleanup();
+      // Pause metrics polling during cinematic to prevent ghost clicks and stale updates
+      console.log('[SystemDashboardScene] Pausing metrics polling for cinematic');
+      systemState.pauseMetricsPolling();
+
+      // Transition to WorldScene in cinematic mode (cleanup UI only, preserve state)
+      this.cleanupUI();
       this.scene.start('WorldScene', {
         showCinematic: true,
         cinematicQueue: [cinematicData],
@@ -1271,8 +1275,12 @@ export class SystemDashboardScene extends Phaser.Scene {
             };
           }).filter((item): item is CinematicData => item !== null);
 
-          // Transition to WorldScene with multiple cinematics
-          this.cleanup();
+          // Pause metrics polling during cinematic to prevent ghost clicks and stale updates
+          console.log('[SystemDashboardScene] Pausing metrics polling for weekly outcomes cinematic');
+          systemState.pauseMetricsPolling();
+
+          // Transition to WorldScene with multiple cinematics (cleanup UI only, preserve state)
+          this.cleanupUI();
           this.scene.start('WorldScene', {
             showCinematic: true,
             cinematicQueue,
@@ -1303,7 +1311,11 @@ export class SystemDashboardScene extends Phaser.Scene {
     });
   }
 
-  private cleanup() {
+  /**
+   * Cleanup UI elements only (for transitioning to cinematics).
+   * Preserves operator session state.
+   */
+  private cleanupUI() {
     this.stopDecisionTimer();
     if (this.unsubscribe) {
       this.unsubscribe();
@@ -1336,7 +1348,13 @@ export class SystemDashboardScene extends Phaser.Scene {
     // Cleanup audio and visual effects
     getSystemAudioManager().stopAmbient();
     getSystemVisualEffects().cleanup();
+  }
 
+  /**
+   * Full cleanup including state reset (for exiting the scene permanently).
+   */
+  private cleanup() {
+    this.cleanupUI();
     systemState.reset();
   }
 
