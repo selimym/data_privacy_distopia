@@ -24,22 +24,35 @@ from datafusion.models.messages import Message, MessageRecord
 from datafusion.models.npc import NPC
 from datafusion.models.social import SocialMediaRecord
 from datafusion.models.system_mode import (
+    BookPublicationEvent,
     CitizenFlag,
     Directive,
     FlagOutcome,
     FlagType,
+    Neighborhood,
+    NewsArticle,
+    NewsChannel,
     Operator,
     OperatorStatus,
+    Protest,
+)
+from datafusion.models.system_mode import (
+    ProtestStatus as ProtestStatusEnum,
 )
 from datafusion.schemas.risk import RiskAssessment, RiskLevel
 from datafusion.schemas.system import (
+    ActionResultRead,
     AlertType,
     AlertUrgency,
+    AvailableActionsRead,
+    BookPublicationEventRead,
     CaseOverview,
     CitizenFlagRead,
     ComplianceTrend,
     DailyMetrics,
     DirectiveRead,
+    ExposureRiskRead,
+    FamilyMemberRead,
     FlagResult,
     FlagSubmission,
     FlagSummary,
@@ -47,17 +60,40 @@ from datafusion.schemas.system import (
     IdentityRead,
     MessageRead,
     MetricsDelta,
+    NeighborhoodRead,
+    NewsArticleRead,
+    NewsChannelRead,
+    NewsReporterRead,
     NoActionResult,
+    NoActionResultRead,
     NoActionSubmission,
+    OperatorDataRead,
     OperatorStatusRead,
+    ProtestRead,
+    PublicMetricsRead,
+    ReluctanceMetricsRead,
+    SystemActionRequest,
     SystemAlert,
     SystemDashboard,
     SystemDashboardWithCases,
     SystemStartRequest,
     SystemStartResponse,
 )
+from datafusion.schemas.system import (
+    ActionType as ActionTypeSchema,
+)
+from datafusion.schemas.system import (
+    ArticleType as ArticleTypeSchema,
+)
+from datafusion.services.action_execution import execute_action
 from datafusion.services.citizen_outcomes import CitizenOutcomeGenerator
+from datafusion.services.operator_data_tracker import (
+    get_exposure_risk_level,
+    get_or_create_operator_data,
+)
 from datafusion.services.operator_tracker import OperatorTracker
+from datafusion.services.public_metrics import get_or_create_public_metrics
+from datafusion.services.reluctance_tracking import get_or_create_reluctance_metrics
 from datafusion.services.risk_scoring import RiskScorer
 from datafusion.services.time_progression import TimeProgressionService
 
@@ -1146,51 +1182,6 @@ def _random_queue_time() -> str:
 
 
 # === New System Mode Mechanics (Phase 6 Endpoints) ===
-
-
-from datafusion.models.system_mode import (
-    BookPublicationEvent,
-    Neighborhood,
-    NewsArticle,
-    NewsChannel,
-    Protest,
-)
-from datafusion.models.system_mode import (
-    ProtestStatus as ProtestStatusEnum,
-)
-from datafusion.schemas.system import (
-    ActionResultRead,
-    AvailableActionsRead,
-    BookPublicationEventRead,
-    ExposureRiskRead,
-    FamilyMemberRead,
-    NeighborhoodRead,
-    NewsArticleRead,
-    NewsChannelRead,
-    NewsReporterRead,
-    NoActionResultRead,
-    OperatorDataRead,
-    ProtestRead,
-    PublicMetricsRead,
-    ReluctanceMetricsRead,
-    SystemActionRequest,
-)
-from datafusion.schemas.system import (
-    ActionType as ActionTypeSchema,
-)
-from datafusion.schemas.system import (
-    ArticleType as ArticleTypeSchema,
-)
-from datafusion.services.action_execution import (
-    execute_action,
-    submit_no_action,
-)
-from datafusion.services.operator_data_tracker import (
-    get_exposure_risk_level,
-    get_or_create_operator_data,
-)
-from datafusion.services.public_metrics import get_or_create_public_metrics
-from datafusion.services.reluctance_tracking import get_or_create_reluctance_metrics
 
 
 @router.post("/actions/execute", response_model=ActionResultRead)

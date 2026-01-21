@@ -287,7 +287,6 @@ async def trigger_exposure_event(
         return None
 
     # Update exposure stage
-    old_stage = operator_data.exposure_stage
     operator_data.exposure_stage = target_stage
     operator_data.last_exposure_at = datetime.now(timezone.utc)
     await db.commit()

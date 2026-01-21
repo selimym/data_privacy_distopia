@@ -572,7 +572,7 @@ class TestPublicMetricsService:
         """Crossing awareness threshold should trigger tier event."""
         # Take actions to cross the 20 threshold
         for _ in range(4):
-            result = await public_metrics.update_public_metrics(
+            await public_metrics.update_public_metrics(
                 operator_id=operator.id,
                 action_type=ActionType.DETENTION,
                 action_severity=6,
@@ -590,7 +590,7 @@ class TestPublicMetricsService:
         """Crossing anger threshold should trigger tier event."""
         # Take actions to cross the 20 threshold
         for _ in range(4):
-            result = await public_metrics.update_public_metrics(
+            await public_metrics.update_public_metrics(
                 operator_id=operator.id,
                 action_type=ActionType.DETENTION,
                 action_severity=6,

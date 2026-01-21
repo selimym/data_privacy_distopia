@@ -1281,8 +1281,7 @@ class TestIntegrationScenarios:
     ):
         """Test news suppression: Check channels → Ban channel → Verify unavailable."""
         # 1. Get initial channels
-        initial_channels = await client.get("/api/system/news/channels")
-        initial_count = len([c for c in initial_channels.json() if not c["is_banned"]])
+        await client.get("/api/system/news/channels")
 
         # 2. Execute press ban
         response = await client.post(

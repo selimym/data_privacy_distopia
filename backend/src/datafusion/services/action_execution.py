@@ -349,9 +349,6 @@ async def execute_action(
         result.warnings.append(reluctance_update.warning_message)
 
     # 8. Check termination threshold
-    from datafusion.models.system_mode import Operator
-
-    operator = await db.get(Operator, operator_id)
     current_week = 1  # TODO: Get from operator/directive
 
     termination = await check_termination_threshold(operator_id, current_week, db)
@@ -517,9 +514,6 @@ async def submit_no_action(
         result.warnings.append(reluctance_update.warning_message)
 
     # Check termination
-    from datafusion.models.system_mode import Operator
-
-    operator = await db.get(Operator, operator_id)
     current_week = 1  # TODO: Get from operator
 
     termination = await check_termination_threshold(operator_id, current_week, db)
