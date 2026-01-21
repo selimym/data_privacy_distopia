@@ -14,6 +14,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from datafusion.database import get_db
 from datafusion.models.finance import FinanceRecord
@@ -101,6 +102,20 @@ from datafusion.services.time_progression import TimeProgressionService
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/system", tags=["system"])
+
+
+def _risk_level_from_score(score: int) -> RiskLevel:
+    """Convert risk score to risk level."""
+    if score >= 81:
+        return RiskLevel.SEVERE
+    elif score >= 61:
+        return RiskLevel.HIGH
+    elif score >= 41:
+        return RiskLevel.ELEVATED
+    elif score >= 21:
+        return RiskLevel.MODERATE
+    else:
+        return RiskLevel.LOW
 
 
 # === Session Management ===
@@ -262,37 +277,71 @@ async def get_dashboard_with_cases(
         pending_cases=pending_cases,
     )
 
-    # Get cases
-    npcs_result = await db.execute(select(NPC).offset(case_offset).limit(case_limit))
+    # Get cases with eager loading for messages (Fix 5)
+    # Note: health/finance/judicial/location/social records are accessed via foreign keys,
+    # not relationships, so we load them separately below
+    npcs_result = await db.execute(
+        select(NPC)
+        .options(
+            selectinload(NPC.message_record).selectinload(MessageRecord.messages),
+        )
+        .offset(case_offset)
+        .limit(case_limit)
+    )
     npcs = npcs_result.scalars().all()
+
+    # Batch query for flagged message counts (Fix 7: eliminate N+1)
+    npc_ids = [npc.id for npc in npcs]
+    flagged_msg_result = await db.execute(
+        select(MessageRecord.npc_id, func.count(Message.id).label("count"))
+        .join(Message)
+        .where(MessageRecord.npc_id.in_(npc_ids), Message.is_flagged)
+        .group_by(MessageRecord.npc_id)
+    )
+    flagged_message_counts = {row.npc_id: row.count for row in flagged_msg_result.all()}
 
     cases = []
     risk_scorer = RiskScorer(db)
 
     for npc in npcs:
-        # Calculate risk score with fallback to default if scoring fails
-        try:
-            risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
-        except Exception as e:
-            logger.error(f"Failed to calculate risk score for NPC {npc.id}: {e}", exc_info=True)
-            # Use default risk assessment instead of skipping citizen
+        # Use cached risk score if available and fresh (< 1 hour old)
+        # Otherwise calculate fresh (Fix 6: optimize case listing)
+        use_cached = (
+            npc.cached_risk_score is not None
+            and npc.risk_score_updated_at is not None
+            and (datetime.now(UTC) - npc.risk_score_updated_at).total_seconds() < 3600
+        )
+
+        if use_cached:
+            # Use cached score for list view (faster)
             risk_assessment = RiskAssessment(
                 npc_id=npc.id,
-                risk_score=0,
-                risk_level=RiskLevel.LOW,
-                contributing_factors=[],
+                risk_score=npc.cached_risk_score,
+                risk_level=_risk_level_from_score(npc.cached_risk_score),
+                contributing_factors=[],  # Not needed for list view
                 correlation_alerts=[],
                 recommended_actions=[],
-                last_updated=datetime.now(UTC),
+                last_updated=npc.risk_score_updated_at,
             )
+        else:
+            # Calculate fresh risk score
+            try:
+                risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
+            except Exception as e:
+                logger.error(f"Failed to calculate risk score for NPC {npc.id}: {e}", exc_info=True)
+                # Use default risk assessment instead of skipping citizen
+                risk_assessment = RiskAssessment(
+                    npc_id=npc.id,
+                    risk_score=0,
+                    risk_level=RiskLevel.LOW,
+                    contributing_factors=[],
+                    correlation_alerts=[],
+                    recommended_actions=[],
+                    last_updated=datetime.now(UTC),
+                )
 
-        # Get flagged message count
-        msg_result = await db.execute(
-            select(func.count(Message.id))
-            .join(MessageRecord)
-            .where(MessageRecord.npc_id == npc.id, Message.is_flagged)
-        )
-        flagged_messages = msg_result.scalar() or 0
+        # Get flagged message count from pre-fetched dictionary
+        flagged_messages = flagged_message_counts.get(npc.id, 0)
 
         # Determine primary concern
         primary_concern = "No significant concerns"
@@ -424,36 +473,71 @@ async def get_cases(
     await _get_operator(operator_id, db)
 
     # Get NPCs (in real implementation would filter by directive criteria)
-    npcs_result = await db.execute(select(NPC).offset(offset).limit(limit))
+    # Using eager loading for messages (Fix 5)
+    # Note: health/finance/judicial/location/social records are accessed via foreign keys,
+    # not relationships, so we rely on cached risk scores for performance
+    npcs_result = await db.execute(
+        select(NPC)
+        .options(
+            selectinload(NPC.message_record).selectinload(MessageRecord.messages),
+        )
+        .offset(offset)
+        .limit(limit)
+    )
     npcs = npcs_result.scalars().all()
+
+    # Batch query for flagged message counts (Fix 7: eliminate N+1)
+    npc_ids = [npc.id for npc in npcs]
+    flagged_msg_result = await db.execute(
+        select(MessageRecord.npc_id, func.count(Message.id).label("count"))
+        .join(Message)
+        .where(MessageRecord.npc_id.in_(npc_ids), Message.is_flagged)
+        .group_by(MessageRecord.npc_id)
+    )
+    flagged_message_counts = {row.npc_id: row.count for row in flagged_msg_result.all()}
 
     cases = []
     risk_scorer = RiskScorer(db)
 
     for npc in npcs:
-        # Calculate risk score with fallback to default if scoring fails
-        try:
-            risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
-        except Exception as e:
-            logger.error(f"Failed to calculate risk score for NPC {npc.id}: {e}", exc_info=True)
-            # Use default risk assessment instead of skipping citizen
+        # Use cached risk score if available and fresh (< 1 hour old)
+        # Otherwise calculate fresh (Fix 6: optimize case listing)
+        use_cached = (
+            npc.cached_risk_score is not None
+            and npc.risk_score_updated_at is not None
+            and (datetime.now(UTC) - npc.risk_score_updated_at).total_seconds() < 3600
+        )
+
+        if use_cached:
+            # Use cached score for list view (faster)
             risk_assessment = RiskAssessment(
                 npc_id=npc.id,
-                risk_score=0,
-                risk_level=RiskLevel.LOW,
-                contributing_factors=[],
+                risk_score=npc.cached_risk_score,
+                risk_level=_risk_level_from_score(npc.cached_risk_score),
+                contributing_factors=[],  # Not needed for list view
                 correlation_alerts=[],
                 recommended_actions=[],
-                last_updated=datetime.now(UTC),
+                last_updated=npc.risk_score_updated_at,
             )
+        else:
+            # Calculate fresh risk score
+            try:
+                risk_assessment = await risk_scorer.calculate_risk_score(npc.id)
+            except Exception as e:
+                logger.error(f"Failed to calculate risk score for NPC {npc.id}: {e}", exc_info=True)
+                # Use default risk assessment instead of skipping citizen
+                risk_assessment = RiskAssessment(
+                    npc_id=npc.id,
+                    risk_score=0,
+                    risk_level=RiskLevel.LOW,
+                    contributing_factors=[],
+                    correlation_alerts=[],
+                    recommended_actions=[],
+                    last_updated=datetime.now(UTC),
+                )
 
-        # Get flagged message count
-        msg_result = await db.execute(
-            select(func.count(Message.id))
-            .join(MessageRecord)
-            .where(MessageRecord.npc_id == npc.id, Message.is_flagged)
-        )
-        flagged_messages = msg_result.scalar() or 0
+        # Get flagged message count from pre-fetched dictionary
+        flagged_messages = flagged_message_counts.get(npc.id, 0)
 
         # Determine primary concern
         primary_concern = "No significant concerns"
@@ -527,6 +611,8 @@ async def get_citizen_file(
         city=npc.city,
         state=npc.state,
         zip_code=npc.zip_code,
+        map_x=npc.map_x,
+        map_y=npc.map_y,
     )
 
     await db.flush()
@@ -759,9 +845,10 @@ async def get_operator_history(
     """
     await _get_operator(operator_id, db)
 
-    # Get all flags
+    # Get all flags with eager loading (Fix 8: eliminate N+1)
     flags_result = await db.execute(
         select(CitizenFlag)
+        .options(selectinload(CitizenFlag.citizen))
         .where(CitizenFlag.operator_id == operator_id)
         .order_by(CitizenFlag.created_at.desc())
     )
@@ -771,9 +858,8 @@ async def get_operator_history(
     outcome_gen = CitizenOutcomeGenerator(db)
 
     for flag in flags:
-        # Get citizen name
-        npc_result = await db.execute(select(NPC).where(NPC.id == flag.citizen_id))
-        npc = npc_result.scalar_one_or_none()
+        # Get citizen name from eager-loaded relationship
+        npc = flag.citizen
         citizen_name = f"{npc.first_name} {npc.last_name}" if npc else "Unknown"
 
         # Get outcome summary
@@ -1396,18 +1482,20 @@ async def get_recent_news(
     db: AsyncSession = Depends(get_db),
 ) -> list[NewsArticleRead]:
     """Get recent news articles."""
+    # Use eager loading to avoid N+1 queries (Fix 9)
     result = await db.execute(
         select(NewsArticle)
+        .options(selectinload(NewsArticle.news_channel))
         .where(NewsArticle.operator_id == operator_id)
         .order_by(NewsArticle.created_at.desc())
         .limit(limit)
     )
     articles = result.scalars().all()
 
-    # Get channel names
+    # Get channel names from eager-loaded relationship
     article_reads = []
     for article in articles:
-        channel = await db.get(NewsChannel, article.news_channel_id)
+        channel = article.news_channel
         article_reads.append(
             NewsArticleRead(
                 id=article.id,
