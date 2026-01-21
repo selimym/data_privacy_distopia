@@ -144,6 +144,7 @@ The system is watching. Compliance is mandatory.`,
    * Update panel with new metrics
    */
   public update(metrics: ReluctanceMetricsRead): void {
+    console.log('[ReluctanceWarningPanel] Updating with new metrics:', metrics);
     this.config.metrics = metrics;
     const newStage = this.calculateWarningStage(metrics.reluctance_score);
 
@@ -151,6 +152,7 @@ The system is watching. Compliance is mandatory.`,
     if (newStage !== this.currentStage) {
       const oldStage = this.currentStage;
       this.currentStage = newStage;
+      console.log('[ReluctanceWarningPanel] Warning stage changed:', oldStage, '->', newStage);
 
       // Notify callback
       if (this.config.onWarningStageChanged) {
@@ -168,6 +170,7 @@ The system is watching. Compliance is mandatory.`,
       }
     } else if (newStage > 0) {
       // Same stage but metrics changed - refresh display
+      console.log('[ReluctanceWarningPanel] Refreshing display (stage unchanged:', newStage, ')');
       this.container.innerHTML = this.getPanelHTML();
     }
   }

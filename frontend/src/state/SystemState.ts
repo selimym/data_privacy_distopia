@@ -35,10 +35,13 @@ export class SystemState {
   public currentTimePeriod: string = 'immediate';  // Track current time period
   private isInitialized: boolean = false;  // Track initialization state
 
+  // Session timing
+  public sessionStartTime: number | null = null;  // Track total session time
+
   // Case selection
   public selectedCitizenId: string | null = null;
   public selectedCitizenFile: FullCitizenFile | null = null;
-  public decisionStartTime: number | null = null;
+  public decisionStartTime: number | null = null;  // Track per-citizen decision time (for hesitation tracking)
 
   // Lists
   public pendingCases: CaseOverview[] = [];
@@ -126,6 +129,9 @@ export class SystemState {
         warnings: [],
       };
       this.currentDirective = response.first_directive;
+
+      // Start session timer
+      this.sessionStartTime = Date.now();
 
       // Load initial data (optimized: single API call)
       await this.loadDashboardWithCases();
@@ -382,10 +388,20 @@ export class SystemState {
 
   /**
    * Get the time elapsed since citizen was selected (in seconds).
+   * Used for tracking hesitation incidents (>30s per citizen).
    */
   public getDecisionTime(): number {
     if (!this.decisionStartTime) return 0;
     return (Date.now() - this.decisionStartTime) / 1000;
+  }
+
+  /**
+   * Get the total session time elapsed (in seconds).
+   * This is the time shown in the dashboard timer.
+   */
+  public getSessionTime(): number {
+    if (!this.sessionStartTime) return 0;
+    return (Date.now() - this.sessionStartTime) / 1000;
   }
 
   /**
@@ -424,8 +440,9 @@ export class SystemState {
       // Clear selection
       this.clearSelection();
 
-      // NOTE: Dashboard refresh deferred - will be refreshed when resuming
-      // session after cinematic (via resumeSession())
+      // Refresh dashboard to update case queue and metrics
+      // This ensures flagged citizens are removed from queue and stats are current
+      await this.loadDashboardWithCases();
 
       return result;
     } catch (err) {
@@ -465,8 +482,9 @@ export class SystemState {
       // Clear selection
       this.clearSelection();
 
-      // NOTE: Dashboard refresh deferred - will be refreshed when resuming
-      // session after cinematic (via resumeSession())
+      // Refresh dashboard to update case queue and metrics
+      // This ensures reviewed citizens are handled properly and stats are current
+      await this.loadDashboardWithCases();
 
       return result;
     } catch (err) {
@@ -543,13 +561,16 @@ export class SystemState {
 
     try {
       const newMetrics = await api.getPublicMetrics(this.operatorId);
+      console.log('[SystemState] Loaded public metrics:', newMetrics);
 
       // Check for tier crossings
       if (this.publicMetrics) {
         if (newMetrics.awareness_tier > this.lastAwarenessTier) {
+          console.log('[SystemState] Awareness tier increased:', this.lastAwarenessTier, '->', newMetrics.awareness_tier);
           this.lastAwarenessTier = newMetrics.awareness_tier;
         }
         if (newMetrics.anger_tier > this.lastAngerTier) {
+          console.log('[SystemState] Anger tier increased:', this.lastAngerTier, '->', newMetrics.anger_tier);
           this.lastAngerTier = newMetrics.anger_tier;
         }
       } else {
@@ -572,10 +593,12 @@ export class SystemState {
 
     try {
       const newMetrics = await api.getReluctanceMetrics(this.operatorId);
+      console.log('[SystemState] Loaded reluctance metrics:', newMetrics);
 
       // Check for reluctance stage change
       const newStage = this.getReluctanceStage(newMetrics.reluctance_score);
       if (newStage > this.lastReluctanceStage) {
+        console.log('[SystemState] Reluctance stage increased:', this.lastReluctanceStage, '->', newStage);
         this.lastReluctanceStage = newStage;
       }
 
@@ -719,6 +742,7 @@ export class SystemState {
     this.operatorId = null;
     this.operatorStatus = null;
     this.currentDirective = null;
+    this.sessionStartTime = null;
     this.selectedCitizenId = null;
     this.selectedCitizenFile = null;
     this.decisionStartTime = null;

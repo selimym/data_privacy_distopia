@@ -172,15 +172,18 @@ export class PublicMetricsDisplay {
    * Update metrics and check for tier crossings
    */
   public update(newMetrics: PublicMetricsRead): void {
+    console.log('[PublicMetricsDisplay] Updating with new metrics:', newMetrics);
     this.config.metrics = newMetrics;
 
     // Check for tier crossings
     if (newMetrics.awareness_tier > this.lastAwarenessTier) {
+      console.log('[PublicMetricsDisplay] Awareness tier crossed:', this.lastAwarenessTier, '->', newMetrics.awareness_tier);
       this.handleTierCrossing('awareness', newMetrics.awareness_tier);
       this.lastAwarenessTier = newMetrics.awareness_tier;
     }
 
     if (newMetrics.anger_tier > this.lastAngerTier) {
+      console.log('[PublicMetricsDisplay] Anger tier crossed:', this.lastAngerTier, '->', newMetrics.anger_tier);
       this.handleTierCrossing('anger', newMetrics.anger_tier);
       this.lastAngerTier = newMetrics.anger_tier;
     }
@@ -188,6 +191,7 @@ export class PublicMetricsDisplay {
     // Update visual
     this.container.innerHTML = this.getDisplayHTML();
     this.setupEventListeners(this.container);
+    console.log('[PublicMetricsDisplay] Display updated');
   }
 
   /**

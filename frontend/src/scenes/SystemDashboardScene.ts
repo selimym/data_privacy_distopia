@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { systemState } from '../state/SystemState';
-import type { CaseOverview, FlagResult, RiskLevel, CinematicData, CitizenOutcome, ExposureEventRead, OperatorDataRead } from '../types/system';
+import type { CaseOverview, FlagResult, FlagType, RiskLevel, CinematicData, CitizenOutcome, ExposureEventRead, OperatorDataRead } from '../types/system';
 import { MessagesPanel } from '../ui/system/MessagesPanel';
 import { DecisionResultModal } from '../ui/system/DecisionResultModal';
 import { OutcomeViewer } from '../ui/system/OutcomeViewer';
@@ -33,6 +33,7 @@ export class SystemDashboardScene extends Phaser.Scene {
   private shownProtestIds: Set<string> = new Set();
   private currentProtestModal: ProtestAlertModal | null = null;
   private lastShownExposureStage: number = 0;
+  private citizenPanelAbortController: AbortController | null = null;
 
   constructor() {
     super({ key: 'SystemDashboardScene' });
@@ -210,6 +211,7 @@ export class SystemDashboardScene extends Phaser.Scene {
       const target = e.target as HTMLElement;
       const caseCard = target.closest('.case-card');
       if (caseCard) {
+        e.stopPropagation();  // Prevent event bubbling
         const npcId = caseCard.getAttribute('data-npc-id');
         if (npcId) {
           this.selectCase(npcId);
@@ -757,13 +759,13 @@ export class SystemDashboardScene extends Phaser.Scene {
     panel.style.display = 'block';
 
     // Don't re-render if same citizen (prevents form state destruction during polling)
-    if (panel.dataset.citizenId === file.identity.npc_id) {
+    if (panel.dataset.citizenId === file.identity.id) {
       // Same citizen - just update timer, don't destroy form
       return;
     }
 
     // Different citizen or first render - full re-render
-    panel.dataset.citizenId = file.identity.npc_id;
+    panel.dataset.citizenId = file.identity.id;
     panel.innerHTML = this.getCitizenFileHTML(file);
     this.setupCitizenFilePanelListeners(panel);
     this.initializeMessagesPanel(panel, file);
@@ -985,11 +987,20 @@ export class SystemDashboardScene extends Phaser.Scene {
   }
 
   private setupCitizenFilePanelListeners(panel: HTMLElement) {
+    // Abort any previous listeners to prevent accumulation
+    if (this.citizenPanelAbortController) {
+      this.citizenPanelAbortController.abort();
+    }
+
+    // Create new controller for this set of listeners
+    this.citizenPanelAbortController = new AbortController();
+    const { signal } = this.citizenPanelAbortController;
+
     // Close button
     const closeBtn = panel.querySelector('.close-citizen-file');
     closeBtn?.addEventListener('click', () => {
       systemState.clearSelection();
-    });
+    }, { signal });
 
     // Tab switching
     const tabs = panel.querySelectorAll('.citizen-tab');
@@ -1008,7 +1019,7 @@ export class SystemDashboardScene extends Phaser.Scene {
           const panelTab = p.getAttribute('data-tab');
           (p as HTMLElement).style.display = panelTab === tabName ? 'block' : 'none';
         });
-      });
+      }, { signal });
     });
 
     // Get unified justification textarea
@@ -1023,7 +1034,7 @@ export class SystemDashboardScene extends Phaser.Scene {
       submitFlagBtn.disabled = !flagSelect.value;
     };
 
-    flagSelect?.addEventListener('change', updateFlagButton);
+    flagSelect?.addEventListener('change', updateFlagButton, { signal });
 
     // Flag submission
     submitFlagBtn?.addEventListener('click', async () => {
@@ -1039,14 +1050,14 @@ export class SystemDashboardScene extends Phaser.Scene {
       if (result) {
         this.showFlagResult(result);
       }
-    });
+    }, { signal });
 
     // No-action submission (always enabled)
     const noActionBtn = panel.querySelector('.btn-no-action');
     noActionBtn?.addEventListener('click', async () => {
       const justification = justificationTextarea?.value.trim() || undefined;
       await systemState.submitNoAction(justification);
-    });
+    }, { signal });
   }
 
   private startDecisionTimer() {
@@ -1054,16 +1065,16 @@ export class SystemDashboardScene extends Phaser.Scene {
     this.decisionTimerInterval = window.setInterval(() => {
       const timerEl = this.container.querySelector('.timer-value');
       if (timerEl) {
-        const seconds = Math.floor(systemState.getDecisionTime());
+        const seconds = Math.floor(systemState.getSessionTime());
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
 
-        // Visual warning for slow decisions
-        if (seconds > 60) {
+        // Visual warning for slow sessions (longer than expected)
+        if (seconds > 300) {  // 5 minutes
           timerEl.classList.add('slow');
         }
-        if (seconds > 120) {
+        if (seconds > 600) {  // 10 minutes
           timerEl.classList.add('very-slow');
         }
       }
@@ -1296,6 +1307,10 @@ export class SystemDashboardScene extends Phaser.Scene {
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
+    }
+    if (this.citizenPanelAbortController) {
+      this.citizenPanelAbortController.abort();
+      this.citizenPanelAbortController = null;
     }
     if (this.messagesPanel) {
       this.messagesPanel.destroy();
