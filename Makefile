@@ -2,7 +2,7 @@
 
 # PRIMARY COMMANDS (Fat Client - Frontend Only)
 
-dev:
+dev: kill-dev
 	@echo "Starting frontend development server..."
 	cd frontend && pnpm dev
 

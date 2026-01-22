@@ -13,8 +13,10 @@ import { ActionGambleModal } from '../ui/system/ActionGambleModal';
 import { ExposureEventModal } from '../ui/system/ExposureEventModal';
 import { getSystemAudioManager } from '../audio/SystemAudioManager';
 import { getSystemVisualEffects } from '../ui/system/SystemVisualEffects';
-import * as systemApi from '../api/system';
-import { getNPCsBatch, getNPC } from '../api/npcs';
+import { TimeProgressionService } from '../services/time-progression';
+import { executeAction } from '../services/action-execution';
+import { advanceDirective } from '../services/game-orchestrator';
+import { gameStore } from '../state/GameStore';
 import { generateActionCinematic, getDefaultCinematicLocation } from '../utils/cinematicGenerator';
 
 /**
@@ -317,15 +319,19 @@ export class SystemDashboardScene extends Phaser.Scene {
         console.log('Suppress outlet:', channelId, channelName);
 
         try {
-          // Execute the press ban action via API
-          const result = await systemApi.executeAction({
-            operator_id: systemState.operatorId,
-            directive_id: systemState.currentDirective?.id || null,
-            action_type: NewActionType.PRESS_BAN,
-            justification: 'Media suppression',
-            decision_time_seconds: 0,
-            target_news_channel_id: channelId,
-          });
+          // Execute the press ban action
+          const result = executeAction(
+            systemState.operatorId,
+            systemState.currentDirective?.id || null,
+            NewActionType.PRESS_BAN,
+            'Media suppression',
+            0,
+            false,
+            null,
+            null,
+            channelId,
+            null
+          );
 
           getSystemAudioManager().play('flag_submit');
 
@@ -352,14 +358,18 @@ export class SystemDashboardScene extends Phaser.Scene {
 
         try {
           // Execute arbitrary detention action (arresting journalist)
-          const result = await systemApi.executeAction({
-            operator_id: systemState.operatorId,
-            directive_id: systemState.currentDirective?.id || null,
-            action_type: NewActionType.ARBITRARY_DETENTION,
-            justification: 'Journalist arrest',
-            decision_time_seconds: 0,
-            target_citizen_id: articleId,  // Note: This might need to be the reporter's citizen ID
-          });
+          const result = executeAction(
+            systemState.operatorId,
+            systemState.currentDirective?.id || null,
+            NewActionType.ARBITRARY_DETENTION,
+            'Journalist arrest',
+            0,
+            false,
+            articleId,  // Note: This might need to be the reporter's citizen ID
+            null,
+            null,
+            null
+          );
 
           getSystemAudioManager().play('flag_submit');
 
@@ -418,15 +428,19 @@ export class SystemDashboardScene extends Phaser.Scene {
         console.log('Declare protest illegal:', protest.id);
 
         try {
-          // Execute the action via API
-          const result = await systemApi.executeAction({
-            operator_id: systemState.operatorId,
-            directive_id: systemState.currentDirective?.id || null,
-            action_type: NewActionType.DECLARE_PROTEST_ILLEGAL,
-            justification: 'Protest suppression',
-            decision_time_seconds: 0,
-            target_protest_id: protest.id,
-          });
+          // Execute the action
+          const result = executeAction(
+            systemState.operatorId,
+            systemState.currentDirective?.id || null,
+            NewActionType.DECLARE_PROTEST_ILLEGAL,
+            'Protest suppression',
+            0,
+            false,
+            null,
+            null,
+            null,
+            protest.id
+          );
 
           getSystemAudioManager().play('flag_submit');
           this.currentProtestModal = null;
@@ -458,15 +472,19 @@ export class SystemDashboardScene extends Phaser.Scene {
         console.log('Incite violence at protest:', protest.id);
 
         try {
-          // Execute the gamble action via API
-          const result = await systemApi.executeAction({
-            operator_id: systemState.operatorId,
-            directive_id: systemState.currentDirective?.id || null,
-            action_type: NewActionType.INCITE_VIOLENCE,
-            justification: 'False flag operation',
-            decision_time_seconds: 0,
-            target_protest_id: protest.id,
-          });
+          // Execute the gamble action
+          const result = executeAction(
+            systemState.operatorId,
+            systemState.currentDirective?.id || null,
+            NewActionType.INCITE_VIOLENCE,
+            'False flag operation',
+            0,
+            false,
+            null,
+            null,
+            null,
+            protest.id
+          );
 
           getSystemAudioManager().play('flag_submit');
           this.currentProtestModal = null;
@@ -541,7 +559,7 @@ export class SystemDashboardScene extends Phaser.Scene {
     if (stage >= 2) {
       // Fetch operator personal data for stages 2 and 3
       try {
-        operatorData = await systemApi.getOperatorData(systemState.operatorId);
+        operatorData = gameStore.getOperatorData() || undefined;
       } catch (err) {
         console.error('Failed to load operator data:', err);
         return;
@@ -1172,11 +1190,19 @@ export class SystemDashboardScene extends Phaser.Scene {
         map_x = cachedFile.identity.map_x;
         map_y = cachedFile.identity.map_y;
       } else {
-        // Fallback: fetch NPC data if not in cache
-        console.warn('[SystemDashboardScene] Citizen file not cached, fetching NPC data...');
-        const npcData = await getNPC(result.citizen_id);
-        map_x = npcData.npc.map_x;
-        map_y = npcData.npc.map_y;
+        // Fallback: fetch NPC data from GameStore if not in cache
+        console.warn('[SystemDashboardScene] Citizen file not cached, fetching from GameStore...');
+        const npc = gameStore.getNPC(result.citizen_id);
+        if (npc) {
+          map_x = npc.map_x;
+          map_y = npc.map_y;
+        } else {
+          console.error(`[SystemDashboardScene] NPC not found: ${result.citizen_id}`);
+          // Use default location if NPC not found
+          const defaultLocation = getDefaultCinematicLocation();
+          map_x = defaultLocation.x;
+          map_y = defaultLocation.y;
+        }
       }
 
       // Get immediate outcome from the result
@@ -1248,20 +1274,16 @@ export class SystemDashboardScene extends Phaser.Scene {
 
       try {
         // Advance time and get outcomes for all flagged citizens
-        const outcomes: CitizenOutcome[] = await systemApi.advanceTime(systemState.operatorId);
+        const timeProgressionService = new TimeProgressionService();
+        const outcomes: CitizenOutcome[] = await timeProgressionService.advanceTime(systemState.operatorId);
 
         if (outcomes.length > 0) {
           console.log(`Time advanced! ${outcomes.length} outcomes to show`);
 
-          // Get all NPCs in one batch call
-          const npcIds = outcomes.map(o => o.citizen_id);
-          const npcs = await getNPCsBatch(npcIds);
-          const npcMap = new Map(npcs.map(npc => [npc.npc.id, npc]));
-
           // Convert outcomes to cinematic queue
           const cinematicQueue: CinematicData[] = outcomes.map(outcome => {
-            const npcData = npcMap.get(outcome.citizen_id);
-            if (!npcData) {
+            const npc = gameStore.getNPC(outcome.citizen_id);
+            if (!npc) {
               console.warn(`NPC data not found for citizen ${outcome.citizen_id}`);
               return null;
             }
@@ -1271,8 +1293,8 @@ export class SystemDashboardScene extends Phaser.Scene {
               timeSkip: outcome.time_skip,
               narrative: outcome.narrative,
               status: outcome.status,
-              map_x: npcData.npc.map_x,
-              map_y: npcData.npc.map_y,
+              map_x: npc.map_x,
+              map_y: npc.map_y,
             };
           }).filter((item): item is CinematicData => item !== null);
 
@@ -1289,11 +1311,11 @@ export class SystemDashboardScene extends Phaser.Scene {
           });
 
           // Advance to next directive after cinematics
-          await systemApi.advanceDirective(systemState.operatorId);
+          await advanceDirective(systemState.operatorId);
         } else {
           console.log('No outcomes to show, just advancing directive');
           // No time progression needed, just advance directive
-          await systemApi.advanceDirective(systemState.operatorId);
+          await advanceDirective(systemState.operatorId);
           await systemState.loadDashboard();
         }
       } catch (error) {

@@ -6,13 +6,12 @@ import {
   MOVEMENT_DURATION_MS,
   MOVEMENT_EASING
 } from '../config';
-import { listNPCs } from '../api/npcs';
-import type { NPCBasic } from '../types/npc';
+import { ensurePopulationLoaded } from '../utils/populationInitializer';
+import { gameStore } from '../state/GameStore';
+import type { NPCRead } from '../types';
 import { DataPanel } from '../ui/DataPanel';
 import { AbuseModePanel } from '../ui/AbuseModePanel';
 import { ScenarioIntro } from '../ui/ScenarioIntro';
-import { ScenarioPromptUI } from '../ui/ScenarioPromptUI';
-import { getScenarioPrompt } from '../api/scenarios';
 import { CinematicTextBox } from '../ui/system/CinematicTextBox';
 import type { CinematicData } from '../types/system';
 
@@ -48,7 +47,7 @@ export class WorldScene extends Phaser.Scene {
   private objectsLayer!: Phaser.Tilemaps.TilemapLayer;
 
   // NPC rendering
-  private npcs: NPCBasic[] = [];
+  private npcs: NPCRead[] = [];
   private npcSprites: Map<string, Phaser.GameObjects.Sprite> = new Map();
   private selectedNpcId: string | null = null;
   private npcTooltip: HTMLDivElement | null = null;
@@ -271,11 +270,13 @@ export class WorldScene extends Phaser.Scene {
 
   private async loadNPCs() {
     try {
-      // Load all NPCs from API (no pagination limit for now)
-      const result = await listNPCs(1000, 0);
-      this.npcs = result.items;
+      // Ensure population is loaded into GameStore
+      await ensurePopulationLoaded({ numCitizens: 100 });
 
-      console.log(`Loaded ${this.npcs.length} NPCs from API`);
+      // Load all NPCs from GameStore
+      this.npcs = gameStore.getAllNPCs();
+
+      console.log(`Loaded ${this.npcs.length} NPCs from GameStore`);
 
       // Create sprites for each NPC
       this.createNPCSprites();
@@ -658,20 +659,9 @@ export class WorldScene extends Phaser.Scene {
   private async showScenarioPrompt() {
     if (!this.currentSessionId) return;
 
-    try {
-      const prompt = await getScenarioPrompt(
-        'rogue_employee',
-        this.currentSessionId
-      );
-
-      const promptUI = new ScenarioPromptUI(prompt, () => {
-        console.log('Prompt dismissed');
-      });
-      promptUI.show();
-    } catch (error) {
-      // No prompt available - that's ok
-      console.log('No scenario prompt available:', error);
-    }
+    // TODO: Re-implement scenario prompts using client-side logic
+    // For now, skip the scenario prompt since it relied on backend
+    console.log('[WorldScene] Scenario prompts not yet implemented in fat client mode');
   }
 
   private createNpcTooltip() {

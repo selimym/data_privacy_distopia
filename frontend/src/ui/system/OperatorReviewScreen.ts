@@ -7,7 +7,8 @@
  */
 
 import type { OperatorRiskAssessment } from '../../types/system';
-import * as api from '../../api/system';
+// TODO: Implement client-side operator risk assessment
+// import * as api from '../../api/system';
 import { getSystemAudioManager } from '../../audio/SystemAudioManager';
 
 export interface OperatorReviewConfig {
@@ -96,7 +97,16 @@ export class OperatorReviewScreen {
 
   private async loadAndShowFile() {
     try {
-      this.assessment = await api.getOperatorAssessment(this.config.operatorId);
+      // TODO: Implement client-side operator risk assessment
+      // For now, use placeholder data
+      this.assessment = {
+        operator_code: this.config.operatorCode,
+        risk_score: 75,
+        risk_level: 'HIGH',
+        contributing_factors: [],
+        recommended_action: 'Further investigation required',
+        assessment_date: new Date().toISOString(),
+      };
       this.renderFileView();
     } catch (error) {
       console.error('Failed to load operator assessment:', error);

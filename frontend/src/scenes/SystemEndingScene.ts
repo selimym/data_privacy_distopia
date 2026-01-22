@@ -6,7 +6,7 @@
  */
 
 import Phaser from 'phaser';
-import * as api from '../api/system';
+import { EndingCalculator } from '../services/ending-calculator';
 import type { EndingResult, CitizenOutcomeSummary } from '../types/system';
 import { getSystemAudioManager } from '../audio/SystemAudioManager';
 import { getSystemVisualEffects } from '../ui/system/SystemVisualEffects';
@@ -43,7 +43,9 @@ export class SystemEndingScene extends Phaser.Scene {
     this.showLoading();
 
     try {
-      this.endingData = await api.getEnding(this.operatorId);
+      const endingCalculator = new EndingCalculator();
+      const endingType = endingCalculator.calculateEnding(this.operatorId);
+      this.endingData = endingCalculator.generateEndingContent(endingType, this.operatorId);
       this.startEnding();
     } catch (error) {
       console.error('Failed to load ending:', error);
@@ -439,11 +441,8 @@ export class SystemEndingScene extends Phaser.Scene {
 
   private async acknowledgeAndReturn() {
     if (this.operatorId) {
-      try {
-        await api.acknowledgeEnding(this.operatorId);
-      } catch (error) {
-        console.error('Failed to acknowledge ending:', error);
-      }
+      // TODO: Track ending acknowledgment in GameStore if needed
+      console.log('Ending acknowledged for operator:', this.operatorId);
     }
     this.returnToMenu();
   }

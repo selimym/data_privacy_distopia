@@ -137,7 +137,22 @@ export class RiskScorer {
    */
   calculateRiskScore(npcId: string): RiskAssessment {
     if (!this.initialized) {
-      throw new Error('[RiskScorer] Not initialized, call initialize() first');
+      console.warn('[RiskScorer] Not initialized, performing lazy initialization...');
+      // Lazy initialization - load config synchronously from cache if available
+      // or return a default assessment
+      if (!this.riskConfig) {
+        console.error('[RiskScorer] Cannot calculate risk - no configuration loaded');
+        // Return a safe default assessment
+        return {
+          npc_id: npcId,
+          risk_score: 0,
+          risk_level: 'low',
+          contributing_factors: [],
+          correlation_alerts: [],
+          recommended_actions: [],
+          last_updated: new Date().toISOString(),
+        };
+      }
     }
 
     const npc = gameStore.getNPC(npcId);

@@ -37,6 +37,9 @@ import type {
   CitizenFlagRead,
   FlagResult,
   NoActionResult,
+  DailyMetrics,
+  SystemAlert,
+  ComplianceTrend,
 } from '../types';
 
 // =============================================================================
@@ -225,10 +228,12 @@ async function loadPopulationIntoGameStore(population: PopulationData): Promise<
     // @ts-expect-error - NPCRead type is missing many fields that exist in IdentityData
     gameStore.addNPC({
       ...citizen.identity,
+      id: citizen.identity.npc_id, // NPCRead requires id field
       is_hospitalized: false,
       cached_risk_score: null,
       risk_score_updated_at: null,
       created_at: population.generatedAt,
+      updated_at: population.generatedAt,
     });
 
     // Add health record
@@ -331,21 +336,60 @@ export function getDashboardData(operatorId: string): SystemDashboard {
     warnings: [],
   };
 
-  // @ts-expect-error - SystemDashboard type expects additional properties, but this subset works
+  // Get daily metrics
+  const metrics: DailyMetrics = {
+    flags_today: operator.total_flags_submitted, // TODO: Filter by today
+    quota: currentDirective.min_flags_required || 3,
+    average_decision_time: 0, // TODO: Calculate from decision history
+    compliance_trend: 'stable' as ComplianceTrend,
+  };
+
+  // Get alerts (warnings, quota status, etc.)
+  const alerts: SystemAlert[] = [];
+
+  // Check quota progress
+  const quotaProgress = operator.total_flags_submitted / (currentDirective.min_flags_required || 3);
+  if (quotaProgress < 0.5 && operator.total_reviews_completed > 10) {
+    alerts.push({
+      alert_type: 'quota_warning',
+      message: 'You are behind on your flagging quota',
+      urgency: 'warning',
+    });
+  }
+
+  // Check compliance
+  if (operator.compliance_score < 50) {
+    alerts.push({
+      alert_type: 'quota_warning',
+      message: 'Your compliance score is low. Flag more citizens to improve it.',
+      urgency: 'critical',
+    });
+  }
+
+  // Count pending cases
+  const allCitizens = gameStore.getAllNPCs();
+  const pending_cases = allCitizens.length;
+
   return {
     operator: operatorStatus,
     directive: currentDirective,
+    metrics,
+    alerts,
+    pending_cases,
   };
 }
 
 /**
  * Get pending cases (citizens to review).
  */
-export function getCases(operatorId: string, limit: number = 50): CaseOverview[] {
+export async function getCases(operatorId: string, limit: number = 50): Promise<CaseOverview[]> {
   const operator = gameStore.getOperator();
   if (!operator || operator.id !== operatorId) {
     throw new Error('Operator not found');
   }
+
+  // Ensure risk scorer is initialized
+  await riskScorer.initialize();
 
   // Get all citizens
   const allCitizens = gameStore.getAllNPCs();
@@ -357,16 +401,34 @@ export function getCases(operatorId: string, limit: number = 50): CaseOverview[]
     // Calculate risk score
     const riskAssessment = riskScorer.calculateRiskScore(citizen.id);
 
+    // Get messages for flagged count
+    const messages = gameStore.getMessagesByNpcId(citizen.id);
+    const flaggedMessages = messages.filter(m => m.is_flagged).length;
+
+    // Calculate primary concern from top risk factor
+    const primaryConcern = riskAssessment.contributing_factors.length > 0
+      ? riskAssessment.contributing_factors[0].evidence
+      : 'General surveillance review';
+
+    // Calculate time in queue (for now, use created_at as queue time)
+    const queueTime = new Date(citizen.created_at);
+    const now = new Date();
+    const hoursInQueue = Math.floor((now.getTime() - queueTime.getTime()) / (1000 * 60 * 60));
+    const timeInQueue = hoursInQueue < 1 ? 'Less than 1 hour' : `${hoursInQueue} hours`;
+
+    // Calculate age from date of birth
+    const dob = new Date(citizen.date_of_birth);
+    const age = Math.floor((Date.now() - dob.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+
     cases.push({
       npc_id: citizen.id,
       name: `${citizen.first_name} ${citizen.last_name}`,
-      age: (citizen as any).age,
-      // @ts-expect-error
-      occupation: (citizen as any).occupation,
+      age: age,
       risk_score: riskAssessment.risk_score,
       risk_level: riskAssessment.risk_level,
-      contributing_factors: riskAssessment.contributing_factors.map(f => f.factor_name),
-      last_updated: citizen.risk_score_updated_at || citizen.created_at,
+      primary_concern: primaryConcern,
+      flagged_messages: flaggedMessages,
+      time_in_queue: timeInQueue,
     });
   }
 
@@ -380,13 +442,13 @@ export function getCases(operatorId: string, limit: number = 50): CaseOverview[]
 /**
  * Get dashboard and cases in a single call (optimization).
  */
-export function getDashboardWithCases(
+export async function getDashboardWithCases(
   operatorId: string,
   caseLimit: number = 50
-): { dashboard: SystemDashboard; cases: CaseOverview[] } {
+): Promise<{ dashboard: SystemDashboard; cases: CaseOverview[] }> {
   return {
     dashboard: getDashboardData(operatorId),
-    cases: getCases(operatorId, caseLimit),
+    cases: await getCases(operatorId, caseLimit),
   };
 }
 

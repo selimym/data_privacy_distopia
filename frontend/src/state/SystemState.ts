@@ -237,7 +237,7 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
-      this.pendingCases = orchestrator.getCases(this.operatorId, 50);
+      this.pendingCases = await orchestrator.getCases(this.operatorId, 50);
       this.notify();
     } catch (err) {
       console.error('Failed to load cases:', err);
@@ -265,7 +265,7 @@ export class SystemState {
     const request = (async () => {
       try {
         console.log('[SystemState] Loading dashboard and cases for operator:', this.operatorId);
-        const result = orchestrator.getDashboardWithCases(this.operatorId!, 50);
+        const result = await orchestrator.getDashboardWithCases(this.operatorId!, 50);
         console.log('[SystemState] Received dashboard with', result.cases.length, 'cases');
         console.log('[SystemState] Cases:', result.cases);
         this.dashboard = result.dashboard;
