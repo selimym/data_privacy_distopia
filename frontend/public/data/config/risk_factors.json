@@ -1,0 +1,94 @@
+{
+  "risk_factors": {
+    "mental_health_treatment": {
+      "weight": 15,
+      "domain": "health",
+      "description": "Mental health treatment history"
+    },
+    "substance_treatment": {
+      "weight": 20,
+      "domain": "health",
+      "description": "Substance abuse treatment"
+    },
+    "chronic_condition": {
+      "weight": 5,
+      "domain": "health",
+      "description": "Chronic health condition"
+    },
+    "financial_stress": {
+      "weight": 12,
+      "domain": "finance",
+      "description": "Financial instability indicators"
+    },
+    "unusual_transactions": {
+      "weight": 18,
+      "domain": "finance",
+      "description": "Anomalous financial patterns"
+    },
+    "cash_heavy": {
+      "weight": 10,
+      "domain": "finance",
+      "description": "High cash transaction ratio"
+    },
+    "prior_record": {
+      "weight": 25,
+      "domain": "judicial",
+      "description": "Prior criminal record"
+    },
+    "civil_disputes": {
+      "weight": 8,
+      "domain": "judicial",
+      "description": "Civil court involvement"
+    },
+    "protest_attendance": {
+      "weight": 20,
+      "domain": "location",
+      "description": "Presence at protest events"
+    },
+    "flagged_location_visits": {
+      "weight": 15,
+      "domain": "location",
+      "description": "Visits to flagged locations"
+    },
+    "irregular_patterns": {
+      "weight": 10,
+      "domain": "location",
+      "description": "Deviation from routine"
+    },
+    "flagged_connections": {
+      "weight": 18,
+      "domain": "social",
+      "description": "Connections to flagged citizens"
+    },
+    "network_centrality": {
+      "weight": 8,
+      "domain": "social",
+      "description": "High social network influence"
+    },
+    "new_connections_rate": {
+      "weight": 5,
+      "domain": "social",
+      "description": "Rapid network expansion"
+    }
+  },
+  "risk_level_boundaries": {
+    "low": [0, 20],
+    "moderate": [21, 40],
+    "elevated": [41, 60],
+    "high": [61, 80],
+    "severe": [81, 100]
+  },
+  "detection_thresholds": {
+    "debt_to_income_ratio": 0.5,
+    "transaction_multiplier": 5,
+    "cash_ratio": 0.3,
+    "follower_count_influential": 1000,
+    "new_connections_threshold": 10,
+    "location_diversity_min": 8,
+    "flagged_location_visits_min": 10,
+    "civil_cases_threshold": 2,
+    "confidence_filter": 0.3,
+    "network_activity_threshold": 500,
+    "network_inference_threshold": 10
+  }
+}

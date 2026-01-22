@@ -4,29 +4,26 @@
  * Simple panel at bottom of screen for abuse mode actions
  */
 
+import { gameStore } from '../state/GameStore';
 import {
-  executeAbuseAction,
-  getRoleActions,
-} from '../api/abuse';
-import { listNPCs } from '../api/npcs';
-import type {
-  AbuseAction,
-  AbuseExecuteRequest,
-  AbuseExecuteResponse,
+  TargetType,
+  ConsequenceSeverity,
+  type AbuseAction,
+  type AbuseExecuteResponse,
 } from '../types/abuse';
-import type { NPCBasic } from '../types/npc';
+import { ContentRating } from '../types/npc';
+import type { NPCRead } from '../types';
 import { ConsequenceViewer } from './ConsequenceViewer';
 
 export class AbuseModePanel {
   private container: HTMLDivElement;
-  private sessionId: string;
-  private selectedTarget: NPCBasic | null = null;
+  private selectedTarget: NPCRead | null = null;
   private availableActions: AbuseAction[] = [];
   private lastExecution: AbuseExecuteResponse | null = null;
   private onActionExecuted: ((actionName: string, targetName: string, targetId: string) => void) | null = null;
 
-  constructor(sessionId: string, onActionExecuted?: (actionName: string, targetName: string, targetId: string) => void) {
-    this.sessionId = sessionId;
+  constructor(_sessionId: string, onActionExecuted?: (actionName: string, targetName: string, targetId: string) => void) {
+    // sessionId not currently used in fat client mode
     this.onActionExecuted = onActionExecuted || null;
     this.container = this.createPanelElement();
     this.setupEventListeners();
@@ -95,38 +92,29 @@ export class AbuseModePanel {
 
   private async loadTargets() {
     try {
-      const response = await listNPCs();
+      // Get all NPCs from GameStore
+      const npcs = gameStore.getAllNPCs();
       const targetSelect = this.container.querySelector('#target-select') as HTMLSelectElement;
 
       // Clear existing options except first
       targetSelect.innerHTML = '<option value="">-- Loading targets... --</option>';
       targetSelect.disabled = true;
 
-      // Filter NPCs to only include those with available actions
-      const npcsWithActions: NPCBasic[] = [];
+      // TODO: Implement client-side rogue employee actions
+      // For now, show all NPCs (Rogue Employee Mode not fully implemented)
+      const npcsWithActions = npcs;
 
-      for (const npc of response.items) {
-        try {
-          const actions = await getRoleActions('rogue_employee', npc.id);
-          if (actions.length > 0) {
-            npcsWithActions.push(npc);
-          }
-        } catch (error) {
-          console.error(`Failed to check actions for NPC ${npc.id}:`, error);
-        }
-      }
-
-      // Update dropdown with filtered NPCs
+      // Update dropdown with NPCs
       targetSelect.innerHTML = '<option value="">-- Choose an NPC --</option>';
       targetSelect.disabled = false;
 
       if (npcsWithActions.length === 0) {
-        targetSelect.innerHTML = '<option value="">-- No targets with available actions --</option>';
+        targetSelect.innerHTML = '<option value="">-- No targets available --</option>';
         targetSelect.disabled = true;
         return;
       }
 
-      npcsWithActions.forEach((npc: NPCBasic) => {
+      npcsWithActions.forEach((npc: NPCRead) => {
         const option = document.createElement('option');
         option.value = npc.id;
         option.textContent = `${npc.first_name} ${npc.last_name}`;
@@ -144,12 +132,28 @@ export class AbuseModePanel {
 
   private async selectTarget(npcId: string) {
     try {
-      const response = await listNPCs();
-      this.selectedTarget = response.items.find((npc: NPCBasic) => npc.id === npcId) || null;
+      // Get NPC from GameStore
+      this.selectedTarget = gameStore.getNPC(npcId) || null;
 
       if (this.selectedTarget) {
-        // Load available actions for this target
-        this.availableActions = await getRoleActions('rogue_employee', npcId);
+        // TODO: Implement client-side rogue employee actions
+        // For now, use placeholder actions (Rogue Employee Mode not fully implemented)
+        this.availableActions = [
+          {
+            id: 'placeholder-action',
+            role_id: 'rogue_employee',
+            action_key: 'view_health_records',
+            name: 'View Health Records',
+            description: 'Access confidential medical information',
+            target_type: TargetType.SPECIFIC_NPC,
+            content_rating: ContentRating.SAFE,
+            detection_chance: 0.1,
+            is_audit_logged: true,
+            consequence_severity: ConsequenceSeverity.MEDIUM,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+        ];
         this.renderActions();
         this.showActions();
       }
@@ -197,13 +201,18 @@ export class AbuseModePanel {
     if (!action) return;
 
     try {
-      const request: AbuseExecuteRequest = {
-        role_key: 'rogue_employee',
-        action_key: action.action_key,
-        target_npc_id: this.selectedTarget.id,
+      // TODO: Implement client-side abuse action execution
+      // For now, create a placeholder response (Rogue Employee Mode not fully implemented)
+      this.lastExecution = {
+        execution_id: 'placeholder-' + Date.now(),
+        action_name: action.name,
+        target_name: `${this.selectedTarget.first_name} ${this.selectedTarget.last_name}`,
+        immediate_result: `Accessed ${this.selectedTarget.first_name}'s confidential data without authorization`,
+        data_revealed: null,
+        was_detected: false,
+        detection_message: null,
+        warning: null,
       };
-
-      this.lastExecution = await executeAbuseAction(request, this.sessionId);
 
       // Notify WorldScene that an action was executed
       if (this.onActionExecuted) {

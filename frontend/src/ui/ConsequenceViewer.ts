@@ -4,7 +4,8 @@
  * Modal for viewing time-based consequences of abuse actions
  */
 
-import { getConsequences } from '../api/abuse';
+// TODO: Implement client-side consequence chain generation
+// import { getConsequences } from '../api/abuse';
 import type { ConsequenceChain, TimeSkip } from '../types/abuse';
 import { TimeSkip as TimeSkipEnum } from '../types/abuse';
 
@@ -33,7 +34,22 @@ export class ConsequenceViewer {
   }
 
   private async loadConsequences(timeSkip: TimeSkip) {
-    this.currentConsequences = await getConsequences(this.executionId, timeSkip);
+    // TODO: Implement client-side consequence chain generation
+    // For now, use placeholder data (Rogue Employee Mode not fully implemented)
+    this.currentConsequences = {
+      execution_id: this.executionId,
+      current_time_skip: timeSkip,
+      time_skips_available: [TimeSkipEnum.IMMEDIATE, TimeSkipEnum.ONE_WEEK, TimeSkipEnum.ONE_MONTH],
+      events: [],
+      victim_impact: 'Unknown impact (Rogue Employee Mode not implemented)',
+      victim_statement: null,
+      real_world_parallel: {
+        case: 'Rogue Employee Mode Not Implemented',
+        summary: 'This mode is planned for future development.',
+        source: 'N/A',
+      },
+      your_status: 'Placeholder - Rogue Employee Mode not implemented',
+    };
     this.currentTimeSkip = timeSkip;
   }
 

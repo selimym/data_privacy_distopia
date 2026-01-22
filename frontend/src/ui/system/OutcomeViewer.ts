@@ -9,7 +9,9 @@
  */
 
 import type { CitizenOutcome } from '../../types/system';
-import * as api from '../../api/system';
+import { gameStore } from '../../state/GameStore';
+// TODO: Implement client-side flag outcome retrieval
+// import * as api from '../../api/system';
 
 export type TimePoint = 'immediate' | '1_month' | '6_months' | '1_year';
 
@@ -109,8 +111,29 @@ export class OutcomeViewer {
     this.showLoadingState();
 
     try {
-      const outcome = await api.getFlagOutcome(this.config.flagId, timePoint);
-      this.outcomes.set(timePoint, outcome);
+      // TODO: Implement client-side flag outcome retrieval
+      // For now, get from GameStore
+      const outcomes = gameStore.getFlagOutcomesByFlagId(this.config.flagId);
+      const outcomeRecord = outcomes.find(o => o.time_skip === timePoint);
+
+      if (!outcomeRecord) {
+        throw new Error(`No outcome found for time point: ${timePoint}`);
+      }
+
+      // Get flag to find citizen ID
+      const flag = gameStore.getFlag(this.config.flagId);
+
+      // Convert to CitizenOutcome format expected by UI
+      const citizenOutcome: CitizenOutcome = {
+        flag_id: this.config.flagId,
+        citizen_id: flag?.citizen_id || '',
+        citizen_name: this.config.citizenName,
+        time_skip: outcomeRecord.time_skip,
+        narrative: outcomeRecord.narrative,
+        status: outcomeRecord.status,
+        statistics: outcomeRecord.statistics,
+      };
+      this.outcomes.set(timePoint, citizenOutcome);
       this.renderOutcome(timePoint);
     } catch (error) {
       console.error('Failed to load outcome:', error);

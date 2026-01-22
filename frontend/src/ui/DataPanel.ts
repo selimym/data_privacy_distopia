@@ -1,12 +1,11 @@
 import Phaser from 'phaser';
-import { getNPC } from '../api/npcs';
-import { getInferences } from '../api/inferences';
+import { gameStore } from '../state/GameStore';
+import { inferenceEngine } from '../services/inference-engine';
+import { DomainType } from '../types/npc';
 import type {
-  DomainType,
   NPCWithDomains,
-  InferencesResponse,
   InferenceResult,
-} from '../types/npc';
+} from '../types';
 
 const STORAGE_KEY_PREFIX = 'npc_domains_';
 
@@ -16,7 +15,7 @@ export class DataPanel {
   private enabledDomains: Set<DomainType> = new Set();
   private currentTab: string = 'inferences';
   private npcData: NPCWithDomains | null = null;
-  private inferencesData: InferencesResponse | null = null;
+  private inferences: InferenceResult[] = [];
 
   constructor(_scene: Phaser.Scene) {
     // scene parameter kept for consistency with Phaser patterns, may be used later
@@ -262,20 +261,54 @@ export class DataPanel {
     contentDiv.innerHTML = '<p class="loading">Loading data...</p>';
 
     try {
-      const domains = Array.from(this.enabledDomains);
-      const [npcData, inferencesData] = await Promise.all([
-        getNPC(npcId, domains),
-        getInferences(npcId, domains),
-      ]);
+      // Ensure inference engine is initialized
+      await inferenceEngine.initialize();
+
+      // Get NPC from GameStore
+      const npc = gameStore.getNPC(npcId);
+      if (!npc) {
+        throw new Error(`NPC ${npcId} not found in GameStore`);
+      }
+
+      // Get domain records from GameStore based on enabled domains
+      const domains: Partial<Record<DomainType, any>> = {};
+      if (this.enabledDomains.has(DomainType.HEALTH)) {
+        const health = gameStore.getHealthRecordByNpcId(npcId);
+        if (health) domains[DomainType.HEALTH] = health;
+      }
+      if (this.enabledDomains.has(DomainType.FINANCE)) {
+        const finance = gameStore.getFinanceRecordByNpcId(npcId);
+        if (finance) domains[DomainType.FINANCE] = finance;
+      }
+      if (this.enabledDomains.has(DomainType.JUDICIAL)) {
+        const judicial = gameStore.getJudicialRecordByNpcId(npcId);
+        if (judicial) domains[DomainType.JUDICIAL] = judicial;
+      }
+      if (this.enabledDomains.has(DomainType.LOCATION)) {
+        const location = gameStore.getLocationRecordByNpcId(npcId);
+        if (location) domains[DomainType.LOCATION] = location;
+      }
+      if (this.enabledDomains.has(DomainType.SOCIAL)) {
+        const social = gameStore.getSocialRecordByNpcId(npcId);
+        if (social) domains[DomainType.SOCIAL] = social;
+      }
+
+      const npcData: NPCWithDomains = {
+        npc,
+        domains,
+      };
+
+      // Generate inferences using inference engine
+      const inferences = inferenceEngine.evaluate(npcData, this.enabledDomains);
 
       // Store data
       this.npcData = npcData;
-      this.inferencesData = inferencesData;
+      this.inferences = inferences;
 
       // Update NPC name
       const nameElement = this.container.querySelector('.npc-name');
       if (nameElement) {
-        nameElement.textContent = `${npcData.npc.first_name} ${npcData.npc.last_name}`;
+        nameElement.textContent = `${npc.first_name} ${npc.last_name}`;
       }
 
       // Render current tab
@@ -310,7 +343,7 @@ export class DataPanel {
     const contentDiv = this.container.querySelector('.tab-content');
     if (!contentDiv) return;
 
-    if (!this.npcData || !this.inferencesData) {
+    if (!this.npcData) {
       contentDiv.innerHTML = '<p class="hint">Loading...</p>';
       return;
     }
@@ -349,8 +382,8 @@ export class DataPanel {
     let html = '';
 
     // Inferences section (only if domains are enabled)
-    if (this.enabledDomains.size > 0 && this.inferencesData!.inferences.length > 0) {
-      html += this.renderInferences(this.inferencesData!.inferences);
+    if (this.enabledDomains.size > 0 && this.inferences.length > 0) {
+      html += this.renderInferences(this.inferences);
     } else if (this.enabledDomains.size === 0) {
       html += `
         <div class="hint">
@@ -367,8 +400,11 @@ export class DataPanel {
     }
 
     // Unlockable domains preview
-    if (this.inferencesData!.unlockable_inferences.length > 0) {
-      html += this.renderUnlockablePreview(this.inferencesData!.unlockable_inferences);
+    if (this.npcData) {
+      const unlockable = inferenceEngine.getUnlockable(this.npcData, this.enabledDomains);
+      if (unlockable.length > 0) {
+        html += this.renderUnlockablePreview(unlockable);
+      }
     }
 
     contentDiv.innerHTML = html;

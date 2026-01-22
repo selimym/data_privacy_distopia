@@ -6,6 +6,8 @@ DataFusion World is an educational game demonstrating data privacy risks through
 
 The goal is educational: demonstrate why strong privacy protections and oversight are essential.
 
+**NEW: Fat Client Architecture** - The game now runs entirely in your browser as a static web application. No backend server required! All game logic, data generation, and state management happens client-side using TypeScript and IndexedDB for persistence.
+
 ### System Mode Mechanics
 
 System Mode features an expanded mechanics system that tracks the moral and practical consequences of surveillance:
@@ -39,157 +41,79 @@ System Mode features an expanded mechanics system that tracks the moral and prac
 
 ## Architecture
 
-This is a **thin client architecture** where the frontend is purely a display layer:
+This is a **fat client architecture** where everything runs in the browser:
 
-- **Backend (Python/FastAPI)** - All game logic, state management, data generation, and decision-making happens here
-- **Frontend (Phaser 3/TypeScript)** - Display only. Calls backend API for everything including NPCs, inferences, game state
-- **Database** - SQLite (dev), PostgreSQL (production). Async SQLAlchemy ORM
+- **Frontend (Phaser 3/TypeScript)** - All game logic, state management, data generation, and decision-making
+- **In-Browser Storage** - IndexedDB for game state persistence and save/load functionality
+- **Static Hosting** - Deploy to Vercel, Netlify, GitHub Pages, or any static host for free
 
-The backend generates synthetic citizen data (health, finance, judicial, location, social media records) and the game mechanics are entirely server-side.
+The frontend generates synthetic citizen data using Faker.js (health, finance, judicial, location, social media records) and all game mechanics run client-side.
 
-## Development Commands
+**Backend Archived**: The original Python/FastAPI backend has been archived for reference. It's no longer required for gameplay but remains available in the `backend/` directory for anyone interested in the original architecture. See [BACKEND_ARCHIVE.md](BACKEND_ARCHIVE.md) for details.
+
+## Quick Start
 
 ### Installation
 ```bash
-make install              # Install both backend and frontend dependencies
-make install-backend      # Backend only (uses uv)
-make install-frontend     # Frontend only (uses pnpm)
+make install              # Install frontend dependencies (pnpm)
 ```
 
-### Development servers
+Or manually:
 ```bash
-make dev                  # Run both backend and frontend in parallel
-make dev-backend          # Backend only (port 8000, auto-reload)
-make dev-frontend         # Frontend only (Vite dev server, port 5173)
+cd frontend && pnpm install
 ```
 
-Or run individually:
+### Development
 ```bash
-# Backend
-cd backend && uv run uvicorn datafusion.main:app --reload --host 0.0.0.0 --port 8000
+make dev                  # Start development server (Vite on port 5173)
+```
 
-# Frontend
+Or manually:
+```bash
 cd frontend && pnpm dev
 ```
 
-### Testing
+Then open http://localhost:5173 in your browser.
+
+### Build for Production
 ```bash
-make test                 # Run all backend tests
-cd backend && uv run pytest                    # Same as above
-cd backend && uv run pytest tests/test_*.py    # Run specific test file
-cd backend && uv run pytest -k test_name       # Run specific test by name
+make build                # Build static files to frontend/dist/
+make preview              # Preview production build locally
 ```
 
-### Database & Data Generation
-```bash
-make seed-db              # Generate test data (50 citizens, rogue_employee scenario, seed 42)
+### Deployment
 
-# Custom data generation
-cd backend && uv run python -m scripts.seed_database --population 100 --scenario rogue_employee --seed 123
+Deploy to your favorite static hosting platform:
+
+```bash
+make deploy-vercel        # Deploy to Vercel
+make deploy-netlify       # Deploy to Netlify
+make deploy-ghpages       # Deploy to GitHub Pages
 ```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
 ### Linting
 ```bash
-# Backend (uses ruff)
-cd backend && uv run ruff check .
-cd backend && uv run ruff format .
-
-# Frontend
 cd frontend && pnpm lint
 ```
 
-### Build
+---
+
+## Archived Backend Commands
+
+The backend is no longer required for gameplay, but you can still run it for reference:
+
 ```bash
-cd frontend && pnpm build         # TypeScript compilation + Vite build
+make install-backend      # Install backend dependencies (uv)
+make dev-backend          # Run backend server (port 8000)
+make test-backend         # Run backend tests
+make seed-db              # Generate test database
 ```
 
-## Backend Structure
+See [BACKEND_ARCHIVE.md](BACKEND_ARCHIVE.md) for more information.
 
-```
-backend/src/datafusion/
-├── main.py                  # FastAPI app entry point, CORS, lifespan
-├── config.py                # Settings using pydantic-settings
-├── database.py              # SQLAlchemy async setup, Base, UUIDMixin, TimestampMixin
-├── logging_config.py        # Structured logging setup
-│
-├── api/                     # API endpoints
-│   ├── __init__.py          # Router aggregation
-│   ├── system.py            # System mode: dashboard, flags, directives (large file)
-│   ├── npcs.py              # NPC listing and retrieval
-│   ├── inferences.py        # Data fusion inference generation
-│   ├── abuse.py             # Rogue employee mode abuse actions
-│   ├── scenarios.py         # Scenario configuration
-│   ├── settings.py          # Game settings
-│   └── routes/health.py     # Health check endpoint
-│
-├── models/                  # SQLAlchemy ORM models
-│   ├── npc.py               # Core NPC model
-│   ├── health.py            # HealthRecord, HealthVisit, HealthCondition, HealthMedication
-│   ├── finance.py           # FinanceRecord, BankAccount, Transaction, Debt
-│   ├── judicial.py          # JudicialRecord (arrests, charges, trials, sentences)
-│   ├── location.py          # LocationRecord (work, home, check-ins)
-│   ├── social.py            # SocialMediaRecord (posts, relationships)
-│   ├── messages.py          # Message, MessageRecord (encrypted/decrypted messages)
-│   ├── system_mode.py       # System mode: Operator, Directive, SystemAction, PublicMetrics,
-│   │                        # ReluctanceMetrics, NewsChannel, Protest, Neighborhood,
-│   │                        # BookPublicationEvent, OperatorData (expanded mechanics)
-│   ├── abuse.py             # AbuseAction, AbuseExecution (rogue employee mode)
-│   ├── consequence.py       # ConsequenceTemplate, TimeSkip
-│   └── inference.py         # ContentRating, RuleCategory
-│
-├── schemas/                 # Pydantic schemas for API requests/responses
-│   ├── npc.py
-│   ├── health.py
-│   ├── finance.py
-│   ├── judicial.py
-│   ├── location.py
-│   ├── social.py
-│   ├── system.py            # System mode schemas (flags, directives, case files)
-│   ├── operator.py          # Operator metrics and status
-│   ├── outcomes.py          # Citizen outcomes
-│   ├── risk.py              # Risk scoring schemas
-│   ├── inference.py         # Inference generation schemas
-│   ├── abuse.py
-│   ├── scenario.py
-│   ├── settings.py
-│   ├── ending.py
-│   └── domains.py
-│
-├── services/                # Business logic
-│   ├── inference_engine.py          # Basic inference generation
-│   ├── advanced_inference_engine.py # Advanced inference rules and logic
-│   ├── inference_rules.py           # Comprehensive inference rule definitions
-│   ├── risk_scoring.py              # Risk scoring for System mode
-│   ├── operator_tracker.py          # Tracks operator decisions and metrics
-│   ├── citizen_outcomes.py          # Calculates citizen harm outcomes
-│   ├── ending_calculator.py         # Game ending logic
-│   ├── abuse_simulator.py           # Simulates abuse actions in Rogue Employee mode
-│   ├── scenario_engine.py           # Scenario configuration and loading
-│   ├── content_filter.py            # Content moderation
-│   ├── reluctance_tracking.py       # Tracks operator reluctance and termination
-│   ├── public_metrics.py            # International awareness and public anger
-│   ├── severity_scoring.py          # Action severity and categorization
-│   └── time_progression.py          # Directive progression and outcome generation
-│
-├── generators/              # Synthetic data generation
-│   ├── identity.py          # Name, demographics
-│   ├── health.py            # Medical records
-│   ├── finance.py           # Financial data
-│   ├── judicial.py          # Criminal records
-│   ├── location.py          # Location history
-│   ├── social.py            # Social media
-│   ├── messages.py          # Message generation
-│   └── scenarios/           # Scenario-specific generators
-│
-├── content/                 # Game content (messages, etc.)
-│
-└── scripts/                 # Utility scripts
-    ├── seed_database.py     # Main data seeding script
-    ├── seed_directives.py   # Seed system mode directives
-    └── seed_abuse_actions.py
-```
-
-## Frontend Structure
+## Project Structure
 
 ```
 frontend/
@@ -252,17 +176,38 @@ frontend/
 │   │       ├── OutcomeViewer.ts
 │   │       └── SystemVisualEffects.ts
 │   │
-│   ├── api/                 # API client
-│   │   ├── client.ts        # Base API client
-│   │   ├── npcs.ts
-│   │   ├── inferences.ts
-│   │   ├── abuse.ts
-│   │   ├── scenarios.ts
-│   │   ├── settings.ts
-│   │   └── system.ts
+│   ├── services/            # Game logic (all client-side)
+│   │   ├── inference-engine.ts      # Data fusion inference generation
+│   │   ├── risk-scoring.ts          # Risk scoring for System mode
+│   │   ├── citizen-outcomes.ts      # Calculates citizen harm outcomes
+│   │   ├── ending-calculator.ts     # Game ending logic
+│   │   ├── operator-tracker.ts      # Tracks operator decisions
+│   │   ├── public-metrics.ts        # International awareness tracking
+│   │   ├── reluctance-tracking.ts   # Operator reluctance mechanics
+│   │   ├── time-progression.ts      # Directive progression
+│   │   ├── news-system.ts           # Dynamic news generation
+│   │   ├── protest-system.ts        # Protest mechanics
+│   │   ├── action-execution.ts      # Action handling
+│   │   ├── event-generation.ts      # Event triggers
+│   │   └── content-loader.ts        # JSON content loading
+│   │
+│   ├── generators/          # Synthetic data generation (Faker.js)
+│   │   ├── identity.ts      # Name, demographics
+│   │   ├── health.ts        # Medical records
+│   │   ├── finance.ts       # Financial data
+│   │   ├── judicial.ts      # Criminal records
+│   │   ├── location.ts      # Location history
+│   │   ├── social.ts        # Social media
+│   │   ├── messages.ts      # Message generation
+│   │   ├── system-seed.ts   # System mode setup
+│   │   └── index.ts         # Population generation
 │   │
 │   ├── state/
+│   │   ├── GameStore.ts     # Central game state store (IndexedDB)
 │   │   └── SystemState.ts   # System mode state management
+│   │
+│   ├── api/                 # Archived (optional remote mode)
+│   │   └── inferences.ts    # Legacy API client code
 │   │
 │   ├── audio/
 │   │   ├── AudioManager.ts
@@ -355,53 +300,62 @@ Map designed using **Tiled Map Editor** (mapeditor.org), exported as JSON.
 - Business logic lives in `services/`, not in API endpoints
 
 ### Frontend Patterns
+- **Fat client architecture**: All game logic runs in the browser
 - **Phaser scenes** manage game state and rendering
-- **All game logic** is fetched from backend API (thin client architecture)
+- **Services** handle all business logic (inference, risk scoring, outcomes, etc.)
+- **Generators** create synthetic citizen data using Faker.js
+- **GameStore** manages state and IndexedDB persistence
 - **UI components** are TypeScript classes that create DOM elements
-- **API calls** use the centralized client in `api/client.ts`
 - **Asset loading**: PreloadScene.ts loads all tilesets, sprite sheets, and creates animations
-- **Sprite rendering**: WorldScene.ts uses `sprite_key` from NPC database records
+- **Sprite rendering**: WorldScene.ts uses `sprite_key` from generated NPCs
 - **Animation playback**: Sprites play direction-based walk/idle animations automatically
 - **Multi-layer tilemap**: 6 depth-sorted layers for visual richness and depth
 
-### Service Layer
-The `services/` directory contains the core game logic:
+### Service Layer (Client-Side)
+The `frontend/src/services/` directory contains all core game logic:
 - **Inference engines**: Generate data fusion insights from citizen records
 - **Risk scoring**: Calculate citizen risk scores for System mode
 - **Outcome tracking**: Measure harm caused to citizens
 - **Operator tracking**: Monitor operator decisions and compliance
+- **News & Protest systems**: Dynamic world events
+- **Ending calculator**: Determine game outcomes based on player choices
+
+### Data Generation (Client-Side)
+The `frontend/src/generators/` directory creates synthetic citizen data:
+- **Identity generator**: Names, demographics, SSNs using Faker.js
+- **Health generator**: Medical visits, conditions, medications
+- **Finance generator**: Bank accounts, transactions, debts, employment
+- **Judicial generator**: Arrests, charges, sentences, probation
+- **Location generator**: Work, home, check-ins
+- **Social generator**: Social media posts, relationships
+- **Message generator**: Encrypted messages with patterns
+- **System seed**: System mode directives and setup
+
+All generators use deterministic seeding for reproducible populations.
 
 ## Testing
 
-Tests use pytest with async support (pytest-asyncio). Key patterns:
-- `conftest.py` provides fixtures including test database and client
-- Tests use the async test client from httpx
-- Database is created fresh for each test session
-- Use `@pytest.mark.asyncio` for async tests (or rely on `asyncio_mode = "auto"`)
+The frontend uses standard JavaScript testing practices. The backend tests are archived but still available for reference.
 
-Example test structure:
-```python
-async def test_something(client: AsyncClient, db: AsyncSession):
-    # Test using client for API calls or db for direct database access
-    response = await client.get("/api/endpoint")
-    assert response.status_code == 200
-```
+### Frontend Testing
+- Unit tests for services and generators
+- Browser-based integration testing
+- Deterministic data generation for reproducible tests
 
-### Test Coverage
-
-The project includes comprehensive test coverage for:
+### Backend Testing (Archived)
+The original Python backend includes comprehensive test coverage:
 - **Core Services**: Inference engines, risk scoring, outcome calculation, ending logic
 - **System Mode Services**: Reluctance tracking, public metrics, severity scoring
 - **API Endpoints**: All major endpoints have integration tests
-- **Database Models**: Model creation and relationship tests
-- **Integration Scenarios**: Realistic gameplay scenarios (e.g., operator taking harsh actions, refusing directives)
 
-Run specific test suites:
+Run archived backend tests:
 ```bash
-cd backend && uv run pytest tests/test_system_mode_services.py  # System mode mechanics
-cd backend && uv run pytest tests/test_risk_scoring.py          # Risk scoring
-cd backend && uv run pytest tests/test_ending_calculator.py     # Ending logic
+make test-backend
+# or
+cd backend && uv run pytest
 ```
+
+See [BACKEND_ARCHIVE.md](BACKEND_ARCHIVE.md) for more information.
 
 ## Data Model Relationships
 
@@ -420,21 +374,25 @@ The data model represents a comprehensive surveillance state:
 
 ## Environment Configuration
 
-Backend uses pydantic-settings for configuration (`.env` file support):
-- `DATABASE_URL` - Database connection string (default: sqlite)
-- `DEBUG` - Debug mode (default: true)
-- `CORS_ORIGINS` - Allowed origins for CORS (default: localhost:5173)
+The game runs entirely client-side with no configuration required. Just run `make dev` and play!
 
-Frontend uses Vite with environment variables in `src/config/api.ts`:
-- API base URL defaults to `http://localhost:8000/api`
+Optional configuration:
+- **Vite environment variables**: Create a `.env` file in `frontend/` for custom build settings
+- **Data generation**: Modify seed values in generators for different populations
+
+The archived backend used pydantic-settings for configuration (see [BACKEND_ARCHIVE.md](BACKEND_ARCHIVE.md)).
 
 ## Important Notes
 
-- **Thin client**: Never implement game logic in the frontend. All decisions, calculations, and state changes happen on the backend.
-- **Async everywhere**: Backend uses async/await throughout. Use `async with` for database sessions.
-- **UUID primary keys**: All entities use UUIDs, not auto-incrementing integers.
-- **TypeScript strict mode**: Frontend uses strict TypeScript with no unused locals/parameters.
-- **Test coverage**: Backend has comprehensive test coverage. Run tests before committing.
-- **Visual assets**: The game expects pixel art assets in `frontend/public/assets/`. Code is implemented but assets need to be added separately (see Visual System section).
-- **Sprite keys**: NPC `sprite_key` values in database must match available sprite sheet filenames in `assets/characters/`.
-- **Tilemap layers**: Tiled map JSON must have layers named exactly: `1_Floor`, `2_Walls_Base`, `3_Furniture_Low`, `4_Furniture_Mid`, `5_Furniture_High`, `6_Objects`.
+- **Fat client**: All game logic runs in the browser. No backend required!
+- **Static hosting**: Deploy to any static host (Vercel, Netlify, GitHub Pages, etc.)
+- **IndexedDB persistence**: Game state automatically saves to browser storage
+- **Deterministic generation**: Use seeded random generation for reproducible populations
+- **TypeScript strict mode**: Frontend uses strict TypeScript with no unused locals/parameters
+- **Visual assets**: The game expects pixel art assets in `frontend/public/assets/`
+- **Sprite keys**: NPC `sprite_key` values must match available sprite sheet filenames in `assets/characters/`
+- **Tilemap layers**: Tiled map JSON must have layers named exactly: `1_Floor`, `2_Walls_Base`, `3_Furniture_Low`, `4_Furniture_Mid`, `5_Furniture_High`, `6_Objects`
+
+## Migration History
+
+This project was migrated from a thin client (Python backend + TypeScript frontend) to a fat client (TypeScript only) architecture. See [REFACTORING_SUMMARY.md](REFACTORING_SUMMARY.md) for the complete migration story and [BACKEND_ARCHIVE.md](BACKEND_ARCHIVE.md) for information about the archived backend code.

@@ -4,9 +4,10 @@
  * Shows content warnings before allowing access to abuse scenarios
  */
 
-import { acknowledgeWarnings, getScenarioWarnings } from '../api/settings';
+// TODO: Implement client-side settings management
+// import { acknowledgeWarnings, getScenarioWarnings } from '../api/settings';
 import type { ScenarioWarnings } from '../types/abuse';
-import { ContentRating } from '../types/npc';
+import { ContentRating } from '../types';
 
 export class WarningModal {
   private container: HTMLDivElement;
@@ -29,7 +30,16 @@ export class WarningModal {
 
   private async setupModal() {
     try {
-      const warnings = await getScenarioWarnings(this.scenarioKey);
+      // TODO: Implement client-side settings management
+      // For now, use placeholder warnings (Rogue Employee Mode not fully implemented)
+      const warnings: ScenarioWarnings = {
+        scenario_key: this.scenarioKey,
+        scenario_name: 'Rogue Employee Mode',
+        description: 'This mode is planned for future development.',
+        educational_purpose: 'Educational game about data privacy',
+        warnings: [],
+        can_filter_dark_content: false,
+      };
       this.render(warnings);
       this.attachEventListeners();
     } catch (error) {
@@ -142,7 +152,9 @@ export class WarningModal {
 
         // Acknowledge warnings
         try {
-          await acknowledgeWarnings(this.scenarioKey);
+          // TODO: Implement client-side settings persistence
+          // await acknowledgeWarnings(this.scenarioKey);
+          console.log('Warnings acknowledged for', this.scenarioKey);
         } catch (error) {
           console.error('Failed to acknowledge warnings:', error);
         }
