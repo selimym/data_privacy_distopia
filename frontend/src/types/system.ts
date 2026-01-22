@@ -16,19 +16,20 @@ export type ComplianceTrend = 'improving' | 'stable' | 'declining';
 export type ActionType = 'increase_monitoring' | 'travel_restriction' | 'employer_notification' | 'intervention' | 'detention';
 
 // NEW - Unified action system (12 action types)
-export type NewActionType =
-  | 'monitoring'
-  | 'restriction'
-  | 'intervention'
-  | 'detention'
-  | 'ice_raid'
-  | 'arbitrary_detention'
-  | 'pressure_firing'
-  | 'press_ban'
-  | 'book_ban'
-  | 'declare_protest_illegal'
-  | 'incite_violence'
-  | 'hospital_arrest';
+export enum NewActionType {
+  MONITORING = 'monitoring',
+  RESTRICTION = 'restriction',
+  INTERVENTION = 'intervention',
+  DETENTION = 'detention',
+  ICE_RAID = 'ice_raid',
+  ARBITRARY_DETENTION = 'arbitrary_detention',
+  PRESSURE_FIRING = 'pressure_firing',
+  PRESS_BAN = 'press_ban',
+  BOOK_BAN = 'book_ban',
+  DECLARE_PROTEST_ILLEGAL = 'declare_protest_illegal',
+  INCITE_VIOLENCE = 'incite_violence',
+  HOSPITAL_ARREST = 'hospital_arrest',
+}
 export type ActionUrgency = 'routine' | 'priority' | 'immediate';
 export type EndingType =
   | 'compliant_operator'
@@ -65,6 +66,7 @@ export interface DirectiveRead {
   internal_memo: string | null;
   required_domains: string[];
   flag_quota: number;
+  min_flags_required: number;
   time_limit_hours: number | null;
   moral_weight: number;
   content_rating: string;
@@ -377,6 +379,7 @@ export interface PublicMetricsRead {
   public_anger: number;  // 0-100
   awareness_tier: number;  // 0-5
   anger_tier: number;  // 0-5
+  created_at?: string;
   updated_at: string;
 }
 
@@ -389,6 +392,11 @@ export interface ReluctanceMetricsRead {
   quota_shortfall: number;
   warnings_received: number;
   is_under_review: boolean;
+  total_no_actions?: number;
+  total_hesitations?: number;
+  stage?: number;
+  warning_issued?: boolean;
+  created_at?: string;
   updated_at: string;
 }
 
@@ -471,6 +479,7 @@ export interface ExposureEventRead {
 
 export interface ExposureRiskRead {
   current_stage: number;  // 0-3
+  exposure_stage?: number;  // Alias for current_stage for backward compatibility
   risk_level: 'none' | 'low' | 'medium' | 'high' | 'critical' | 'exposed';
   progress_to_next_stage: number;  // 0-100
   awareness: number;

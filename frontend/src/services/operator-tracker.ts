@@ -7,11 +7,10 @@
  */
 
 import { gameStore } from '../state/GameStore';
-import type { Operator, OperatorMetrics } from '../state/GameStore';
+import type { Operator } from '../state/GameStore';
 import type {
   OperatorContributingFactor,
   OperatorRiskAssessment,
-  DirectiveRead,
   CitizenFlagRead,
 } from '../types';
 

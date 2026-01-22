@@ -6,7 +6,6 @@
  * Rules are hardcoded but designed to be flexible.
  */
 
-import { gameStore } from '../state/GameStore';
 import { loadKeywords, loadRiskFactorWeights } from './content-loader';
 import type {
   NPCWithDomains,
@@ -189,7 +188,7 @@ export class InferenceEngine {
    * @returns List of unlockable inferences
    */
   getUnlockable(
-    npcData: NPCWithDomains,
+    _npcData: NPCWithDomains,
     currentDomains: Set<DomainType>
   ): UnlockableInference[] {
     if (!this.initialized) {

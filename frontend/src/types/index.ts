@@ -97,7 +97,7 @@ export {
   type AlertUrgency,
   type ComplianceTrend,
   type ActionType,
-  type NewActionType,
+  NewActionType,
   type ActionUrgency,
   type EndingType,
   type ArticleType,

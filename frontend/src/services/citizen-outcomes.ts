@@ -17,7 +17,6 @@ import type { CitizenFlagRead, FlagType, NPCRead } from '../types';
 let OUTCOME_TEMPLATES_DATA: any = null;
 let FAMILY_EVENTS: string[] = [];
 let DETENTION_CONDITIONS: string[] = [];
-let SUMMARIES: any = null;
 
 /**
  * Load outcome templates from JSON file.
@@ -34,7 +33,6 @@ async function loadOutcomeTemplates(): Promise<void> {
   OUTCOME_TEMPLATES_DATA = data.outcome_templates;
   FAMILY_EVENTS = data.family_events;
   DETENTION_CONDITIONS = data.detention_conditions;
-  SUMMARIES = data.summaries;
 }
 
 // Ensure templates are loaded before use

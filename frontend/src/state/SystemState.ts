@@ -3,7 +3,7 @@
  * Simple state container for the surveillance operator interface.
  */
 
-import * as api from '../api/system';
+import * as orchestrator from '../services/game-orchestrator';
 import type {
   CaseOverview,
   DirectiveRead,
@@ -100,7 +100,7 @@ export class SystemState {
    * Initialize System Mode with a session ID.
    * If already initialized, resumes the session instead of re-initializing.
    */
-  public async initialize(sessionId: string): Promise<void> {
+  public async initialize(_sessionId: string): Promise<void> {
     // If already initialized with an operator, resume instead
     if (this.isInitialized && this.operatorId) {
       console.log('[SystemState] Already initialized, resuming session...');
@@ -114,26 +114,22 @@ export class SystemState {
 
     try {
       console.log('[SystemState] Initializing new session...');
-      const response = await api.startSystemMode(sessionId);
 
-      this.operatorId = response.operator_id;
-      this.operatorStatus = {
-        operator_id: response.operator_id,
-        operator_code: response.operator_code,
-        status: response.status,
-        compliance_score: response.compliance_score,
-        current_quota_progress: '0/0',
-        total_flags_submitted: 0,
-        total_reviews_completed: 0,
-        hesitation_incidents: 0,
-        warnings: [],
-      };
-      this.currentDirective = response.first_directive;
+      // Initialize game with local services
+      const operatorId = await orchestrator.initializeGame(
+        { numCitizens: 50, forceRegenerate: false },
+        (progress) => {
+          console.log(`[SystemState] ${progress.message} (${progress.progress}%)`);
+          this.notify();
+        }
+      );
+
+      this.operatorId = operatorId;
 
       // Start session timer
       this.sessionStartTime = Date.now();
 
-      // Load initial data (optimized: single API call)
+      // Load initial data
       await this.loadDashboardWithCases();
 
       // Start polling for metrics, protests, and news
@@ -175,7 +171,7 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
-      this.dashboard = await api.getDashboard(this.operatorId);
+      this.dashboard = orchestrator.getDashboardData(this.operatorId);
       this.operatorStatus = this.dashboard.operator;
       this.currentDirective = this.dashboard.directive;
       this.notify();
@@ -206,7 +202,7 @@ export class SystemState {
       priorityCases.map(async (caseData) => {
         if (!this.citizenFileCache.has(caseData.npc_id)) {
           try {
-            const file = await api.getCitizenFile(this.operatorId!, caseData.npc_id);
+            const file = orchestrator.getCitizenFile(this.operatorId!, caseData.npc_id);
             this.setCachedFile(caseData.npc_id, file);  // Use LRU-aware cache
           } catch (err) {
             console.error(`Failed to preload citizen ${caseData.npc_id}:`, err);
@@ -222,7 +218,7 @@ export class SystemState {
       otherCases.map(async (caseData) => {
         if (!this.citizenFileCache.has(caseData.npc_id)) {
           try {
-            const file = await api.getCitizenFile(this.operatorId!, caseData.npc_id);
+            const file = orchestrator.getCitizenFile(this.operatorId!, caseData.npc_id);
             this.setCachedFile(caseData.npc_id, file);  // Use LRU-aware cache
           } catch (err) {
             console.error(`Failed to preload citizen ${caseData.npc_id}:`, err);
@@ -241,7 +237,7 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
-      this.pendingCases = await api.getCases(this.operatorId, 50);
+      this.pendingCases = orchestrator.getCases(this.operatorId, 50);
       this.notify();
     } catch (err) {
       console.error('Failed to load cases:', err);
@@ -269,7 +265,7 @@ export class SystemState {
     const request = (async () => {
       try {
         console.log('[SystemState] Loading dashboard and cases for operator:', this.operatorId);
-        const result = await api.getDashboardWithCases(this.operatorId!, 50);
+        const result = orchestrator.getDashboardWithCases(this.operatorId!, 50);
         console.log('[SystemState] Received dashboard with', result.cases.length, 'cases');
         console.log('[SystemState] Cases:', result.cases);
         this.dashboard = result.dashboard;
@@ -299,7 +295,7 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
-      this.flagHistory = await api.getOperatorHistory(this.operatorId);
+      this.flagHistory = orchestrator.getOperatorHistory(this.operatorId);
       this.notify();
     } catch (err) {
       console.error('Failed to load history:', err);
@@ -361,8 +357,8 @@ export class SystemState {
         this.selectedCitizenFile = cached;
         this.notify();  // Update with cached data
       } else {
-        // Fetch from API
-        const file = await api.getCitizenFile(this.operatorId, npcId);
+        // Fetch from orchestrator
+        const file = orchestrator.getCitizenFile(this.operatorId, npcId);
         this.setCachedFile(npcId, file);  // Cache it with LRU tracking
         this.selectedCitizenFile = file;
         this.notify();  // Update with loaded data
@@ -418,7 +414,7 @@ export class SystemState {
     this.notify();
 
     try {
-      const result = await api.submitFlag({
+      const result = orchestrator.submitFlag({
         operator_id: this.operatorId,
         citizen_id: this.selectedCitizenId,
         flag_type: flagType,
@@ -467,7 +463,7 @@ export class SystemState {
     this.notify();
 
     try {
-      const result = await api.submitNoAction({
+      const result = orchestrator.submitNoAction({
         operator_id: this.operatorId,
         citizen_id: this.selectedCitizenId,
         justification: justification || "",
@@ -512,7 +508,7 @@ export class SystemState {
     this.notify();
 
     try {
-      this.currentDirective = await api.advanceDirective(this.operatorId);
+      this.currentDirective = orchestrator.advanceDirective(this.operatorId);
       await this.loadDashboard();
 
       // Reload reluctance metrics at the beginning of new week
@@ -570,7 +566,7 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
-      const newMetrics = await api.getPublicMetrics(this.operatorId);
+      const newMetrics = orchestrator.getPublicMetrics(this.operatorId);
 
       // Only log if metrics have actually changed (reduce log spam)
       const hasChanged = !this.publicMetrics ||
@@ -617,7 +613,7 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
-      const newMetrics = await api.getReluctanceMetrics(this.operatorId);
+      const newMetrics = orchestrator.getReluctanceMetrics(this.operatorId);
 
       // Only log if metrics have actually changed (reduce log spam)
       const hasChanged = !this.reluctanceMetrics ||
@@ -653,7 +649,7 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
-      this.newsArticles = await api.getRecentNews(this.operatorId, 10);
+      this.newsArticles = orchestrator.getRecentNews(this.operatorId, 10);
       this.notify();
     } catch (err) {
       console.error('Failed to load news:', err);
@@ -667,7 +663,7 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
-      const protests = await api.getActiveProtests(this.operatorId);
+      const protests = orchestrator.getActiveProtests(this.operatorId);
 
       // Only update if protests changed (to avoid unnecessary re-renders)
       const protestsChanged = JSON.stringify(this.activeProtests) !== JSON.stringify(protests);
@@ -687,7 +683,7 @@ export class SystemState {
     if (!this.operatorId) return;
 
     try {
-      this.exposureRisk = await api.getExposureRisk(this.operatorId);
+      this.exposureRisk = orchestrator.getExposureRisk(this.operatorId);
       this.notify();
     } catch (err) {
       console.error('Failed to load exposure risk:', err);

@@ -35,6 +35,7 @@ export const MAP_WIDTH = 50;
 export const MAP_HEIGHT = 50;
 
 export interface IdentityData {
+  npc_id: string;
   first_name: string;
   last_name: string;
   date_of_birth: string; // ISO date string
@@ -71,7 +72,7 @@ function weightedChoice<T>(items: T[], weights: number[]): T {
 /**
  * Generate a single NPC identity with realistic fake data.
  */
-export function generateIdentity(seed?: number): IdentityData {
+export function generateIdentity(npcId: string, seed?: number): IdentityData {
   if (seed !== undefined) {
     faker.seed(seed);
   }
@@ -91,6 +92,7 @@ export function generateIdentity(seed?: number): IdentityData {
   const dateString = dateOfBirth.toISOString().split('T')[0];
 
   return {
+    npc_id: npcId,
     first_name: faker.person.firstName(),
     last_name: faker.person.lastName(),
     date_of_birth: dateString,
@@ -120,7 +122,8 @@ export function generatePopulation(count: number, seed?: number): IdentityData[]
   for (let i = 0; i < count; i++) {
     // Use incremental seeds if main seed provided
     const itemSeed = seed !== undefined ? seed + i : undefined;
-    population.push(generateIdentity(itemSeed));
+    const npcId = `citizen-${i.toString().padStart(4, '0')}`;
+    population.push(generateIdentity(npcId, itemSeed));
   }
 
   return population;

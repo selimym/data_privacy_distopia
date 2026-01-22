@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { systemState } from '../state/SystemState';
 import type { CaseOverview, FlagResult, FlagType, RiskLevel, CinematicData, CitizenOutcome, ExposureEventRead, OperatorDataRead } from '../types/system';
+import { NewActionType } from '../types';
 import { MessagesPanel } from '../ui/system/MessagesPanel';
 import { DecisionResultModal } from '../ui/system/DecisionResultModal';
 import { OutcomeViewer } from '../ui/system/OutcomeViewer';
@@ -320,7 +321,7 @@ export class SystemDashboardScene extends Phaser.Scene {
           const result = await systemApi.executeAction({
             operator_id: systemState.operatorId,
             directive_id: systemState.currentDirective?.id || null,
-            action_type: 'press_ban',
+            action_type: NewActionType.PRESS_BAN,
             justification: 'Media suppression',
             decision_time_seconds: 0,
             target_news_channel_id: channelId,
@@ -330,7 +331,7 @@ export class SystemDashboardScene extends Phaser.Scene {
 
           // Generate and show cinematic
           const cinematics = generateActionCinematic({
-            actionType: 'press_ban',
+            actionType: NewActionType.PRESS_BAN,
             success: result.success,
             targetId: channelId,
             targetName: 'News Outlet', // TODO: Get actual channel name
@@ -354,7 +355,7 @@ export class SystemDashboardScene extends Phaser.Scene {
           const result = await systemApi.executeAction({
             operator_id: systemState.operatorId,
             directive_id: systemState.currentDirective?.id || null,
-            action_type: 'arbitrary_detention',
+            action_type: NewActionType.ARBITRARY_DETENTION,
             justification: 'Journalist arrest',
             decision_time_seconds: 0,
             target_citizen_id: articleId,  // Note: This might need to be the reporter's citizen ID
@@ -364,7 +365,7 @@ export class SystemDashboardScene extends Phaser.Scene {
 
           // Generate and show cinematic
           const cinematics = generateActionCinematic({
-            actionType: 'arbitrary_detention',
+            actionType: NewActionType.ARBITRARY_DETENTION,
             success: result.success,
             targetId: articleId,
             targetName: 'Journalist', // TODO: Get actual reporter name
@@ -421,7 +422,7 @@ export class SystemDashboardScene extends Phaser.Scene {
           const result = await systemApi.executeAction({
             operator_id: systemState.operatorId,
             directive_id: systemState.currentDirective?.id || null,
-            action_type: 'declare_protest_illegal',
+            action_type: NewActionType.DECLARE_PROTEST_ILLEGAL,
             justification: 'Protest suppression',
             decision_time_seconds: 0,
             target_protest_id: protest.id,
@@ -435,7 +436,7 @@ export class SystemDashboardScene extends Phaser.Scene {
 
           // Generate and show cinematic
           const cinematics = generateActionCinematic({
-            actionType: 'declare_protest_illegal',
+            actionType: NewActionType.DECLARE_PROTEST_ILLEGAL,
             success: result.success,
             targetId: protest.id,
             targetName: protest.neighborhood,
@@ -461,7 +462,7 @@ export class SystemDashboardScene extends Phaser.Scene {
           const result = await systemApi.executeAction({
             operator_id: systemState.operatorId,
             directive_id: systemState.currentDirective?.id || null,
-            action_type: 'incite_violence',
+            action_type: NewActionType.INCITE_VIOLENCE,
             justification: 'False flag operation',
             decision_time_seconds: 0,
             target_protest_id: protest.id,
@@ -488,7 +489,7 @@ export class SystemDashboardScene extends Phaser.Scene {
             onAcknowledge: () => {
               // After showing results, show cinematic
               const cinematics = generateActionCinematic({
-                actionType: 'incite_violence',
+                actionType: NewActionType.INCITE_VIOLENCE,
                 success: result.success,
                 targetId: protest.id,
                 targetName: protest.neighborhood,

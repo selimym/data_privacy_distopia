@@ -110,10 +110,10 @@ export function generateCitizen(citizenId: string, seed?: number): CitizenData {
     faker.seed(seed);
   }
 
-  // Generate identity first
-  const identity = generateIdentity(seed);
+  // Generate identity first with the citizen ID
+  const identity = generateIdentity(citizenId, seed);
 
-  // Use a stable UUID for this citizen (for now, use index-based approach)
+  // Use the citizenId as npcId
   const npcId = citizenId;
 
   // Generate all domain records

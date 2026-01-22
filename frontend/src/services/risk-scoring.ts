@@ -8,8 +8,8 @@
 
 import { gameStore } from '../state/GameStore';
 import { loadKeywords, loadRiskFactorWeights, loadCorrelationAlerts } from './content-loader';
+import { DomainType } from '../types';
 import type {
-  DomainType,
   RiskLevel,
   RiskAssessment,
   ContributingFactor,
@@ -17,12 +17,6 @@ import type {
   RecommendedAction,
   ActionType,
   ActionUrgency,
-  HealthRecord,
-  FinanceRecord,
-  JudicialRecord,
-  LocationRecord,
-  SocialMediaRecord,
-  Transaction,
 } from '../types';
 
 /**
@@ -105,12 +99,16 @@ export class RiskScorer {
 
       // Parse risk factors into usable format
       const domainMap: Record<string, DomainType> = {
-        health: 'health',
-        finance: 'finance',
-        judicial: 'judicial',
-        location: 'location',
-        social: 'social',
+        health: DomainType.HEALTH,
+        finance: DomainType.FINANCE,
+        judicial: DomainType.JUDICIAL,
+        location: DomainType.LOCATION,
+        social: DomainType.SOCIAL,
       };
+
+      if (!this.riskConfig) {
+        throw new Error('Failed to load risk configuration');
+      }
 
       for (const [factorKey, factorData] of Object.entries(
         this.riskConfig.risk_factors
@@ -118,7 +116,7 @@ export class RiskScorer {
         const domainStr = factorData.domain;
         this.riskFactors[factorKey] = {
           weight: factorData.weight,
-          domain: domainMap[domainStr],
+          domain: domainMap[domainStr] || DomainType.HEALTH,
           description: factorData.description,
         };
       }
@@ -228,7 +226,7 @@ export class RiskScorer {
    * Detect cross-domain patterns that suggest concerning behavior.
    */
   generateCorrelationAlerts(
-    npcId: string,
+    _npcId: string,
     contributingFactors: ContributingFactor[]
   ): CorrelationAlert[] {
     if (!this.correlationConfig) {
@@ -240,11 +238,11 @@ export class RiskScorer {
     const factorKeysPresent = new Set(contributingFactors.map((f) => f.factor_key));
 
     const domainMap: Record<string, DomainType> = {
-      health: 'health',
-      finance: 'finance',
-      judicial: 'judicial',
-      location: 'location',
-      social: 'social',
+      health: DomainType.HEALTH,
+      finance: DomainType.FINANCE,
+      judicial: DomainType.JUDICIAL,
+      location: DomainType.LOCATION,
+      social: DomainType.SOCIAL,
     };
 
     // Process each correlation alert from config
