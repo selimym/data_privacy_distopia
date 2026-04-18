@@ -27,6 +27,13 @@ interface UIState {
   advanceTutorial: () => void
   skipTutorial: () => void
 
+  // Tutorial completion tracking — persisted in localStorage
+  tutorialComplete: boolean
+  requestTutorial: () => void
+
+  // In-memory flag: set from StartScreen to force tutorial replay
+  tutorialRequested: boolean
+
   // Queue collapse state
   queueCollapsed: boolean
   toggleQueue: () => void
@@ -88,13 +95,16 @@ interface UIState {
 }
 
 const MEMO_KEY = 'civic-harmony-memo-acknowledged'
+const TUTORIAL_KEY = 'civic-harmony-tutorial-complete'
 
 const initialState = {
   currentScreen: 'start' as Screen,
   previousScreen: null as Screen | null,
   currentView: 'case-review' as DashboardView,
-  memoAcknowledged: localStorage.getItem(MEMO_KEY) === 'true',
+  memoAcknowledged: false,
   tutorialStep: null as number | null,
+  tutorialComplete: localStorage.getItem(TUTORIAL_KEY) === 'true',
+  tutorialRequested: false,
   queueCollapsed: false,
   selectedCitizenId: null as string | null,
   cinematicQueue: [] as CinematicData[],
@@ -129,7 +139,9 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   acknowledgeMemo: () => {
     localStorage.setItem(MEMO_KEY, 'true')
-    set({ memoAcknowledged: true, tutorialStep: 0 })
+    const { tutorialComplete, tutorialRequested } = get()
+    const startTutorial = !tutorialComplete || tutorialRequested
+    set({ memoAcknowledged: true, tutorialStep: startTutorial ? 0 : null, tutorialRequested: false })
   },
 
   advanceTutorial: () => {
@@ -139,7 +151,12 @@ export const useUIStore = create<UIState>((set, get) => ({
     set({ tutorialStep: next > 3 ? null : next })
   },
 
-  skipTutorial: () => set({ tutorialStep: null }),
+  skipTutorial: () => {
+    localStorage.setItem(TUTORIAL_KEY, 'true')
+    set({ tutorialStep: null, tutorialComplete: true })
+  },
+
+  requestTutorial: () => set({ tutorialRequested: true }),
 
   toggleQueue: () => set(state => ({ queueCollapsed: !state.queueCollapsed })),
 
@@ -240,5 +257,10 @@ export const useUIStore = create<UIState>((set, get) => ({
     newlyUnlockedDomains: [...new Set([...state.newlyUnlockedDomains, ...domains])],
   })),
 
-  reset: () => set({ ...initialState, memoAcknowledged: localStorage.getItem(MEMO_KEY) === 'true' }),
+  reset: () => set({
+    ...initialState,
+    memoAcknowledged: false,
+    tutorialComplete: localStorage.getItem(TUTORIAL_KEY) === 'true',
+    tutorialRequested: get().tutorialRequested,
+  }),
 }))
