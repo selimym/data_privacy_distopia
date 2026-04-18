@@ -5,6 +5,8 @@
  */
 import { useRef, useState, useEffect } from 'react'
 import { useUIStore } from '@/stores/uiStore'
+import { useContentStore } from '@/stores/contentStore'
+import { useGameStore } from '@/stores/gameStore'
 import { StreamingText } from '@/components/shared'
 import type { StreamingTextHandle, TextSegment } from '@/components/shared'
 
@@ -59,6 +61,9 @@ export function TutorialOverlay() {
   const tutorialStep = useUIStore(s => s.tutorialStep)
   const advanceTutorial = useUIStore(s => s.advanceTutorial)
   const skipTutorial = useUIStore(s => s.skipTutorial)
+  const setSelectedCitizen = useUIStore(s => s.setSelectedCitizen)
+  const getFilteredCaseQueue = useGameStore(s => s.getFilteredCaseQueue)
+  const unlockedDomains = useContentStore(s => s.unlockedDomains)
 
   const [tipReady, setTipReady] = useState(false)
   const [isDone, setIsDone] = useState(false)
@@ -69,6 +74,21 @@ export function TutorialOverlay() {
     setTipReady(false)
     setIsDone(false)
   }, [tutorialStep])
+
+  // Auto-select top-risk citizen when tutorial reaches the center panel
+  useEffect(() => {
+    if (tutorialStep !== 1) return
+    const queue = getFilteredCaseQueue(unlockedDomains)
+    const sorted = [...queue].sort((a, b) => {
+      const aClassified = a.risk_level === 'classified' ? 1 : 0
+      const bClassified = b.risk_level === 'classified' ? 1 : 0
+      if (bClassified !== aClassified) return bClassified - aClassified
+      return (b.risk_score ?? -1) - (a.risk_score ?? -1)
+    })
+    if (sorted.length > 0 && sorted[0] !== undefined) {
+      setSelectedCitizen(sorted[0].citizen_id)
+    }
+  }, [tutorialStep, getFilteredCaseQueue, unlockedDomains, setSelectedCitizen])
 
   if (tutorialStep === null) return null
 

@@ -14,8 +14,11 @@ const COUNTRY_KEYS = ['usa', 'uk', 'france'] as const
 export default function StartScreen() {
   const { t } = useTranslation()
   const setScreen = useUIStore((state) => state.setScreen)
+  const tutorialComplete = useUIStore(s => s.tutorialComplete)
+  const requestTutorial = useUIStore(s => s.requestTutorial)
 
   const [countries, setCountries] = React.useState<CountryProfile[]>([])
+  const [replayTutorial, setReplayTutorial] = React.useState(false)
   const [loadingCountries, setLoadingCountries] = React.useState(true)
   const [selectedKey, setSelectedKey] = React.useState<string>('usa')
   const [starting, setStarting] = React.useState(false)
@@ -55,6 +58,7 @@ export default function StartScreen() {
     setStartError(null)
     try {
       await initializeGame(selectedKey, 'SYS-OP-001')
+      if (replayTutorial) requestTutorial()
       setScreen('dashboard')
     } catch (err) {
       setStartError(String(err))
@@ -250,6 +254,31 @@ export default function StartScreen() {
           >
             {starting ? t('common.loading') : t('start.begin_shift')}
           </button>
+          {tutorialComplete && (
+            <button
+              data-testid="replay-tutorial-btn"
+              type="button"
+              onClick={() => setReplayTutorial(r => !r)}
+              style={{
+                marginTop: 8,
+                background: 'transparent',
+                border: `1px solid ${replayTutorial ? 'rgba(5, 150, 105, 0.5)' : 'rgba(255,255,255,0.15)'}`,
+                color: replayTutorial ? 'var(--color-green)' : '#6b7280',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase' as const,
+                padding: '10px 28px',
+                cursor: 'pointer',
+                borderRadius: 2,
+                transition: 'border-color 0.15s, color 0.15s',
+                display: 'block',
+                width: '100%',
+              }}
+            >
+              {replayTutorial ? '✓ REPLAY ONBOARDING' : 'REPLAY ONBOARDING'}
+            </button>
+          )}
           {hasSeenAnyEnding() && (
             <button
               data-testid="open-archive-btn"
