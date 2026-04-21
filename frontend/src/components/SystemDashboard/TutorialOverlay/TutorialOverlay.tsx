@@ -1,5 +1,5 @@
 /**
- * TutorialOverlay — 4-step guided first shift overlaid on the live dashboard.
+ * TutorialOverlay — 5-step guided first shift overlaid on the live dashboard.
  * Dims the dashboard, spotlights the relevant panel with a green glow,
  * and streams each tip using the same AI aesthetic as the memo.
  */
@@ -41,6 +41,14 @@ const STEPS: TutorialStep[] = [
       { text: 'When ready, ' },
       { text: 'flag or clear the citizen', style: { color: 'var(--text-primary)' } },
       { text: ' using the buttons at the bottom. Take your time on your first case.' },
+    ],
+  },
+  {
+    panel: 'center',
+    segments: [
+      { text: 'Pin a data item in one tab, then switch to another tab and pin a related item. When you have evidence from ' },
+      { text: 'two different domains,', style: { color: 'var(--text-primary)' } },
+      { text: ' the Connect button appears. Use it to save your observation as a standing rule — the system will apply it automatically to future citizens.' },
     ],
   },
   {
