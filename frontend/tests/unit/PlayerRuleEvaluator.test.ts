@@ -106,8 +106,7 @@ describe('evaluatePlayerRule', () => {
 describe('playerRuleToInferenceResult', () => {
   it('returns a well-shaped InferenceResult with correct fields', () => {
     const rule = makeRule()
-    const profile = makeProfile()
-    const result = playerRuleToInferenceResult(rule, profile)
+    const result = playerRuleToInferenceResult(rule)
 
     expect(result.rule_key).toBe(rule.rule_key)
     expect(result.rule_name).toBe(rule.name)
@@ -120,5 +119,16 @@ describe('playerRuleToInferenceResult', () => {
     expect(result.domains_used).toEqual(rule.evidence_domains)
     expect(result.scariness_level).toBe(rule.scariness_level)
     expect(result.origin).toBe('player')
+  })
+})
+
+describe('playerRuleToInferenceRule', () => {
+  it('creates an InferenceRule with sentinel condition_function and player origin', () => {
+    const rule = makeRule()
+    const inferenceRule = playerRuleToInferenceRule(rule)
+    expect(inferenceRule.condition_function).toBe('player_rule_evaluator')
+    expect(inferenceRule.origin).toBe('player')
+    expect(inferenceRule._player_rule_data).toBe(rule)
+    expect(inferenceRule.required_domains).toEqual(['health', 'messages'])
   })
 })
