@@ -167,6 +167,7 @@ export interface InferenceResult {
   educational_note: string
   real_world_example: string
   victim_statements: VictimStatement[]
+  origin?: 'legacy' | 'player' | 'system'
 }
 
 export interface VictimStatement {

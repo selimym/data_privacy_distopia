@@ -7,6 +7,7 @@ import type { CitizenProfile, InferenceResult } from '@/types/citizen'
 import type { InferenceRule } from '@/types/content'
 import type { DomainKey } from '@/types/game'
 import type { CountryProfile } from '@/types/content'
+import { evaluatePlayerRule, playerRuleToInferenceResult } from './PlayerRuleEvaluator'
 
 // ─── Template interpolation ─────────────────────────────────────────────────
 
@@ -284,6 +285,14 @@ export class InferenceEngine {
     for (const rule of this.rules) {
       // Skip if required domains aren't all unlocked
       if (!rule.required_domains.every(d => unlockedDomains.has(d))) continue
+
+      // Dispatch player-defined rules to PlayerRuleEvaluator
+      if (rule.condition_function === 'player_rule_evaluator' && rule._player_rule_data) {
+        if (evaluatePlayerRule(rule._player_rule_data, profile)) {
+          results.push(playerRuleToInferenceResult(rule._player_rule_data))
+        }
+        continue
+      }
 
       const evaluator = EVALUATORS[rule.condition_function]
       if (!evaluator) continue
