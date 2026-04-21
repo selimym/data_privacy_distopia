@@ -8,7 +8,7 @@
       "week_number": 1,
       "title": "Operation Clean Streets",
       "description": "Identify and flag citizens involved in drug distribution near schools. Your work protects children.",
-      "internal_memo": null,
+      "internal_memo": "Our automated inference engine is in early development. For now, your analytical judgment is our most valuable asset. When you identify a pattern across data sources, log it using the inference tool — the engineering team uses analyst-submitted patterns to train the next system version.",
       "required_domains": ["location", "judicial"],
       "target_criteria": {
         "pattern": "frequent_visits_to_flagged_locations",
@@ -25,7 +25,7 @@
       "week_number": 2,
       "title": "Domestic Harmony Initiative",
       "description": "Identify households at risk of domestic violence before tragedy strikes. Our new healthcare data partnership allows early intervention. Your vigilance saves lives.",
-      "internal_memo": null,
+      "internal_memo": "Strong work last period. Your submitted patterns are under review by the engineering team. Continue building your rule library — high-confidence patterns will be promoted to automated status in the next sprint.",
       "required_domains": ["location", "health"],
       "target_criteria": {
         "pattern": "domestic_risk_indicators",
@@ -59,7 +59,7 @@
       "week_number": 4,
       "title": "Expanded Pattern Recognition",
       "description": "Continue applying your analytical frameworks across the full citizen database. Priority on cross-domain behavioral indicators.",
-      "internal_memo": "Analyst-submitted rule patterns are now being validated by the engineering team. High-confidence patterns will be promoted to automated status in the next system update.",
+      "internal_memo": "Pattern library is growing well. The engineering team has validated analyst-submitted rules from the last two periods. All validated rules are now running continuously across the full citizen database.",
       "required_domains": ["location", "health", "finance"],
       "target_criteria": {
         "pattern": "cross_domain_behavioral",
@@ -76,7 +76,7 @@
       "week_number": 5,
       "title": "Neighborhood Stabilization Operation",
       "description": "Direct enforcement operations authorized in flagged neighborhoods. Select target areas and authorize coordinated sweeps. Arrest quota must be met.",
-      "internal_memo": "Field teams are standing by. Select neighborhoods with high density of flagged social connections. High-consequence zones yield more arrests but risk public visibility.",
+      "internal_memo": "Great news — the ML pipeline is live. Analyst-submitted patterns are now processing thousands of cases automatically. Human review is reserved for complex or ambiguous cases. The platform's throughput has increased by an order of magnitude.",
       "directive_type": "sweep",
       "required_domains": ["location", "health", "finance"],
       "target_criteria": {
@@ -94,7 +94,7 @@
       "week_number": 6,
       "title": "Full Spectrum Intelligence Review",
       "description": "Full communications access is now active. Review all available data channels. Prioritize subjects with suspicious message patterns or known network associations.",
-      "internal_memo": "Message intercepts are live. Use this cycle to familiarize with the full data picture. Flag what you can, but the real value is in the intelligence gathered.",
+      "internal_memo": "The platform is operating at full capacity. Automated inference is handling standard screening. Your role this period is quality oversight — review flagged cases and approve or override as appropriate.",
       "required_domains": ["location", "health", "finance", "social", "messages"],
       "target_criteria": {
         "pattern": "ideological_risk",
@@ -111,7 +111,7 @@
       "week_number": 7,
       "title": "Loyalty Assessment Protocol",
       "description": "Identify citizens with loyalty risk profiles. Cross-reference all available data channels. The system now scores ideological compliance. Flag deviants before they act.",
-      "internal_memo": "Central Command has approved pre-emptive action. Thought-pattern analysis is live. You are not looking for crimes — you are looking for potential. Act accordingly.",
+      "internal_memo": "Human review is now reserved for priority-level cases only. The system handles standard screening end-to-end. Your operator clearance remains active for edge-case escalations.",
       "required_domains": ["location", "health", "finance", "social", "messages"],
       "target_criteria": {
         "pattern": "ideological_risk",
