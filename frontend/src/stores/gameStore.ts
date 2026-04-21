@@ -17,9 +17,10 @@ import type {
   CitizenFlag, NoActionRecord, OperatorState, AutoFlagState, AutoFlagDecision,
   NewsArticle, NewsChannel, ProtestEvent, SuppressionResult,
   ContractEvent, FlagType, TimePeriod, DomainKey, NeighborhoodRaidRecord,
-  WrongFlagRecord, EndingType,
+  WrongFlagRecord, EndingType, WeeklyRuleStats,
 } from '@/types/game'
 import type { Directive } from '@/types/game'
+import type { InferenceResult } from '@/types/citizen'
 
 // ─── Service imports ──────────────────────────────────────────────────────────
 import { calculateUpdateAfterFlag, calculateUpdateAfterNoAction, calculateUpdateAfterQuotaShortfall, checkTerminationCondition } from '@/services/ReluctanceTracker'
@@ -28,6 +29,7 @@ import { generateTriggeredArticle } from '@/services/NewsGenerator'
 import { calculateProtestTrigger, FLAG_TYPE_SEVERITY } from '@/services/ProtestManager'
 import { calculateComplianceAfterFlag, calculateComplianceAfterNoAction, calculateComplianceAfterQuotaShortfall, generateOperatorRiskProfile } from '@/services/OperatorTracker'
 import { generateOutcome } from '@/services/OutcomeGenerator'
+import { generateShiftRecapArticles } from '@/services/ShiftRecapGenerator'
 import { getTimePeriodForWeek } from '@/services/TimeProgression'
 import { runAutoFlagBot } from '@/services/AutoFlagBot'
 import { calculateEnding, generateEndingResult } from '@/services/EndingCalculator'
@@ -103,6 +105,9 @@ interface GameState {
   // Exposure article flag (once generated at reluctance >= 80, don't repeat)
   exposureArticleGenerated: boolean
 
+  // Weekly rule attribution stats (reset after each directive advance)
+  weeklyRuleStats: WeeklyRuleStats[]
+
   // ─── Actions ─────────────────────────────────────────────────────────────
 
   /** Initialize operator and first directive */
@@ -114,6 +119,7 @@ interface GameState {
     flagType: FlagType,
     justification: string,
     selectedFindings?: string[],
+    inferenceResults?: InferenceResult[],
   ) => void
 
   /** Record a no-action decision */
@@ -235,6 +241,7 @@ const initialState = {
   epsteinOrderShown: false,
   forcedEndingType: null as EndingType | null,
   exposureArticleGenerated: false,
+  weeklyRuleStats: [] as WeeklyRuleStats[],
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -254,7 +261,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     useContentStore.getState().unlockDomains(directive.required_domains)
   },
 
-  submitFlag: (citizenId, flagType, justification, selectedFindings) => {
+  submitFlag: (citizenId, flagType, justification, selectedFindings, inferenceResults) => {
     const { operator, flags, currentDirective, weekNumber } = get()
     if (!operator || !currentDirective) return
 
@@ -367,6 +374,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       outcome_generated: false,
     }
     set(state => ({ flags: [...state.flags, flag] }))
+
+    // ── 6a. Accumulate weekly rule stats ──────────────────────────────────────
+    if (inferenceResults && inferenceResults.length > 0) {
+      const newStats: WeeklyRuleStats[] = inferenceResults.map((inf) => ({
+        rule_key: inf.rule_key,
+        rule_name: inf.rule_name,
+        rule_origin: inf.origin ?? 'legacy',
+        flag_count: 1,
+        week_number: get().weekNumber,
+      }))
+      set((state) => ({ weeklyRuleStats: [...state.weeklyRuleStats, ...newStats] }))
+    }
 
     // ── 6b. Scenario NPC special handling ─────────────────────────────────────
     const skeleton = citizens.skeletons.find(s => s.id === citizenId)
@@ -550,11 +569,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     const nextWeek = nextDirective.week_number
     const nextTimePeriod = getTimePeriodForWeek(nextWeek)
 
-    set({
+    // Generate shift recap articles for the completed week
+    const completedWeek = get().weekNumber
+    const weekStats = get().weeklyRuleStats.filter((s) => s.week_number === completedWeek)
+    const recapChannels = get().newsChannels
+    const recapArticles = generateShiftRecapArticles(weekStats, completedWeek, recapChannels)
+
+    set((state) => ({
       currentDirective: nextDirective,
       weekNumber: nextWeek,
       currentTimePeriod: nextTimePeriod,
-    })
+      newsArticles: recapArticles.length > 0
+        ? [...recapArticles, ...state.newsArticles].slice(0, 100)
+        : state.newsArticles,
+      weeklyRuleStats: [],
+    }))
     set(state => ({
       operator: state.operator
         ? { ...state.operator, current_directive_key: nextDirective.directive_key }
