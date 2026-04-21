@@ -14,6 +14,7 @@ import { DataDomainTabs } from './DataDomainTabs'
 import { InferencePanel } from './InferencePanel'
 import { FlagSubmission } from './FlagSubmission'
 import { AutoFlagDecisionPanel } from './AutoFlagDecisionPanel'
+import { CreateInferenceModal } from './CreateInferenceModal'
 
 export function CitizenPanel() {
   const { t } = useTranslation()
@@ -239,7 +240,11 @@ export function CitizenPanel() {
             </div>
           )}
           {showCreateInference && (
-            <div data-testid="create-inference-modal-placeholder" />
+            <CreateInferenceModal
+              pinnedPoints={pinnedPoints}
+              onClose={() => setShowCreateInference(false)}
+              onCreated={handleClearPins}
+            />
           )}
 
           {/* Divider */}
