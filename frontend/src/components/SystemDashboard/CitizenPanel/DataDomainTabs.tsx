@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import type { CitizenProfile } from '@/types/citizen'
 import type { DomainKey } from '@/types/game'
+import type { PinnedDataPoint } from '@/types/content'
 import { useContentStore } from '@/stores/contentStore'
 import { useUIStore } from '@/stores/uiStore'
 import { HealthTab } from './HealthTab'
@@ -16,11 +17,13 @@ interface DataDomainTabsProps {
   unlockedDomains: DomainKey[]
   activeTab: DomainKey | 'identity'
   onTabChange: (tab: DomainKey | 'identity') => void
+  pinnedPoints: PinnedDataPoint[]
+  onPin: (point: PinnedDataPoint) => void
 }
 
 const ALL_DOMAINS: DomainKey[] = ['health', 'finance', 'judicial', 'location', 'social', 'messages']
 
-export function DataDomainTabs({ profile, unlockedDomains, activeTab, onTabChange }: DataDomainTabsProps) {
+export function DataDomainTabs({ profile, unlockedDomains, activeTab, onTabChange, pinnedPoints, onPin }: DataDomainTabsProps) {
   const { t } = useTranslation()
   const country = useContentStore((s) => s.country)
   const newlyUnlockedDomains = useUIStore(s => s.newlyUnlockedDomains)
@@ -115,22 +118,46 @@ export function DataDomainTabs({ profile, unlockedDomains, activeTab, onTabChang
           <IdentitySection skeleton={profile} />
         )}
         {activeTab === 'health' && profile.health && (
-          <HealthTab health={profile.health} />
+          <HealthTab
+            health={profile.health}
+            onPin={onPin}
+            pinnedIds={pinnedPoints.filter((p) => p.domain === 'health').map((p) => p.id)}
+          />
         )}
         {activeTab === 'finance' && profile.finance && (
-          <FinanceTab finance={profile.finance} />
+          <FinanceTab
+            finance={profile.finance}
+            onPin={onPin}
+            pinnedIds={pinnedPoints.filter((p) => p.domain === 'finance').map((p) => p.id)}
+          />
         )}
         {activeTab === 'judicial' && profile.judicial && (
-          <JudicialTab judicial={profile.judicial} />
+          <JudicialTab
+            judicial={profile.judicial}
+            onPin={onPin}
+            pinnedIds={pinnedPoints.filter((p) => p.domain === 'judicial').map((p) => p.id)}
+          />
         )}
         {activeTab === 'location' && profile.location && (
-          <LocationTab location={profile.location} />
+          <LocationTab
+            location={profile.location}
+            onPin={onPin}
+            pinnedIds={pinnedPoints.filter((p) => p.domain === 'location').map((p) => p.id)}
+          />
         )}
         {activeTab === 'social' && profile.social && (
-          <SocialTab social={profile.social} />
+          <SocialTab
+            social={profile.social}
+            onPin={onPin}
+            pinnedIds={pinnedPoints.filter((p) => p.domain === 'social').map((p) => p.id)}
+          />
         )}
         {activeTab === 'messages' && profile.messages && (
-          <MessagesTab messages={profile.messages} />
+          <MessagesTab
+            messages={profile.messages}
+            onPin={onPin}
+            pinnedIds={pinnedPoints.filter((p) => p.domain === 'messages').map((p) => p.id)}
+          />
         )}
       </div>
     </div>

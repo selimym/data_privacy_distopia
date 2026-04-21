@@ -9,6 +9,7 @@ import { calculateRiskScore } from '@/services/RiskScorer'
 import type { CitizenProfile } from '@/types/citizen'
 import type { InferenceResult } from '@/types/citizen'
 import type { DomainKey } from '@/types/game'
+import type { PinnedDataPoint } from '@/types/content'
 import { DataDomainTabs } from './DataDomainTabs'
 import { InferencePanel } from './InferencePanel'
 import { FlagSubmission } from './FlagSubmission'
@@ -33,6 +34,8 @@ export function CitizenPanel() {
   const [inferenceResults, setInferenceResults] = useState<InferenceResult[]>([])
   const [activeTab, setActiveTab] = useState<DomainKey | 'identity'>('identity')
   const [visitedTabs, setVisitedTabs] = useState<Set<DomainKey>>(new Set())
+  const [pinnedPoints, setPinnedPoints] = useState<PinnedDataPoint[]>([])
+  const [showCreateInference, setShowCreateInference] = useState(false)
   const epsteinEndingTriggered = useRef(false)
 
   useEffect(() => {
@@ -80,6 +83,25 @@ export function CitizenPanel() {
       cancelled = true
     }
   }, [selectedCitizenId, dataBanks, country, inferenceRules, unlockedDomains, getProfile, startDecisionTimer])
+
+  // Reset pins when the selected citizen changes
+  useEffect(() => {
+    setPinnedPoints([])
+    setShowCreateInference(false)
+  }, [selectedCitizenId])
+
+  const handlePin = (point: PinnedDataPoint) => {
+    setPinnedPoints((prev) => {
+      const exists = prev.find((p) => p.id === point.id && p.domain === point.domain)
+      if (exists) return prev.filter((p) => !(p.id === point.id && p.domain === point.domain))
+      return [...prev, point]
+    })
+  }
+
+  const handleClearPins = () => setPinnedPoints([])
+
+  const uniquePinnedDomains = new Set(pinnedPoints.map((p) => p.domain))
+  const canConnect = pinnedPoints.length >= 2 && uniquePinnedDomains.size >= 2
 
   const hasBotDecision = selectedCitizenId !== null &&
     pendingBotDecisions.some(d => d.citizen_id === selectedCitizenId)
@@ -154,6 +176,8 @@ export function CitizenPanel() {
               profile={profile}
               unlockedDomains={unlockedDomains}
               activeTab={activeTab}
+              pinnedPoints={pinnedPoints}
+              onPin={handlePin}
               onTabChange={(tab) => {
                 setActiveTab(tab)
                 if (tab !== 'identity') {
@@ -175,6 +199,48 @@ export function CitizenPanel() {
               }}
             />
           </div>
+
+          {/* Pin connect bar */}
+          {canConnect && (
+            <div style={{ flexShrink: 0, padding: '6px 12px', background: 'var(--bg-surface)', borderTop: '1px solid var(--border-subtle)' }}>
+              <button
+                data-testid="connect-evidence-btn"
+                onClick={() => setShowCreateInference(true)}
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  letterSpacing: '0.06em',
+                  cursor: 'pointer',
+                  background: 'var(--color-amber)',
+                  color: 'var(--bg-primary)',
+                  border: 'none',
+                  padding: '4px 10px',
+                }}
+              >
+                Connect {pinnedPoints.length} items → create inference
+              </button>
+              <button
+                data-testid="clear-pins-btn"
+                onClick={handleClearPins}
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10,
+                  letterSpacing: '0.06em',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-subtle)',
+                  padding: '4px 8px',
+                  marginLeft: 8,
+                }}
+              >
+                Clear pins
+              </button>
+            </div>
+          )}
+          {showCreateInference && (
+            <div data-testid="create-inference-modal-placeholder" />
+          )}
 
           {/* Divider */}
           <div style={{ height: 2, background: 'var(--border-default)', flexShrink: 0 }} />
