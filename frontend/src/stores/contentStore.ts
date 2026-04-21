@@ -4,7 +4,8 @@
  */
 import { create } from 'zustand'
 import { loadScenario, loadCountryProfile, loadInferenceRules, loadOutcomeTemplates, loadDataBanks } from '@/services/ContentLoader'
-import type { Scenario, CountryProfile, InferenceRule, OutcomeTemplates, DataBanks } from '@/types/content'
+import { playerRuleToInferenceRule } from '@/services/PlayerRuleEvaluator'
+import type { Scenario, CountryProfile, InferenceRule, OutcomeTemplates, DataBanks, PlayerRule } from '@/types/content'
 import type { DomainKey } from '@/types/game'
 
 interface ContentState {
@@ -27,6 +28,7 @@ interface ContentState {
   unlockDomain: (domain: DomainKey) => void
   unlockDomains: (domains: DomainKey[]) => void
   updateInferenceRules: (rules: InferenceRule[]) => void
+  addPlayerRule: (rule: PlayerRule) => void
   reset: () => void
 }
 
@@ -92,6 +94,14 @@ export const useContentStore = create<ContentState>((set, get) => ({
   },
 
   updateInferenceRules: (rules) => set({ inferenceRules: rules }),
+
+  addPlayerRule: (rule) =>
+    set((state) => {
+      if (state.inferenceRules.some((r) => r.rule_key === rule.rule_key)) {
+        return state
+      }
+      return { inferenceRules: [...state.inferenceRules, playerRuleToInferenceRule(rule)] }
+    }),
 
   reset: () => set(initialState),
 }))
