@@ -91,6 +91,7 @@ frontend-v2/playwright-report/
 
 # Brainstorming / visual companion sessions
 .superpowers/
+docs/superpowers
 
 # Test results (root level)
 test-results/.worktrees/

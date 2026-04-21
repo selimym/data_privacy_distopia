@@ -276,3 +276,21 @@ export interface SuppressionResult {
   anger_delta: number
   narrative: string
 }
+
+// ─── Rule attribution ─────────────────────────────────────────────────────────
+
+export interface RuleAttributionRecord {
+  rule_key: string
+  rule_origin: 'legacy' | 'player' | 'system'
+  citizen_id: string
+  flag_type: FlagType
+  week_number: number
+}
+
+export interface WeeklyRuleStats {
+  rule_key: string
+  rule_name: string
+  rule_origin: 'legacy' | 'player' | 'system'
+  flag_count: number
+  week_number: number
+}
