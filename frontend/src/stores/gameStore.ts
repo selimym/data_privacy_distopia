@@ -841,11 +841,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       return true
     })
 
-    if (weekNumber === 8) {
-      // Week 8: only Jessica Martinez
-      return undecided.filter(c => skeletonById.get(c.citizen_id)?.scenario_key === 'jessica_martinez')
-    }
-
+    // Week 8: Jessica is in a normal queue (guaranteed to appear via appears_at_week)
     // Week 5: hacktivist goes first
     if (weekNumber === 5) {
       const hacktivistIdx = undecided.findIndex(
