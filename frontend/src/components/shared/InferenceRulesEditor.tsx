@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useContentStore } from '@/stores/contentStore'
 import { useUIStore } from '@/stores/uiStore'
 import { Modal } from './Modal'
@@ -34,6 +34,12 @@ export function InferenceRulesEditor() {
   )
 
   const isOpen = modal.type === 'inference_rules_editor'
+
+  // Re-sync from store whenever the modal opens so newly added rules appear
+  // immediately. localRules is intentionally NOT synced on every inferenceRules
+  // change — only on open — to preserve the user's in-session toggles.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (isOpen) setLocalRules(inferenceRules.map(r => ({ ...r, enabled: true }))) }, [isOpen])
 
   const handleToggle = useCallback((ruleKey: string) => {
     setLocalRules(prev =>
