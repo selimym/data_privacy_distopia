@@ -225,13 +225,13 @@ Each directive defines the week's mission:
 | 1 | review | 2 | Operation Clean Streets | 2 | — |
 | 2 | review | 2 | Domestic Harmony Initiative | 3 | Health |
 | 3 | review | 3 | Economic Security Protocol | 5 | Finance |
-| 4 | **sweep** | **20 arrests** | Neighborhood Stabilization | 7 | — |
-| 5 | review | 4 | Social Cohesion Monitoring | 8 | Social + **AutoFlag unlocked** |
+| 4 | review | 3 | Pattern Expansion Directive | 7 | — |
+| 5 | **sweep** | **20 arrests** | Neighborhood Stabilization | 7 | Social + **AutoFlag unlocked** |
 | 6 | review | 2 | Full Spectrum Intelligence | 9 | Messages |
 | 7 | review | 3 | Loyalty Assessment Protocol | 10 | — |
-| 8 | review | 1 | Priority Target Directive | 10 | Jessica Martinez only |
+| 8 | review | 3 | Priority Screening Directive | 10 | — |
 
-### Week 4: Neighborhood Sweep (unique mechanic)
+### Week 5: Neighborhood Sweep (unique mechanic)
 
 Instead of reviewing individual citizens, the player selects entire neighborhoods to raid.
 
@@ -338,6 +338,13 @@ Five pre-defined news channels with distinct political stances:
 - Headline + body generated from stance-specific templates
 - Same flag, different framing: Detention + critical → "Citizen Detained Without Trial" vs. state-friendly → "Threat Neutralized"
 
+**Shift Recap** (generated at the end of each week via `ShiftRecapGenerator`):
+- One article per active (non-banned) channel summarising the week's rule-attributed detentions
+- Attributes flag counts back to specific rules: *"Mental Health Crisis Risk screening — 12 detentions this week."*
+- Critical stance frames this as alarm; state-friendly stance celebrates efficiency
+- Generation threshold decreases each week (more articles as the arc escalates)
+- This is the primary surface where the player sees their own rules applied at scale
+
 **Background** (periodic, world-building):
 - Generic surveillance concern articles
 - No direct metrics impact
@@ -399,18 +406,18 @@ Accumulated anger from protests can trigger:
 ### Jessica Martinez — Week 8 Focal Point
 
 - Role: Community organizer, high school teacher
-- Only citizen in the Week 8 queue
+- Present in the Week 8 queue **alongside other citizens** (not the sole target)
 - Risk score is technically high (system manipulation) but morally she's innocent
 - AutoFlag bot will pre-recommend flagging her
-- **The final moral test**: the system has been guiding the player toward this moment for 7 weeks
+- **The final moral test**: the system has been guiding the player toward this moment for 7 weeks; she is now one face among many that the automation has surfaced
 
 Player choice:
 - Flag → contributes to **COMPLIANT_OPERATOR** ending (if compliance ≥80 + flags ≥10)
 - Don't flag → outcome determined by other metrics
 
-### Hamza Bendelladj — The Hacktivist Arc (Week 5+)
+### Hamza Bendelladj — The Hacktivist Arc (Week 6+)
 
-Hamza appears in the Week 5 queue with high risk scores. His messages are addressed directly to the operator.
+Hamza appears in the **Week 6** queue with high risk scores. His messages are addressed directly to the operator.
 
 **Path A — Don't Flag Hamza**:
 - End-of-week-5 memo: contact from Hamza + list of corrupt government official IDs to flag
@@ -563,7 +570,7 @@ Phaser **never reads from Zustand stores directly**.
 |---------|--------|
 | CaseRow | name, risk_score badge, risk_level label, domain count, flags/no-action indicator |
 | Behavior | Click → setSelectedCitizen(); scroll for long lists |
-| Week 4 | Replaced by SweepStatusPanel (raid records list) |
+| Week 5 | Replaced by SweepStatusPanel (raid records list) |
 
 ### CitizenPanel (center)
 
@@ -592,7 +599,7 @@ All sections individually collapsible:
 - Pending contract event → ContractBanner
 - Bot available → AutoFlagBanner
 
-### NeighborhoodSweepPanel (center, Week 4 only)
+### NeighborhoodSweepPanel (center, Week 5 only)
 
 - List of all available neighborhoods with: est. arrests (min/max), consequence_risk badge
 - Player selects; running total tracks toward 20-arrest quota
@@ -647,13 +654,26 @@ At the end of each week, a memo from a fictional colleague overlays the screen. 
 | Moderate reluctance (30–60) | Alex (70%) or Director (30%) |
 | All other weeks | Random by sender |
 
+### Normalization Arc Memos
+
+A sequence of internal memos across Weeks 1–7 frames the player's rule-creation as professional contribution and gradually hands authority to the automated system:
+
+| Week | Framing |
+|------|---------|
+| 1 | *"Your pattern submissions are being reviewed by the engineering team."* |
+| 3 | *"The system has begun applying analyst-submitted patterns automatically."* |
+| 5 | *"The ML pipeline is live. Analyst patterns are now processing thousands of cases automatically."* |
+| 7 | *"Human review is now reserved for priority-level cases only."* |
+
+These memos are distinct from the weekly performance memos and deliver the automation arc through the voice of management, making the handover feel official and routine rather than alarming.
+
 ### Special Memos
 
-**Hacktivist Contact Memo** (Week 5, Path A):
+**Hacktivist Contact Memo** (Week 6, Path A):
 - Contains contact from Hamza + list of government official IDs
 - Instruction: flag these individuals next week
 
-**Epstein Order Memo** (Week 5 or 6):
+**Epstein Order Memo** (Week 7):
 - "Do NOT flag citizen [ID]. Authorization: Central Command."
 - Displayed before all data tabs when the protected citizen is selected
 
@@ -678,11 +698,12 @@ At the end of each week, a memo from a fictional colleague overlays the screen. 
 1. Start Screen appears (always)
 2. User selects country, language
 3. First-shift memo acknowledgment (first run only)
-4. Tutorial (optional, 4 guided steps):
+4. Tutorial (optional, 5 guided steps):
    - Step 0: Dashboard layout explanation
    - Step 1: Select a citizen from the queue (queue panel highlighted)
-   - Step 2: Review a data domain (domain tabs highlighted)
-   - Step 3: Submit a flag or take no action (buttons highlighted)
+   - Step 2: Review a data domain — guided to find and pin a specific data point
+   - Step 3: Switch to a second domain tab, pin a related point, click **Connect** to create an inference rule
+   - Step 4: Submit a flag or take no action (buttons highlighted)
 5. Play begins
 
 ### Tutorial Blocking Behavior
@@ -702,6 +723,45 @@ At the end of each week, a memo from a fictional colleague overlays the screen. 
 ### Architecture
 Pure TypeScript service (no store imports). Takes CitizenProfile + InferenceRule[] + unlocked_domains → returns InferenceResult[].
 
+Two evaluators run behind the same interface:
+- **Built-in evaluator**: standard rules with a `condition_function` string matched against profile fields
+- **PlayerRuleEvaluator**: dispatched when `condition_function === 'player_rule_evaluator'`; checks whether every domain in the rule's `evidence_domains` has concerning data for the citizen
+
+### Rule Origin Taxonomy
+
+Three classes of rules coexist in the inference panel, each with distinct visual attribution:
+
+| Origin | Badge label | When it appears | Example |
+|--------|-------------|----------------|---------|
+| `legacy` | LEGACY SYSTEM | Week 1 pre-existing | "Criminal Record Detected" |
+| `player` | YOUR RULE | Weeks 1–8, player-created | "Mental Health Crisis Risk" |
+| `system` | ML PIPELINE | Weeks 5–8, ML contract fires | Auto-generated system rules |
+
+Origin is displayed as a coloured prefix label in the inference row. Legacy = gray, player = blue, system = purple.
+
+### Legacy Stub Rules (Week 1 starting state)
+
+Two deliberately blunt rules exist from day one:
+- **"Criminal Record Detected"** — triggers on any judicial entry whatsoever (a parking ticket qualifies)
+- **"Financial Risk Flag"** — triggers on any debt (a mortgage qualifies)
+
+Their intentional crudeness motivates the player to build better rules.
+
+### Cross-Domain Correlation (Player Rule Creation)
+
+The player creates rules by pinning evidence across domain tabs:
+
+1. **Pin a data point**: click any item in a domain tab — it highlights and persists across tab switches
+2. **Pin a second point** from a different domain tab — a **"Connect → create inference"** button appears
+3. **Pattern Registry dialog** opens:
+   - Name field (player names the pattern)
+   - Threat level selector (1–5, five labelled buttons: MINIMAL / LOW / MEDIUM / HIGH / CRITICAL)
+   - Category auto-derived from the selected domains (no manual selection required)
+   - Evidence chain shown as a labeled list
+4. Click **Register Pattern** — the rule is added to `contentStore.inferenceRules` and evaluates against all future citizens immediately; the current citizen's inference panel updates in-place without reload
+
+Pin state clears when the player moves to a new citizen or manually dismisses.
+
 ### InferenceRule Structure
 
 | Field | Description |
@@ -710,7 +770,9 @@ Pure TypeScript service (no store imports). Takes CitizenProfile + InferenceRule
 | name, category | Display name (e.g., "Mental Health Analysis") |
 | required_domains | Domains that must be unlocked |
 | scariness_level | 1 (minimal) → 5 (critical) |
-| condition_function | JS code evaluated against profile |
+| origin | `'legacy'` \| `'player'` \| `'system'` |
+| condition_function | Built-in function name or `'player_rule_evaluator'` |
+| _player_rule_data | PlayerRule payload (present when origin = 'player') |
 | inference_template | Text with {var} placeholders |
 | evidence_templates[] | Supporting evidence templates |
 | implications_templates[] | What this inference "means" |
@@ -720,6 +782,8 @@ Pure TypeScript service (no store imports). Takes CitizenProfile + InferenceRule
 
 ### Sample Rules (from content/inference_rules.json)
 
+- `legacy_criminal_record`: any judicial entry (legacy stub)
+- `legacy_financial_risk`: any debt (legacy stub)
 - `check_financial_desperation`: medical debt + delinquent + chronic condition
 - `check_pregnancy_tracking`: OB visits + prenatal meds + out-of-state location
 - `check_depression_suicide_risk`: antidepressants + therapy visits + financial stress
@@ -727,21 +791,20 @@ Pure TypeScript service (no store imports). Takes CitizenProfile + InferenceRule
 - `check_domestic_violence`: injury visits + social isolation
 - `check_job_loss_prediction`: no workplace check-ins + career service transactions
 - `check_gambling_addiction`: gambling transactions + casino visits + debt sources
-- 12+ additional rules across health, financial, social, behavioral domains
+- 13+ additional rules across health, financial, social, behavioral domains
 
 ### InferenceResult Fields
-- rule_key, rule_name, category, confidence (0–1 auto-calculated)
+- rule_key, rule_name, category, confidence (0–1 auto-calculated), origin
 - inference_text (interpolated), supporting_evidence[], implications[]
 - domains_used, scariness_level, educational_note, real_world_example
 - victim_statements: [{text, context, severity}]
 
-### Player Editing
-InferenceRulesEditor modal (accessible from citizen panel):
-- Toggle rules on/off
-- Edit condition functions
-- Edit output templates
-- Test rule against current citizen in real time
-- Changes persist within session (not saved to file)
+### Rule Editor Modal
+InferenceRulesEditor modal (accessible via "Edit Inference Rules" button in inference panel):
+- Lists all rules with origin labels and scariness badges
+- Toggle individual rules on/off (toggles persist for the session)
+- Save button applies the enabled subset back to the active ruleset
+- Newly added player rules appear immediately on first open (no close-reopen needed)
 
 ---
 
@@ -869,8 +932,8 @@ The inference panel is the primary moment of *data literacy education* — it sh
 This section lists areas where the current design has acknowledged gaps, rough edges, or unexplored potential. These are starting points for your collaboration:
 
 ### Game Flow & Pacing
-- **Week 4 sweep vs. individual weeks**: The neighborhood sweep mechanic is mechanically distinct but has limited player agency. How do you design a mechanic that feels as personal as individual flagging but operates at mass scale?
-- **Week 8 single target**: Having exactly one citizen in the queue removes the choice paralysis that made earlier weeks effective. Is this the right final chapter design?
+- **Week 5 sweep vs. individual weeks**: The neighborhood sweep mechanic is mechanically distinct but has limited player agency. How do you design a mechanic that feels as personal as individual flagging but operates at mass scale?
+- **Week 8 queue size**: Jessica Martinez is now one of several citizens in the Week 8 queue, which restores choice paralysis and makes singling her out feel more like the system's doing than the player's. This is resolved — but the emotional weight of the final decision may be diluted by the surrounding noise. Worth playtesting.
 - **Time between weeks**: Currently just a memo overlay. Could there be more between-week rituals — decompression, world-state reflection, implied passage of time?
 
 ### AutoFlag Bot UX
@@ -910,4 +973,4 @@ This section lists areas where the current design has acknowledged gaps, rough e
 
 ---
 
-*Document generated from full codebase analysis. Accurate as of the `Clear_dev_artifacts` branch.*
+*Document generated from full codebase analysis. Last updated 2026-04-26 to reflect the Progressive Inference Automation redesign (branch `Clear_dev_artifacts`).*
