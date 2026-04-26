@@ -49,7 +49,6 @@ export function CitizenPanel() {
     let cancelled = false
     setIsLoading(true)
     setProfile(null)
-    setInferenceResults([])
     setActiveTab('identity')
     setVisitedTabs(new Set())
     epsteinEndingTriggered.current = false
@@ -60,21 +59,9 @@ export function CitizenPanel() {
       .then(loadedProfile => {
         if (cancelled) return
         setProfile(loadedProfile)
-
-        // Run inference engine
-        const engine = new InferenceEngine(inferenceRules)
-        const unlockedSet = new Set(unlockedDomains as DomainKey[])
-        const results = engine.evaluate(loadedProfile, unlockedSet, country)
-        setInferenceResults(results)
-
-        // Run risk scoring and update cache
-        const riskAssessment = calculateRiskScore(loadedProfile, results, unlockedSet)
-        useCitizenStore.getState().updateSkeletonCache(selectedCitizenId, riskAssessment.score)
       })
       .catch(() => {
-        if (!cancelled) {
-          setProfile(null)
-        }
+        if (!cancelled) setProfile(null)
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)
@@ -83,7 +70,26 @@ export function CitizenPanel() {
     return () => {
       cancelled = true
     }
-  }, [selectedCitizenId, dataBanks, country, inferenceRules, unlockedDomains, getProfile, startDecisionTimer])
+  // tutorialStep intentionally excluded: we only read it once when a new citizen is selected
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCitizenId, dataBanks, country, getProfile, startDecisionTimer])
+
+  // Re-run inference when profile or rules change — no full reload, no flicker
+  useEffect(() => {
+    if (!profile || !country) {
+      setInferenceResults([])
+      return
+    }
+    const engine = new InferenceEngine(inferenceRules)
+    const unlockedSet = new Set(unlockedDomains as DomainKey[])
+    const results = engine.evaluate(profile, unlockedSet, country)
+    setInferenceResults(results)
+
+    const riskAssessment = calculateRiskScore(profile, results, unlockedSet)
+    if (selectedCitizenId) {
+      useCitizenStore.getState().updateSkeletonCache(selectedCitizenId, riskAssessment.score)
+    }
+  }, [profile, inferenceRules, unlockedDomains, country, selectedCitizenId])
 
   // Reset pins when the selected citizen changes
   useEffect(() => {
