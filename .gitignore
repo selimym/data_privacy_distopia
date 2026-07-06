@@ -98,3 +98,12 @@ test-results/.worktrees/
 
 # Assets
 frontend/public/assets/
+# Claude Code local settings
+.claude/settings.local.json
+
+# Test results (root level)
+test-results/
+
+# Personal working notes
+brainstorm.md
+papers_please_dev_blog_dump.txt
