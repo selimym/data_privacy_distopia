@@ -735,9 +735,11 @@ Three classes of rules coexist in the inference panel, each with distinct visual
 |--------|-------------|----------------|---------|
 | `legacy` | LEGACY SYSTEM | Week 1 pre-existing | "Criminal Record Detected" |
 | `player` | YOUR RULE | Weeks 1–8, player-created | "Mental Health Crisis Risk" |
-| `system` | ML PIPELINE | Weeks 5–8, ML contract fires | Auto-generated system rules |
+| `system` | ML PIPELINE | Weeks 5–8, once autoflag contract fires | Derived from the player's own rules by `SystemRuleGenerator`, e.g. "Cohort Model v5.2 — Mental Health Crisis Risk" |
 
 Origin is displayed as a coloured prefix label in the inference row. Legacy = gray, player = blue, system = purple.
+
+System rules are derived on each directive advance once the autoflag contract has fired (`SystemRuleGenerator`, called from `advanceDirective`): each player rule is absorbed exactly once (idempotent by rule_key); patterns with 3+ evidence domains are broadened by dropping one domain (fires on less evidence), 2-domain patterns escalate scariness by +1. Each derived rule carries a model-drift educational note and a predictive-policing real-world example. This is the mechanical proof of the memos' claim that "analyst patterns are processing cases automatically."
 
 ### Legacy Stub Rules (Week 1 starting state)
 

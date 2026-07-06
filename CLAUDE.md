@@ -21,6 +21,7 @@ Educational browser game about surveillance normalization. Fat client — all lo
 
 - **building-world-maps** — invoke before touching `frontend/src/phaser/`, tilemaps, NPC sprites/pathing, or `frontend/public/assets/`
 - **game-feel-and-transitions** — invoke before adding/changing animations, screen transitions, cinematics, or flag-submission feedback
+- **testing-game-flows** — invoke when writing tests, adding mechanics/content, or investigating "X is unreachable / never appears" bugs
 
 ## Tech Stack
 
