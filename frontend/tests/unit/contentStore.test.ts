@@ -43,3 +43,28 @@ describe('contentStore.addPlayerRule', () => {
     expect(matches).toHaveLength(1)
   })
 })
+
+describe('contentStore.addSystemRules', () => {
+  it('appends system rules to inferenceRules', () => {
+    useContentStore.getState().addPlayerRule(makePlayerRule())
+    const player = useContentStore.getState().inferenceRules[0]!
+    const systemRule = { ...player, rule_key: 'system_player_rule_1', origin: 'system' as const }
+
+    useContentStore.getState().addSystemRules([systemRule])
+
+    const rules = useContentStore.getState().inferenceRules
+    expect(rules.some((r) => r.rule_key === 'system_player_rule_1' && r.origin === 'system')).toBe(true)
+  })
+
+  it('skips rules whose rule_key already exists', () => {
+    useContentStore.getState().addPlayerRule(makePlayerRule())
+    const player = useContentStore.getState().inferenceRules[0]!
+    const systemRule = { ...player, rule_key: 'system_player_rule_1', origin: 'system' as const }
+
+    useContentStore.getState().addSystemRules([systemRule])
+    useContentStore.getState().addSystemRules([systemRule])
+
+    const matches = useContentStore.getState().inferenceRules.filter((r) => r.rule_key === 'system_player_rule_1')
+    expect(matches).toHaveLength(1)
+  })
+})

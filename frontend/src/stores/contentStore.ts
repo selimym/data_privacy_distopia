@@ -29,6 +29,7 @@ interface ContentState {
   unlockDomains: (domains: DomainKey[]) => void
   updateInferenceRules: (rules: InferenceRule[]) => void
   addPlayerRule: (rule: PlayerRule) => void
+  addSystemRules: (rules: InferenceRule[]) => void
   reset: () => void
 }
 
@@ -101,6 +102,14 @@ export const useContentStore = create<ContentState>((set, get) => ({
         return state
       }
       return { inferenceRules: [...state.inferenceRules, playerRuleToInferenceRule(rule)] }
+    }),
+
+  addSystemRules: (rules) =>
+    set((state) => {
+      const existing = new Set(state.inferenceRules.map((r) => r.rule_key))
+      const fresh = rules.filter((r) => !existing.has(r.rule_key))
+      if (fresh.length === 0) return state
+      return { inferenceRules: [...state.inferenceRules, ...fresh] }
     }),
 
   reset: () => set(initialState),

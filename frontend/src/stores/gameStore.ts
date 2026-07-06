@@ -30,6 +30,7 @@ import { calculateProtestTrigger, FLAG_TYPE_SEVERITY } from '@/services/ProtestM
 import { calculateComplianceAfterFlag, calculateComplianceAfterNoAction, calculateComplianceAfterQuotaShortfall, generateOperatorRiskProfile } from '@/services/OperatorTracker'
 import { generateOutcome } from '@/services/OutcomeGenerator'
 import { generateShiftRecapArticles } from '@/services/ShiftRecapGenerator'
+import { generateSystemRules } from '@/services/SystemRuleGenerator'
 import { getTimePeriodForWeek } from '@/services/TimeProgression'
 import { runAutoFlagBot } from '@/services/AutoFlagBot'
 import { calculateEnding, generateEndingResult } from '@/services/EndingCalculator'
@@ -598,6 +599,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       )
       if (contractEvent) {
         _fireContractEvent(contractEvent, set, get)
+      }
+    }
+
+    // ML pipeline absorbs analyst-submitted patterns once autoflag is live
+    // (contract fire above sets is_available synchronously, so week 5 derives too)
+    if (get().autoFlagState.is_available) {
+      const contentNow = useContentStore.getState()
+      const derivedRules = generateSystemRules(contentNow.inferenceRules, nextWeek)
+      if (derivedRules.length > 0) {
+        contentNow.addSystemRules(derivedRules)
       }
     }
 
