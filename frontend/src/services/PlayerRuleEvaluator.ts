@@ -51,7 +51,10 @@ export function evaluatePlayerRule(rule: PlayerRule, profile: CitizenProfile): b
   return rule.evidence_domains.every(domain => isDomainConcerning(domain, profile))
 }
 
-export function playerRuleToInferenceResult(rule: PlayerRule): InferenceResult & { origin: 'player' } {
+export function playerRuleToInferenceResult(
+  rule: PlayerRule,
+  source?: Pick<InferenceRule, 'origin' | 'educational_note' | 'real_world_example'>,
+): InferenceResult {
   const confidence = Math.min(0.65 + rule.evidence_domains.length * 0.05, 0.95)
 
   return {
@@ -67,10 +70,10 @@ export function playerRuleToInferenceResult(rule: PlayerRule): InferenceResult &
     ],
     domains_used: rule.evidence_domains,
     scariness_level: rule.scariness_level,
-    educational_note: '',
-    real_world_example: '',
+    educational_note: source?.educational_note ?? '',
+    real_world_example: source?.real_world_example ?? '',
     victim_statements: [],
-    origin: 'player',
+    origin: source?.origin ?? 'player',
   }
 }
 

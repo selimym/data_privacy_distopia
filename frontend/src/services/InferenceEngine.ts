@@ -289,7 +289,7 @@ export class InferenceEngine {
       // Dispatch player-defined rules to PlayerRuleEvaluator
       if (rule.condition_function === 'player_rule_evaluator' && rule._player_rule_data) {
         if (evaluatePlayerRule(rule._player_rule_data, profile)) {
-          results.push(playerRuleToInferenceResult(rule._player_rule_data))
+          results.push(playerRuleToInferenceResult(rule._player_rule_data, rule))
         }
         continue
       }

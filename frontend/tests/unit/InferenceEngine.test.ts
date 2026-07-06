@@ -319,6 +319,55 @@ describe('InferenceEngine', () => {
 
       expect(results).toHaveLength(0)
     })
+
+    it('system-origin rules reusing player_rule_evaluator report origin=system and their own key/name', () => {
+      const systemPlayerData: PlayerRule = {
+        ...playerRule,
+        rule_key: 'system_player_health_messages_pattern',
+        name: 'Cohort Model — Health + Messages Crisis Pattern',
+      }
+      const systemRule: InferenceRule = {
+        ...playerInferenceRule,
+        rule_key: systemPlayerData.rule_key,
+        name: systemPlayerData.name,
+        origin: 'system',
+        educational_note: 'Model generalization note',
+        real_world_example: 'Predictive policing feedback loops',
+        _player_rule_data: systemPlayerData,
+      }
+      const engine = new InferenceEngine([systemRule])
+
+      const concerningProfile: CitizenProfile = {
+        ...baseSkeleton,
+        health: {
+          conditions: [],
+          sensitive_conditions: ['HIV'],
+          medications: [],
+          visits: [],
+          insurance_provider: 'BlueCross',
+        },
+        messages: [
+          {
+            id: 'msg-1',
+            date: '2024-03-01',
+            contact: 'Unknown',
+            platform: 'Signal',
+            excerpt: 'I need help urgently',
+            is_encrypted: true,
+            is_concerning: true,
+            category: 'personal_crisis',
+          },
+        ],
+      }
+
+      const results = engine.evaluate(concerningProfile, new Set<DomainKey>(['health', 'messages']), country)
+
+      expect(results).toHaveLength(1)
+      expect(results[0]!.rule_key).toBe('system_player_health_messages_pattern')
+      expect(results[0]!.origin).toBe('system')
+      expect(results[0]!.educational_note).toBe('Model generalization note')
+      expect(results[0]!.real_world_example).toBe('Predictive policing feedback loops')
+    })
   })
 
   describe('getUnlockable()', () => {
