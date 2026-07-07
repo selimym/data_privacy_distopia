@@ -2,7 +2,26 @@
 
 ## Project
 
-Educational browser game about surveillance normalization. Fat client — all logic in the browser, no backend. See `docs/GAMEPLAY.md` for narrative/mechanics, `README.md` for architecture.
+Educational browser game about surveillance normalization. Fat client — all logic in the browser, no backend.
+
+**Design thesis (governs every change):** the game teaches through *complicity* — each action feels mundane and procedurally justified; horror accumulates. UX friction and dashboard density can be intentional. Before "improving" UX, check whether the friction serves the thesis (see `UX_Critique.html` framing note).
+
+## Document Map
+
+| Document | Use it for |
+|----------|-----------|
+| `docs/GAMEPLAY.md` | Narrative arc, mechanics summary, week table |
+| `docs/GAME_DESIGN_REFERENCE.md` | Exhaustive mechanics/UI reference + §20 known design tensions |
+| `docs/papers_please_devlog_insights.md` | Design lessons from Papers, Please (feedback timing, friction, consequence design) |
+| `UX_Critique.html` | 29 prioritized UX findings (F-01…F-29) with P0–P3 matrix |
+| `docs/ALPHA_ROADMAP.md` | Checklist to first shareable alpha |
+| `README.md` | Architecture, directory layout, testing |
+
+## Project Skills
+
+- **building-world-maps** — invoke before touching `frontend/src/phaser/`, tilemaps, NPC sprites/pathing, or `frontend/public/assets/`
+- **game-feel-and-transitions** — invoke before adding/changing animations, screen transitions, cinematics, or flag-submission feedback
+- **testing-game-flows** — invoke when writing tests, adding mechanics/content, or investigating "X is unreachable / never appears" bugs
 
 ## Tech Stack
 
@@ -37,12 +56,18 @@ frontend/public/content/
   data_banks/              ← health, finance, judicial, social, messages
   outcomes.json
   locales/en.json
+
+frontend/public/assets/
+  tilesets/interiors/      ← LimeZu Modern Interiors, 48px MV format (768×768 sheets)
+  tilesets/exteriors/      ← LimeZu Modern Exteriors, 48px MV format (768×768 sheets)
+  characters/              ← *_walk.png = 24-frame strips (32×64/frame); legacy 128×128 4×4 sheets
+  maps/town.json           ← Tiled JSON (currently placeholder — see building-world-maps skill)
 ```
 
 ## Architecture Rules
 
 - **Stores call services. Components call stores. Phaser never touches stores.**
-- Phaser ↔ React via one-way `EventTarget` bridge only
+- Phaser ↔ React via one-way `EventTarget` bridge only (`window.__worldEvents`; React dispatches, Phaser listens; Phaser signals back only via `map-ready`)
 - `import * as Phaser from 'phaser'` — never default import
 - All UUIDs via `crypto.randomUUID()`
 - All citizen data via Faker.js with deterministic seeds
@@ -67,9 +92,13 @@ submitFlag(citizenId, flagType, justification)
 
 ## Game Facts
 
-- 8 weeks / 8 directives; Jessica Martinez (week 8) is the narrative focal point
-- AutoFlag Bot available from week 4; all bot decisions log under the player's operator ID
-- 9 endings determined by: compliance, reluctance, bot usage, protest suppression, ICE approvals
+- 8 weeks / 8 directives; Jessica Martinez (week 8) is the narrative focal point, one face among many in the queue
+- Week 5 is the pivot week: neighborhood **sweep** directive (20-arrest quota) + **AutoFlag™ Bot** unlocks via the social-media contract event
+- Domain unlock order: location+judicial (wk1) → health (wk2) → finance (wk3) → social+messages (wk6)
+- All bot decisions log under the player's operator ID
+- 9 endings (10 priority levels, first match wins) determined by: compliance, reluctance, bot usage, protest suppression, ICE approvals, Jessica/hacktivist/protected-citizen choices
+- Special NPC arcs: Hamza (hacktivist, wk6), protected citizen (Epstein analog, wk5–6), Jessica (wk8) — details in GAME_DESIGN_REFERENCE §9
+- Verify week/quota facts against `frontend/public/content/scenarios/default.json` before relying on docs — docs drift
 
 ## Important Rules
 

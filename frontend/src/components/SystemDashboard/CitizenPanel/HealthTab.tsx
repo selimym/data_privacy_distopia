@@ -1,10 +1,25 @@
 import type { HealthRecord } from '@/types/citizen'
+import type { PinnedDataPoint } from '@/types/content'
 
 interface HealthTabProps {
   health: HealthRecord
+  onPin: (point: PinnedDataPoint) => void
+  pinnedIds: string[]
 }
 
-export function HealthTab({ health }: HealthTabProps) {
+const pinBtnStyle = (pinned: boolean): React.CSSProperties => ({
+  fontFamily: 'var(--font-mono)',
+  fontSize: 9,
+  cursor: 'pointer',
+  background: 'transparent',
+  border: `1px solid ${pinned ? 'var(--color-amber)' : 'var(--border-subtle)'}`,
+  color: pinned ? 'var(--color-amber)' : 'var(--text-muted)',
+  padding: '1px 5px',
+  letterSpacing: '0.04em',
+  verticalAlign: 'middle',
+})
+
+export function HealthTab({ health, onPin, pinnedIds }: HealthTabProps) {
   return (
     <div data-testid="health-tab" style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}>
       {health.conditions.length > 0 && (
@@ -21,7 +36,28 @@ export function HealthTab({ health }: HealthTabProps) {
           <div style={{ fontSize: 9, color: 'var(--color-amber)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
             Sensitive Conditions
           </div>
-          <div style={{ color: 'var(--color-amber)' }}>{health.sensitive_conditions.join(', ')}</div>
+          {health.sensitive_conditions.map((cond, i) => {
+            const id = `condition_${i}`
+            const pinned = pinnedIds.includes(id)
+            return (
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginRight: 8 }}>
+                <span style={{ color: 'var(--color-amber)' }}>{cond}</span>
+                <button
+                  data-testid={`pin-health-condition-${i}`}
+                  style={pinBtnStyle(pinned)}
+                  aria-pressed={pinned}
+                  onClick={() => onPin({
+                    id,
+                    domain: 'health',
+                    label: cond,
+                    category: 'sensitive_condition',
+                  })}
+                >
+                  {pinned ? '● Pinned' : '○ Pin'}
+                </button>
+              </span>
+            )
+          })}
         </div>
       )}
 
@@ -44,17 +80,37 @@ export function HealthTab({ health }: HealthTabProps) {
             <th>Reason</th>
             <th>Specialty</th>
             <th>Facility</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
-          {health.visits.map((v, i) => (
-            <tr key={i}>
-              <td>{v.date}</td>
-              <td>{v.reason}</td>
-              <td>{v.specialty}</td>
-              <td>{v.facility}</td>
-            </tr>
-          ))}
+          {health.visits.map((v, i) => {
+            const id = `visit_${i}`
+            const pinned = pinnedIds.includes(id)
+            return (
+              <tr key={i}>
+                <td>{v.date}</td>
+                <td>{v.reason}</td>
+                <td>{v.specialty}</td>
+                <td>{v.facility}</td>
+                <td>
+                  <button
+                    data-testid={`pin-health-visit-${i}`}
+                    style={pinBtnStyle(pinned)}
+                    aria-pressed={pinned}
+                    onClick={() => onPin({
+                      id,
+                      domain: 'health',
+                      label: `${v.reason} — ${v.facility}`,
+                      category: 'health_visit',
+                    })}
+                  >
+                    {pinned ? '● Pinned' : '○ Pin'}
+                  </button>
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>

@@ -100,15 +100,15 @@ test.describe('11 — Ending Screen', () => {
     // ── Narrative display should be visible ───────────────────────────────
     await expect(page.locator('[data-testid="narrative-display"]')).toBeVisible()
 
-    // ── Verify total flags shown (17 = 2+2+3+4+2+3+1, week 4 sweep skipped) ──
+    // ── Verify total flags shown (18 = 2+2+3+3+2+3+3, week 5 sweep skipped) ──
     const totalFlags = await page.evaluate(() => {
       const w = window as unknown as Record<string, Record<string, () => unknown>>
       return ((w.__stores['game']() as Record<string, unknown>)['flags'] as unknown[]).length
     })
-    expect(totalFlags).toBe(17)
+    expect(totalFlags).toBe(18)
 
     // ── Statistics panel should contain the flag count as text ────────────
     const statsText = await page.locator('[data-testid="statistics-panel"]').textContent()
-    expect(statsText).toMatch(/17|seventeen/i)
+    expect(statsText).toMatch(/18|eighteen/i)
   })
 })

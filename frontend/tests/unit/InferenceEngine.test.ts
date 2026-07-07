@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { InferenceEngine } from '@/services/InferenceEngine'
 import type { CitizenProfile } from '@/types/citizen'
-import type { InferenceRule } from '@/types/content'
+import type { InferenceRule, PlayerRule } from '@/types/content'
 import type { DomainKey } from '@/types/game'
 import inferenceRulesJson from '../../public/content/inference_rules.json'
 
@@ -220,6 +220,153 @@ describe('InferenceEngine', () => {
       for (let i = 1; i < results.length; i++) {
         expect(results[i - 1]!.scariness_level).toBeGreaterThanOrEqual(results[i]!.scariness_level)
       }
+    })
+  })
+
+  describe('InferenceEngine with player rules', () => {
+    const playerRule: PlayerRule = {
+      rule_key: 'player_health_messages_pattern',
+      name: 'Health + Messages Crisis Pattern',
+      category: 'player_defined',
+      scariness_level: 3,
+      evidence_domains: ['health', 'messages'],
+      evidence_keys: ['sensitive_conditions', 'concerning_messages'],
+      evidence_labels: ['Sensitive health condition detected', 'Concerning messages found'],
+      origin: 'player',
+      created_at_week: 2,
+    }
+
+    const playerInferenceRule: InferenceRule = {
+      rule_key: playerRule.rule_key,
+      name: playerRule.name,
+      category: playerRule.category,
+      required_domains: playerRule.evidence_domains,
+      scariness_level: playerRule.scariness_level,
+      content_rating: 'moderate',
+      condition_function: 'player_rule_evaluator',
+      inference_template: '',
+      evidence_templates: playerRule.evidence_labels,
+      implications_templates: [],
+      educational_note: '',
+      real_world_example: '',
+      victim_statements: [],
+      origin: 'player',
+      _player_rule_data: playerRule,
+    }
+
+    it('evaluates player_rule_evaluator rules against the citizen profile', () => {
+      const engine = new InferenceEngine([playerInferenceRule])
+
+      const concerningProfile: CitizenProfile = {
+        ...baseSkeleton,
+        health: {
+          conditions: [],
+          sensitive_conditions: ['HIV'],
+          medications: [],
+          visits: [],
+          insurance_provider: 'BlueCross',
+        },
+        messages: [
+          {
+            id: 'msg-1',
+            date: '2024-03-01',
+            contact: 'Unknown',
+            platform: 'Signal',
+            excerpt: 'I need help urgently',
+            is_encrypted: true,
+            is_concerning: true,
+            category: 'personal_crisis',
+          },
+        ],
+      }
+
+      const unlockedDomains = new Set<DomainKey>(['health', 'messages'])
+      const results = engine.evaluate(concerningProfile, unlockedDomains, country)
+
+      expect(results).toHaveLength(1)
+      expect(results[0]!.rule_key).toBe('player_health_messages_pattern')
+      expect(results[0]!.origin).toBe('player')
+    })
+
+    it('does not fire player rule when citizen lacks concerning data in a required domain', () => {
+      const engine = new InferenceEngine([playerInferenceRule])
+
+      const normalProfile: CitizenProfile = {
+        ...baseSkeleton,
+        health: {
+          conditions: [],
+          sensitive_conditions: ['HIV'],
+          medications: [],
+          visits: [],
+          insurance_provider: 'BlueCross',
+        },
+        messages: [
+          {
+            id: 'msg-2',
+            date: '2024-03-01',
+            contact: 'Alice',
+            platform: 'SMS',
+            excerpt: 'See you at lunch!',
+            is_encrypted: false,
+            is_concerning: false,
+            category: 'normal',
+          },
+        ],
+      }
+
+      const unlockedDomains = new Set<DomainKey>(['health', 'messages'])
+      const results = engine.evaluate(normalProfile, unlockedDomains, country)
+
+      expect(results).toHaveLength(0)
+    })
+
+    it('system-origin rules reusing player_rule_evaluator report origin=system and their own key/name', () => {
+      const systemPlayerData: PlayerRule = {
+        ...playerRule,
+        rule_key: 'system_player_health_messages_pattern',
+        name: 'Cohort Model — Health + Messages Crisis Pattern',
+      }
+      const systemRule: InferenceRule = {
+        ...playerInferenceRule,
+        rule_key: systemPlayerData.rule_key,
+        name: systemPlayerData.name,
+        origin: 'system',
+        educational_note: 'Model generalization note',
+        real_world_example: 'Predictive policing feedback loops',
+        _player_rule_data: systemPlayerData,
+      }
+      const engine = new InferenceEngine([systemRule])
+
+      const concerningProfile: CitizenProfile = {
+        ...baseSkeleton,
+        health: {
+          conditions: [],
+          sensitive_conditions: ['HIV'],
+          medications: [],
+          visits: [],
+          insurance_provider: 'BlueCross',
+        },
+        messages: [
+          {
+            id: 'msg-1',
+            date: '2024-03-01',
+            contact: 'Unknown',
+            platform: 'Signal',
+            excerpt: 'I need help urgently',
+            is_encrypted: true,
+            is_concerning: true,
+            category: 'personal_crisis',
+          },
+        ],
+      }
+
+      const results = engine.evaluate(concerningProfile, new Set<DomainKey>(['health', 'messages']), country)
+
+      expect(results).toHaveLength(1)
+      expect(results[0]!.rule_key).toBe('system_player_health_messages_pattern')
+      expect(results[0]!.origin).toBe('system')
+      expect(results[0]!.educational_note).toBe('Model generalization note')
+      expect(results[0]!.real_world_example).toBe('Predictive policing feedback loops')
     })
   })
 

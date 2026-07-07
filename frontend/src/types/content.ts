@@ -68,6 +68,27 @@ export interface InferenceRule {
   educational_note: string
   real_world_example: string
   victim_statements: VictimStatement[]
+  origin?: 'legacy' | 'player' | 'system'
+  _player_rule_data?: PlayerRule
+}
+
+export interface PinnedDataPoint {
+  id: string
+  domain: DomainKey
+  label: string
+  category: string
+}
+
+export interface PlayerRule {
+  rule_key: string
+  name: string
+  category: string
+  scariness_level: 1 | 2 | 3 | 4 | 5
+  evidence_domains: DomainKey[]
+  evidence_keys: string[]
+  evidence_labels: string[]
+  origin: 'player'
+  created_at_week: number
 }
 
 // ─── Outcome templates ───────────────────────────────────────────────────────

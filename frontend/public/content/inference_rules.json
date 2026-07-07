@@ -1,6 +1,50 @@
 {
   "rules": [
     {
+      "rule_key": "legacy_criminal_record",
+      "name": "Criminal Record Detected",
+      "category": "judicial_history",
+      "required_domains": ["judicial"],
+      "scariness_level": 3,
+      "content_rating": "moderate",
+      "condition_function": "check_prior_criminal_record",
+      "inference_template": "Subject has a criminal record on file.",
+      "evidence_templates": ["Judicial record: {case_count} case(s) on file"],
+      "implications_templates": ["Subject has prior law enforcement contact"],
+      "educational_note": "A criminal record includes parking tickets, dismissed charges, and juvenile records. This rule flags anyone with any judicial entry regardless of severity or outcome.",
+      "real_world_example": "Background check databases in the US contain records for over 77 million people — nearly 1 in 3 adults.",
+      "victim_statements": [
+        {
+          "text": "I was flagged on a background check for an arrest that was dismissed 12 years ago. I still can't get housing.",
+          "context": "Rental applicant, age 41",
+          "severity": 3
+        }
+      ],
+      "origin": "legacy"
+    },
+    {
+      "rule_key": "legacy_financial_risk",
+      "name": "Financial Risk Flag",
+      "category": "financial_vulnerability",
+      "required_domains": ["finance"],
+      "scariness_level": 2,
+      "content_rating": "moderate",
+      "condition_function": "check_financial_desperation",
+      "inference_template": "Subject carries debt. Financial instability detected.",
+      "evidence_templates": ["Debt accounts: {debt_count} on file"],
+      "implications_templates": ["Subject may be financially vulnerable"],
+      "educational_note": "This rule triggers for any debt — including mortgages, student loans, and medical bills that are common to most working adults.",
+      "real_world_example": "77% of Americans carry some form of debt. Credit scoring systems have historically been used to discriminate against minority communities.",
+      "victim_statements": [
+        {
+          "text": "My mortgage — the one I've been paying for 15 years — flagged me as a financial risk.",
+          "context": "Homeowner, age 52",
+          "severity": 2
+        }
+      ],
+      "origin": "legacy"
+    },
+    {
       "rule_key": "financial_desperation",
       "name": "Financial Desperation Detection",
       "category": "vulnerability_exploitation",
@@ -36,7 +80,8 @@
           "context": "Chronic illness patient",
           "severity": 4
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "pregnancy_tracking",
@@ -74,7 +119,8 @@
           "context": "Anonymous, age 31",
           "severity": 5
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "depression_suicide_risk",
@@ -113,7 +159,8 @@
           "context": "Anonymous, age 35",
           "severity": 5
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "affair_detection",
@@ -145,7 +192,8 @@
           "context": "Divorce proceeding, age 41",
           "severity": 4
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "domestic_violence",
@@ -177,7 +225,8 @@
           "context": "Domestic violence survivor, age 29",
           "severity": 5
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "job_loss_prediction",
@@ -208,7 +257,8 @@
           "context": "Job seeker, age 33",
           "severity": 3
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "gambling_addiction",
@@ -241,7 +291,8 @@
           "context": "Recovering gambling addict, age 47",
           "severity": 4
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "elderly_cognitive_decline",
@@ -273,7 +324,8 @@
           "context": "Family member of victim, age 82",
           "severity": 5
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "complete_identity_profile",
@@ -308,7 +360,8 @@
           "context": "Identity theft victim, age 52",
           "severity": 5
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "prior_criminal_record",
@@ -339,7 +392,8 @@
           "context": "Former defendant, drug possession, age 34",
           "severity": 3
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "flagged_location_association",
@@ -369,7 +423,8 @@
           "context": "Bystander, age 41",
           "severity": 3
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "recidivism_location_risk",
@@ -400,7 +455,8 @@
           "context": "Former defendant, age 28",
           "severity": 4
         }
-      ]
+      ],
+      "origin": "legacy"
     },
     {
       "rule_key": "unionization_activity",
@@ -431,7 +487,8 @@
           "context": "Warehouse worker, age 28",
           "severity": 4
         }
-      ]
+      ],
+      "origin": "legacy"
     }
   ]
 }

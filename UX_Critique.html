@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX/UI Critique — Data Privacy Dystopia</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap');
+
+  :root {
+    --bg: #0d0f13;
+    --surface: #13161c;
+    --surface-2: #1a1e27;
+    --surface-3: #232836;
+    --border: #2a2f3d;
+    --text: #c8cdd8;
+    --text-dim: #606880;
+    --text-bright: #e8ecf4;
+    --accent: oklch(65% 0.18 200);   /* teal */
+    --accent-2: oklch(65% 0.18 50);  /* amber */
+    --accent-3: oklch(65% 0.18 350); /* rose */
+    --accent-4: oklch(65% 0.18 150); /* green */
+    --critical: oklch(60% 0.20 25);
+    --tag-bg: #1e2330;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 64px 32px 120px;
+  }
+
+  /* ── Header ── */
+  .doc-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 32px;
+    margin-bottom: 48px;
+  }
+  .doc-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .doc-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-bright);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 16px;
+  }
+  .doc-meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .meta-item span {
+    color: var(--text);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 24px 28px;
+    margin-bottom: 56px;
+  }
+  .toc-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+  .toc-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 32px;
+  }
+  .toc-list a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 13px;
+    font-family: var(--mono);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .toc-list a:hover { color: var(--text-bright); }
+  .toc-num {
+    color: var(--text-dim);
+    font-size: 10px;
+    min-width: 18px;
+  }
+
+  /* ── Sections ── */
+  .section {
+    margin-bottom: 64px;
+    scroll-margin-top: 32px;
+  }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    min-width: 24px;
+  }
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-bright);
+    letter-spacing: -0.01em;
+  }
+  .section-tag {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+  .tag-critical { background: oklch(25% 0.08 25); color: var(--critical); border: 1px solid oklch(35% 0.1 25); }
+  .tag-high { background: oklch(25% 0.08 50); color: var(--accent-2); border: 1px solid oklch(35% 0.1 50); }
+  .tag-med { background: oklch(25% 0.06 200); color: var(--accent); border: 1px solid oklch(35% 0.08 200); }
+  .tag-low { background: oklch(22% 0.04 150); color: var(--accent-4); border: 1px solid oklch(30% 0.06 150); }
+
+  /* ── Finding cards ── */
+  .findings {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .finding {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .finding-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .finding-icon {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .icon-critical { background: var(--critical); }
+  .icon-high { background: var(--accent-2); }
+  .icon-med { background: var(--accent); }
+  .icon-low { background: var(--accent-4); }
+
+  .finding-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-bright);
+    flex: 1;
+  }
+  .finding-body {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .finding-desc {
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text);
+  }
+  .finding-rec {
+    background: var(--surface-3);
+    border-left: 2px solid var(--accent);
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text);
+    border-radius: 0 2px 2px 0;
+  }
+  .finding-rec strong {
+    color: var(--accent);
+    font-weight: 500;
+    display: block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .finding-rec.amber { border-left-color: var(--accent-2); }
+  .finding-rec.amber strong { color: var(--accent-2); }
+  .finding-rec.rose { border-left-color: var(--accent-3); }
+  .finding-rec.rose strong { color: var(--accent-3); }
+  .finding-rec.green { border-left-color: var(--accent-4); }
+  .finding-rec.green strong { color: var(--accent-4); }
+
+  /* ── Dividers / callouts ── */
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .callout em { color: var(--text-bright); font-style: normal; font-weight: 500; }
+
+  /* ── Two-col compare ── */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .compare-col {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+  }
+  .compare-col h4 {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .compare-col.problem h4 { color: var(--critical); }
+  .compare-col.solution h4 { color: var(--accent-4); }
+  .compare-col p { font-size: 13px; line-height: 1.6; }
+
+  /* ── Priority matrix ── */
+  .matrix {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .matrix th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .matrix td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .matrix tr:last-child td { border-bottom: none; }
+  .matrix tr:hover td { background: var(--surface-2); }
+  .sev {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .sev-c { background: oklch(22% 0.08 25); color: var(--critical); border: 1px solid oklch(32% 0.1 25); }
+  .sev-h { background: oklch(22% 0.08 50); color: var(--accent-2); border: 1px solid oklch(32% 0.1 50); }
+  .sev-m { background: oklch(22% 0.06 200); color: var(--accent); border: 1px solid oklch(32% 0.08 200); }
+  .sev-l { background: oklch(20% 0.04 150); color: var(--accent-4); border: 1px solid oklch(28% 0.06 150); }
+
+  .effort {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  /* ── Inline code ── */
+  code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--surface-3);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--accent);
+  }
+
+  /* ── Scroll top ── */
+  a.back { color: var(--text-dim); font-size: 11px; font-family: var(--mono); text-decoration: none; }
+  a.back:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="doc-header" id="top">
+    <div class="doc-label">UX/UI Design Critique &amp; Recommendations</div>
+    <div class="doc-title">Data Privacy Dystopia<br>Game Interface Review</div>
+    <div class="doc-meta">
+      <span class="meta-item">Reviewer: <span>UX/UI Consultant</span></span>
+      <span class="meta-item">Date: <span>2026-04-26</span></span>
+      <span class="meta-item">Version: <span>v2.4.1 (screenshots)</span></span>
+      <span class="meta-item">Sections: <span>10 areas · 29 findings</span></span>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">Contents</div>
+    <ul class="toc-list">
+      <li><a href="#s1"><span class="toc-num">01</span> Information Architecture &amp; Layout</a></li>
+      <li><a href="#s2"><span class="toc-num">02</span> Inference Panel</a></li>
+      <li><a href="#s3"><span class="toc-num">03</span> Moral Feedback &amp; Emotional Pacing</a></li>
+      <li><a href="#s4"><span class="toc-num">04</span> Citizen Queue &amp; Case Selection</a></li>
+      <li><a href="#s5"><span class="toc-num">05</span> Flag Submission UX</a></li>
+      <li><a href="#s6"><span class="toc-num">06</span> AutoFlag Bot UX</a></li>
+      <li><a href="#s6b"><span class="toc-num">06b</span> Inference Creation Flow</a></li>
+      <li><a href="#s6c"><span class="toc-num">06c</span> News Feed</a></li>
+      <li><a href="#s7"><span class="toc-num">07</span> Onboarding &amp; Tutorial</a></li>
+      <li><a href="#s8"><span class="toc-num">08</span> Priority Matrix</a></li>
+    </ul>
+  </div>
+
+  <!-- FRAMING -->
+  <div class="callout" style="margin-bottom:48px; border-left: 3px solid var(--accent);">
+    <em>Design thesis check.</em> The game works by making complicity feel mundane. Every UX decision must serve that goal — not generic "good UX." Some friction is intentional. Some density is intentional. This critique separates friction that <em>advances the design thesis</em> from friction that merely confuses, and density that feels <em>professional-clinical</em> from density that just loses the player.
+  </div>
+
+  <!-- ───────────────────────────────── S1 ── -->
+  <div class="section" id="s1">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-title">Information Architecture &amp; Layout</span>
+      <span class="section-tag tag-critical">Critical</span>
+    </div>
+
+    <div class="callout">
+      The three-column dashboard is the right layout. The problem is <em>hierarchy collapse</em> — everything competes at the same visual weight, so the player cannot reliably orient themselves. The Palantir aesthetic justifies density, but real Palantir UIs have a very clear primary/secondary/tertiary hierarchy even within that density.
+    </div>
+
+    <div class="findings">
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-critical"></div>
+          <div class="finding-label">F-01 · The right sidebar has no visual hierarchy — Directive, Metrics, and Alerts blend together</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            In the main screen screenshots, the right panel shows Active Directive, Compliance Score, Operator Disposition, Public Metrics, and Alerts all using identical type sizes, identical card styles, and the same background tone. The player's eye has nowhere to land. The directive — the player's current mission — is the most important contextual anchor, but it reads as just another card.
+          </div>
+          <div class="finding-rec amber">
+            <strong>Recommendation</strong>
+            Give the Active Directive a distinct visual treatment: slightly brighter background, a left accent bar in the directive's moral-weight color, and the title at a larger size. Collapse the metrics into a single compact "status bar" row (three numbers: Compliance / Awareness / Anger with color-coded values) that only expands on click. This frees vertical space and makes the directive unmistakably primary.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-critical"></div>
+          <div class="finding-label">F-02 · The data domain tabs and the inference panel compete for the same cognitive moment</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            In the health and location screenshots, the inference panel is pinned at the bottom occupying ~35% of the center panel height while the data area above is mostly empty white space. This layout inversion — the interpretation below, the evidence above, with a large void between — forces the player to scroll up to examine evidence after looking down at conclusions. The most common workflow (evidence → inference → flag decision) runs against the visual flow.
+          </div>
+          <div class="finding-rec">
+            <strong>Recommendation</strong>
+            Restructure vertically: tabs + data content fill the available space naturally and collapse when there's little content. The inference panel should appear as a <em>drawer that slides up</em> from the bottom, anchored but not always visible at full height. When inferences exist, show a sticky summary strip ("3 inferences · highest: CRITICAL") at the bottom of the data area that expands on click. This makes inference feel like a conclusion you surface intentionally, not a list you scroll past.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-03 · The top bar carries too much — directive title, week counter, quota, time, and nav all in one strip</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The topbar in the main screen contains the directive name, week/shift info, quota progress, navigation tabs, and system info. At 1080p this is illegible — items are truncated or hard to parse at a glance. The quota progress ("0/2") is the single most urgency-driving number in the game and currently is the smallest thing in the bar.
+          </div>
+          <div class="finding-rec amber">
+            <strong>Recommendation</strong>
+            Promote the quota counter to a persistent, prominent component — a large monospace display like a ticket counter in the topbar center, with a fill animation when it increments. Move directive name to the right sidebar. Navigation tabs (Case Review / News Feed / World Map) stay in the topbar but with more breathing room and active-state treatment.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-med"></div>
+          <div class="finding-label">F-04 · No persistent "current week" time label in the game state</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The weeks carry strong narrative time labels ("Now", "1 Month Later", "6 Months Later") that are central to the horror — the player realizing how much time has passed while they've been complicit. But this timestamp is only shown in cinematics, not persistently in the UI. A player who doesn't watch cinematics misses this entirely.
+          </div>
+          <div class="finding-rec green">
+            <strong>Recommendation</strong>
+            Show the narrative time label as a small, ghosted monospace string at the top of the right sidebar or in the topbar area — e.g., <code>SYS-DATE: 6 MONTHS LATER</code>. Subtle, diegetic, always present. This is low effort and high narrative payoff.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────── S2 ── -->
+  <div class="section" id="s2">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-title">Inference Panel</span>
+      <span class="section-tag tag-critical">Critical</span>
+    </div>
+
+    <div class="callout">
+      The inference panel is the game's <em>primary educational surface</em> — where the player learns what data fusion actually means for a real person. It is also the most underserved area of the UI. It reads like a data table because it is one. The design goal should be to make it feel like a machine drawing conclusions about a human being — which is much more unsettling than a table.
+    </div>
+
+    <div class="findings">
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-critical"></div>
+          <div class="finding-label">F-05 · Inference rows have identical visual weight regardless of their moral severity</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            In the screenshots, "Recidivism Risk — Location Pattern" (HIGH) and "Association with Flagged Locations" (LOW) appear as the same-height rows with only a small colored badge differentiating them. A CRITICAL inference about pregnancy tracking and a LOW inference about a flagged location feel equivalent. The player's moral attention is not being directed.
+          </div>
+          <div class="finding-rec">
+            <strong>Recommendation</strong>
+            Make scariness level 4–5 inferences physically larger — taller row, slightly brighter background, the inference text in a larger font. Level 1–2 inferences should be visually compressed (small, muted, collapsed by default). This mirrors how a real automated system would surface "priority" findings, and it teaches the player that the system is doing moral sorting for them — which is the point.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-critical"></div>
+          <div class="finding-label">F-06 · Educational notes are buried in expand rows — most players will never see them</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The most important content in the game — educational notes, real-world examples, victim statements — is hidden inside a chevron expand that looks identical to every other expand in the table. There is no signal that these rows contain something qualitatively different from just "more data." Players optimizing for quota completion will never open them.
+          </div>
+          <div class="finding-rec rose">
+            <strong>Recommendation</strong>
+            Redesign the expand to feel like cracking open a classified file. When expanded, show the educational note in a visually distinct container — off-white or sepia background, a different font weight, formatted as a short paragraph rather than a list. Victim statements deserve their own visual language: a pull-quote treatment with an em-dash attribution. Make it clear this is a different register of information — human context, not system data. Consider adding a small "real case" icon on rows that have educational content as a discoverability hook.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-07 · Rule origin (Legacy / Your Rule / ML Pipeline) is not visually salient enough</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The origin badge (LEGACY / YOUR RULE / ML PIPELINE) is one of the most important design elements in the entire game — it's how the player tracks which inferences they created vs. inherited vs. had imposed on them. In the screenshots, origin labels appear as small prefix text. By Week 5+ when all three origins coexist, the player needs to instantly know "I built this" vs. "the machine built this."
+          </div>
+          <div class="finding-rec amber">
+            <strong>Recommendation</strong>
+            Give each origin a full left-border treatment in its color (gray=legacy, blue=player, purple=ML) and a distinct icon. For "YOUR RULE" rows specifically, add a subtle pulsing indicator when the rule was recently created — making the player feel the causal chain between their rule creation and its current application.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-08 · Cross-domain inference callout is easy to miss</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The "CROSS-DOMAIN INFERENCE" text appears in small red text at the bottom of the inference section in the location screenshots. This is one of the game's core thesis moments — innocent data from two domains combining into surveillance — and it's displayed as a footer. The player may scroll past it entirely.
+          </div>
+          <div class="finding-rec">
+            <strong>Recommendation</strong>
+            Elevate the cross-domain callout to a dedicated visual element — a connecting line or node diagram between the two source domains (could be as simple as two small domain icons with a line between them), displayed inline with the inference row rather than as a footnote. It should feel like "the machine showing its work."
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────── S3 ── -->
+  <div class="section" id="s3">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-title">Moral Feedback &amp; Emotional Pacing</span>
+      <span class="section-tag tag-critical">Critical</span>
+    </div>
+
+    <div class="callout">
+      The game's horror is supposed to accumulate across 8 weeks. Currently, the only mid-game moral mirror is the shift memo and abstract metric numbers. Citizens disappear after flagging. The player never sees what their flags actually do until the ending. <em>This is the biggest gap between design intent and implementation.</em>
+    </div>
+
+    <div class="findings">
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-critical"></div>
+          <div class="finding-label">F-09 · Flagged citizens vanish — there is no trace of consequences mid-game</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            Once a citizen is flagged, they disappear from the queue and are not seen again until the ending screen's fate summary. The player can submit dozens of flags without any signal of what happens to those people. The metrics go up, but there's no face attached to the numbers. This makes the game feel like a data exercise rather than an act of harm.
+          </div>
+          <div class="finding-rec rose">
+            <strong>Recommendation</strong>
+            Add a "processed" section at the bottom of the citizen queue — a grayed-out, collapsed list of flagged citizens with a one-line status that updates over time (e.g., "Veum, Maurice · Enhanced monitoring initiated"). These should feel bureaucratic and mundane, not dramatic. As weeks pass, statuses escalate: "Travel restriction applied" → "Employment terminated" → "Detained." The player accumulates this list passively while reviewing new cases. It doesn't demand attention, but it's always there.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-10 · Compliance Score and Reluctance Score are abstract — no human context</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The right sidebar shows numeric gauges for Compliance and Operator Disposition. These numbers don't tell the player what they mean in human terms. A compliance score of 56 is meaningless without understanding "56 out of 100 what?" — and the bar moving slightly after a flag doesn't feel consequential.
+          </div>
+          <div class="finding-rec amber">
+            <strong>Recommendation</strong>
+            Replace or supplement the abstract gauge with a one-line textual status that changes contextually: <code>COMPLIANCE: 56 — "Performance within acceptable range."</code> As it drops: <code>"Review your hesitation pattern."</code> At warning threshold: <code>"Director Chen has been notified."</code> This makes the score feel like an institutional eye watching the player, not just a game meter.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-11 · The shift memo is the only decompression beat — it carries too much narrative weight</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The end-of-week memos are beautifully written and tonally distinct. But they are the sole moment of reflection in the game. A player who skips or speed-reads them loses all the normalization arc. And because they also carry next-directive briefings, the memo toggle between "moral mirror" and "mission briefing" — two very different registers — creates cognitive dissonance.
+          </div>
+          <div class="finding-rec">
+            <strong>Recommendation</strong>
+            Split the memo into two stages: (1) a full-screen memo that handles only the emotional/narrative beat — colleague feedback, moral register — with no forward-facing content. Then (2) a separate transition card: the next directive briefing, styled differently (operational, cold, forward-looking). This gives the player a moment to sit with the moral weight before pivoting to the next mission. It also makes skipping the memo feel more costly — you're skipping the human moment, not just a preamble.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-med"></div>
+          <div class="finding-label">F-12 · Hesitation is tracked but invisible to the player in the moment</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The decision timer runs silently. The player doesn't know their hesitation is being tracked, or that it affects their Reluctance score. The design document says hesitation >30s increments reluctance by +5 — but there is no signal to the player. This means the player can't make an informed decision about whether to take their time (moral deliberation) or move faster (strategic compliance).
+          </div>
+          <div class="finding-rec green">
+            <strong>Recommendation</strong>
+            Show the timer — but make it feel like institutional surveillance, not a game mechanic. A small clock or elapsed-time display in the bottom of the case panel, styled as a system log: <code>REVIEW TIME: 00:47</code>. This diegetically communicates "the system is watching how long you take" without breaking immersion. Players who notice it will feel watched. Players who don't will still be tracked. Both outcomes serve the game's thesis.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────── S4 ── -->
+  <div class="section" id="s4">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-title">Citizen Queue &amp; Case Selection</span>
+      <span class="section-tag tag-high">High</span>
+    </div>
+
+    <div class="findings">
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-13 · Risk score badges do all the pre-selection sorting — players never have to make a discovery</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The citizen queue shows risk scores prominently for every citizen. A player optimizing for quota will simply sort by risk score and flag the top N citizens without reading their files. This short-circuits the intended experience of discovering alarming inferences yourself. The queue becomes a leaderboard of flaggability, not a list of people.
+          </div>
+          <div class="finding-rec rose">
+            <strong>Recommendation</strong>
+            Remove risk scores from the queue entirely in the early weeks. Show only name, a domain count indicator (how much data is available), and a "review pending" status. The score is only generated after the player opens the file and the inference engine runs. This forces at least one click of discovery per citizen, and makes the risk score feel like something the system computes from your review — not a pre-existing verdict.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-med"></div>
+          <div class="finding-label">F-14 · Queue has no sense of time pressure or backlog urgency</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The citizen queue is a static list. There's nothing in the UI that makes the player feel the weight of 30–50 pending cases, or that cases are waiting. The only urgency comes from the quota bar, which is abstract. In a real surveillance bureaucracy, the volume of cases is part of the pressure to delegate judgment.
+          </div>
+          <div class="finding-rec amber">
+            <strong>Recommendation</strong>
+            Show a case count at the top of the queue: <code>47 CASES PENDING · QUOTA: 2/3</code>. Consider subtle aging indicators — a timestamp on each case showing "added 2h ago," "added 4h ago" — that make the backlog feel like a real workload accumulating. This also implicitly justifies the AutoFlag bot as a response to volume, which is the real-world rationale for these systems.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────── S5 ── -->
+  <div class="section" id="s5">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <span class="section-title">Flag Submission UX</span>
+      <span class="section-tag tag-high">High</span>
+    </div>
+
+    <div class="findings">
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-15 · Flag type selection feels like a form field — not a consequential moral choice</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The flag type selector uses radio buttons labeled "Enhanced Monitoring · Travel Restriction Order · Welfare Intervention · Administrative Detention." These are consequentially different outcomes — from surveillance to indefinite imprisonment — but they are presented as identical-weight radio options in a horizontal row. There is no friction difference between selecting "Monitoring" and selecting "Detention."
+          </div>
+          <div class="finding-rec rose">
+            <strong>Recommendation</strong>
+            Give each flag type a distinct visual weight that scales with consequence. Monitoring: neutral, no additional treatment. Restriction: amber border. Intervention: orange. Detention: red background, slightly larger, and a micro-confirm step ("This action initiates administrative detention. Confirm?"). The escalating visual severity mirrors the human cost, and the Detention confirm step creates just enough friction to feel like an institutional checkpoint — not an obstacle, but a formality the system makes you click through.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-16 · "No Action" is visually subordinated — it reads as "do nothing" rather than a meaningful choice</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The NO ACTION button is gray and secondary. In the game's logic, taking no action is an active moral decision — it increases Reluctance and risks compliance penalties. But visually, it looks like a cancel button, not a meaningful choice. Players may avoid it simply because it looks like the wrong answer.
+          </div>
+          <div class="finding-rec">
+            <strong>Recommendation</strong>
+            Rename "No Action" to something more diegetically meaningful — "PASS · INSUFFICIENT GROUNDS" or "CLEAR FILE." Give it equal visual weight to the Submit button, just in a cooler color. The point is that the player should feel they are making a decision either way — not that one option is the real button and the other is a back door.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-med"></div>
+          <div class="finding-label">F-17 · Flag submission has no transition — the citizen simply disappears</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            After clicking Submit Flag, the citizen is removed from the queue and the center panel resets. There is no acknowledgment of what just happened — no confirmation, no record, no momentary weight. The action that is the moral core of the game is completed in a single click with no feedback.
+          </div>
+          <div class="finding-rec amber">
+            <strong>Recommendation</strong>
+            Add a brief (0.8s) transition after flagging: the citizen profile fades to a "FILE SUBMITTED — [FLAG TYPE]" confirmation state with a case ID and timestamp before clearing. This mirrors bureaucratic paper-trails and gives the action weight. The citizen's name and flag type should also appear as a new entry in the processed section of the queue (per F-09), cementing the causal chain.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────── S6 ── -->
+  <div class="section" id="s6">
+    <div class="section-header">
+      <span class="section-num">06</span>
+      <span class="section-title">AutoFlag Bot UX</span>
+      <span class="section-tag tag-high">High</span>
+    </div>
+
+    <div class="callout">
+      The AutoFlag bot is the game's most powerful argument — automation as moral diffusion. The design document acknowledges that "approving a bot recommendation feels lower-stakes than manual flagging, even though the outcome is identical." The UX should lean into this dissonance, not smooth it over.
+    </div>
+
+    <div class="findings">
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-18 · Bot approval feels like a rubber-stamp — there is no friction or legibility to the process</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The current bot design runs a bulk sweep and presents decisions for player approval. But if the approval UI is a simple confirm dialog, the player is just clicking OK. The design intent — making automation feel seductive and easy while the outcome is identical to manual flagging — is not fully realized. The player needs to feel the comfort of delegation, not just be told about it.
+          </div>
+          <div class="finding-rec">
+            <strong>Recommendation</strong>
+            Design a "bot review mode" that shows pending bot decisions as a scrollable list — each citizen's name, flag type, and bot confidence score — with a single "Approve All" button at the bottom. The UX flow should feel like reviewing a spreadsheet, not making decisions. Citizens scroll past rapidly. The contrast with the deliberate one-by-one manual review is the point. Each approved row should show a brief animation of the citizen profile briefly flashing before being processed — present, then gone. Volume and speed are the message.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-med"></div>
+          <div class="finding-label">F-19 · Bot confidence percentages read as theater but don't feel like theater</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The design document notes that bot confidence percentages are "ML-speak templates" — they're generated from formulas and don't represent real statistical confidence. But in the UI they look identical to any other percentage. The player has no reason to be skeptical of them. This is a missed opportunity: the game could make the theater visible to attentive players.
+          </div>
+          <div class="finding-rec green">
+            <strong>Recommendation</strong>
+            Add subtle anomalies into bot confidence display — e.g., two citizens with nearly identical risk profiles showing 91.2% and 91.4% confidence, generated by the same formula. Add an easter egg: hovering over the confidence score shows a tooltip like <code>CONFIDENCE SCORE v2.1 · threshold-adjusted</code> with no further explanation. Attentive players will notice the numbers are formulaic. Less attentive players won't — which is also the point.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────── S7 ── -->
+  <div class="section" id="s7">
+    <div class="section-header">
+      <span class="section-num">07</span>
+      <span class="section-title">Onboarding &amp; Tutorial</span>
+      <span class="section-tag tag-med">Medium</span>
+    </div>
+
+    <div class="findings">
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-20 · The start screen underuses its dramatic potential — country selection is functional but cold</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The start screen shows three country cards (US / GB / FR) with surveillance depth bars and a "Begin Shift" button. This is clean and efficient, but for a game about normalization, the onboarding should itself normalize. The current screen reads as a settings menu. The player doesn't yet feel they're about to start a job.
+          </div>
+          <div class="finding-rec amber">
+            <strong>Recommendation</strong>
+            Before the country selection, show a brief "system boot" sequence — a terminal-style loading screen with scrolling system initialization text (fake process names, database connections, operator credentials verified). Then fade into the country selection framed not as a choice but as an assignment: <code>DEPLOYMENT ASSIGNMENT — SELECT YOUR OPERATIONAL REGION</code>. The country cards should feel less like game options and more like desk assignments. Small copy changes with large tonal impact.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-med"></div>
+          <div class="finding-label">F-21 · Tutorial teaches mechanics but not the moral stakes of the first decision</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The tutorial walks players through: select a citizen, review a domain, pin and connect data points, submit a flag. It teaches the mechanics correctly. But it guides the player through a flag submission without the player necessarily understanding they've just simulated detaining someone. The tutorial's first flag is a "safe" practice, which may set a tone of "this is just a puzzle."
+          </div>
+          <div class="finding-rec">
+            <strong>Recommendation</strong>
+            After the tutorial flag submission, add a single additional tutorial card — not a game mechanic explanation, but a human outcome: <code>"SYSTEM NOTE: Flag submitted. Subject will be notified of enhanced monitoring. Average processing time: 48 hours."</code> No moral judgment, just a bureaucratic consequence. This is the only moment in the tutorial where the real-world analog is made concrete. It plants the seed without lecturing.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-med"></div>
+          <div class="finding-label">F-22 · The inference rule creation flow (pin → connect → register) is not intuitive enough to survive without the tutorial</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The connect-inference workflow — pin a data point, switch tabs, pin another, see the "Connect → create inference" button — is innovative but depends on discovery. Players who don't do the tutorial may never notice they can pin things. The affordance (clicking any data item to pin it) is invisible without guidance.
+          </div>
+          <div class="finding-rec green">
+            <strong>Recommendation</strong>
+            Add a first-time contextual tooltip when a player opens their first data domain tab: a dimmed overlay on a single data item with <code>TIP: Click any item to pin it for cross-domain analysis</code>. This is a one-time nudge that doesn't require the tutorial. Also consider making pinned items more visually dramatic — a persistent "pinned" strip at the top of the center panel showing pinned items from different domains, so the player always knows their current pin state.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────── S6b ── -->
+  <div class="section" id="s6b">
+    <div class="section-header">
+      <span class="section-num">06b</span>
+      <span class="section-title">Inference Creation Flow (Pin → Connect → Register)</span>
+      <span class="section-tag tag-critical">Critical</span>
+    </div>
+
+    <div class="callout">
+      The inference creation mechanic is the game's most original system — the player literally builds the surveillance apparatus. The flow is: click <code>+ PIN</code> on a data row, switch tabs, pin a second item, click "Connect → create inference," name the pattern, set a threat level, register. This is clever, but the current implementation has serious legibility problems that blunt its impact.
+    </div>
+
+    <div class="findings">
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-critical"></div>
+          <div class="finding-label">F-23 · The PIN affordance is invisible — there is no signal that data rows are interactive before you hover</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The <code>+ PIN</code> button is rendered as <code>color: var(--text-placeholder)</code> — the dimmest text in the design system. It only appears on hover (via the table row hover state). A player who doesn't happen to hover over the right column at the right time will never discover the mechanic, even after the tutorial. The tutorial itself requires guiding the player to the exact right interaction.
+          </div>
+          <div class="finding-rec rose">
+            <strong>Recommendation</strong>
+            Make PIN buttons always visible at low opacity (not hover-only), with a subtle <code>◆</code> icon rather than text. On hover, the icon brightens and a tooltip appears: "Pin this data point to build an inference." This creates ambient discoverability — the player sees the interactivity without being overwhelmed.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-critical"></div>
+          <div class="finding-label">F-24 · Pinned items are not visible when you switch tabs — you can't see your evidence chain while building it</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            In the current implementation, pinned items are tracked in state but have no persistent visual presence in the center panel. When you pin an item on the Health tab and switch to Location to pin a second, the first pinned item is invisible. The player has to remember what they pinned — there's no spatial anchor for the emerging evidence chain.
+          </div>
+          <div class="finding-rec">
+            <strong>Recommendation</strong>
+            Show a persistent "pinned items" strip at the top of the center panel (not bottom-sticky, which competes with the connect bar). Each pin gets a small chip showing its domain color and a truncated label. This strip is always visible across tab switches, so the player sees their accumulating evidence chain as they navigate. The connect bar then naturally appears below this strip when pins from 2+ domains exist.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-25 · The Pattern Registry modal undersells the moral weight of what the player is doing</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The modal is functional: evidence chain, name field, threat level selector, warning text, register button. But the warning text ("This pattern will be applied to all future citizens automatically") is in muted <code>var(--text-muted)</code> color inside a neutral container. The most important sentence in the entire game is displayed as fine print.
+          </div>
+          <div class="finding-rec amber">
+            <strong>Recommendation</strong>
+            The warning block deserves its own visual treatment — a distinct amber border, slightly brighter text, and a specific line: <em>"All future detentions triggered by this rule will be filed under your operator ID."</em> The word "your" should be in the operator's actual code (e.g., <code>SYS-OP-001</code>), making it personal. The register button text could be more precise: <em>"REGISTER PATTERN — I accept responsibility"</em> or simply a two-step confirm, with the second confirmation showing an estimated number of citizens this rule would already flag.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-26 · After registration, the new rule appears in the inference panel with no ceremony — the causal chain is invisible</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            After clicking Register, the modal closes and the inference panel below silently gains a new row tagged "YOUR RULE." The player has no moment of seeing that their pattern just evaluated against the current citizen and found a match — or didn't. The feedback loop between "I created this rule" and "this rule is now running" is broken.
+          </div>
+          <div class="finding-rec green">
+            <strong>Recommendation</strong>
+            On registration, briefly flash the new inference row (0.6s amber highlight animation) to draw the eye to it. The row should say "NEW — just registered" for a few seconds. If the new rule immediately produces a hit on the current citizen, show a subtle notification: "Your new pattern triggered a match on this citizen." This makes the player feel the rule's power immediately.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────── S6c ── -->
+  <div class="section" id="s6c">
+    <div class="section-header">
+      <span class="section-num">06c</span>
+      <span class="section-title">News Feed</span>
+      <span class="section-tag tag-high">High</span>
+    </div>
+
+    <div class="callout">
+      The news feed is the game's mirror — it shows the player what their flags look like from outside the system. It has five channels with distinct political stances, triggered and background articles, and a ticker. But the current implementation makes this feel like a secondary screen rather than a haunting consequence surface.
+    </div>
+
+    <div class="findings">
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-critical"></div>
+          <div class="finding-label">F-27 · All five channels report the same flagging event with nearly identical headlines — the player cannot feel the editorial divergence</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            In the Week 1 news screenshot, five articles appear for the same flagging event. Four of them start with either "6 residents detained" or "5 flagged in week 1 under 'Recidivism Risk — Location Pattern'." The only differentiation is the stance badge (CRITICAL / INDEPENDENT / STATE) and minor phrasing changes. A player scanning the feed sees a wall of near-identical text — the editorial perspective that gives each channel its power is buried in the body text nobody reads.
+          </div>
+          <div class="finding-rec rose">
+            <strong>Recommendation</strong>
+            Make the editorial stance visible at the headline level. The same event should produce headlines that feel like they come from different worlds: The Tribune: <em>"Residents Detained Without Charge Under Secret Scoring System"</em> vs. State Bulletin: <em>"Civic Harmony Platform Neutralises Six High-Risk Individuals in First Week."</em> These headlines should be written as opposites — the player should immediately see the framing divergence without reading the body. This is the feed's entire argument about media and surveillance.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-high"></div>
+          <div class="finding-label">F-28 · The news feed has no sense of escalation or accumulation over time</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            The feed shows articles as a flat chronological list. There is no visual difference between a week-1 article and a week-7 article. The accumulation of coverage — from local murmurs to international condemnation — is communicated only through the metric tier labels, not through the feed itself. A player who opens the news feed at Week 7 sees a long list that doesn't feel qualitatively different from Week 1.
+          </div>
+          <div class="finding-rec amber">
+            <strong>Recommendation</strong>
+            Group articles by week with a header that shows the current awareness tier: <em>"WEEK 3 · NATIONAL COVERAGE"</em> → <em>"WEEK 6 · INTERNATIONAL COVERAGE."</em> As the tier rises, the header style escalates (larger, redder, more urgent). The player should be able to scroll back through the feed and see the moment their actions crossed thresholds — when the coverage changed register. This is a low-effort, high-payoff change.
+          </div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-head">
+          <div class="finding-icon icon-med"></div>
+          <div class="finding-label">F-29 · The feed is navigated separately from the case review — there is no ambient news presence during work</div>
+        </div>
+        <div class="finding-body">
+          <div class="finding-desc">
+            To read the news, the player must switch from Case Review to News Feed — leaving their work entirely. The ticker provides ambient headlines, but it's 11px monospace text at the very bottom of the screen that most players will ignore. The result is that news and case review feel like separate activities, when the design intent is that news coverage should haunt the player while they work.
+          </div>
+          <div class="finding-rec">
+            <strong>Recommendation</strong>
+            Add a collapsible news panel to the right sidebar — a compact version showing the 2–3 most recent headlines with stance badges, sitting below Alerts. Clicking a headline opens the full article as a modal overlay on the case review screen. This keeps the player in their workflow while surfacing consequences. The ticker remains for background ambience but is no longer the sole ambient signal.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ───────────────────────────────── S8 ── -->
+  <div class="section" id="s8">
+    <div class="section-header">
+      <span class="section-num">08</span>
+      <span class="section-title">Priority Matrix — All Findings</span>
+      <span class="section-tag tag-low">Summary</span>
+    </div>
+
+    <div class="callout">
+      Sorted by design-thesis impact × implementation effort. "High thesis impact" means the change directly strengthens the game's argument about surveillance, complicity, or normalization.
+    </div>
+
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Finding</th>
+          <th>Thesis Impact</th>
+          <th>Effort</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>F-09</code></td>
+          <td>Flagged citizens disappear — no mid-game consequence trace</td>
+          <td><span class="sev sev-c">Critical</span></td>
+          <td><span class="effort">Medium</span></td>
+          <td><span class="sev sev-c">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>F-13</code></td>
+          <td>Risk scores in queue allow quota-gaming without moral engagement</td>
+          <td><span class="sev sev-c">Critical</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-c">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>F-06</code></td>
+          <td>Educational notes buried in expand rows</td>
+          <td><span class="sev sev-c">Critical</span></td>
+          <td><span class="effort">Medium</span></td>
+          <td><span class="sev sev-c">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>F-18</code></td>
+          <td>Bot approval is a rubber-stamp — seduction not realized in UX</td>
+          <td><span class="sev sev-c">Critical</span></td>
+          <td><span class="effort">Medium</span></td>
+          <td><span class="sev sev-c">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>F-15</code></td>
+          <td>Flag type selection has no consequence gradient</td>
+          <td><span class="sev sev-h">High</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-h">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>F-11</code></td>
+          <td>Shift memo carries too much — split moral + operational content</td>
+          <td><span class="sev sev-h">High</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-h">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>F-07</code></td>
+          <td>Rule origin not visually salient — who wrote this rule?</td>
+          <td><span class="sev sev-h">High</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-h">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>F-05</code></td>
+          <td>All inference rows same visual weight regardless of severity</td>
+          <td><span class="sev sev-h">High</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-h">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>F-10</code></td>
+          <td>Compliance score is abstract — add institutional voice</td>
+          <td><span class="sev sev-h">High</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-h">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>F-01</code></td>
+          <td>Right sidebar hierarchy collapse — directive lost in noise</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-h">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>F-12</code></td>
+          <td>Hesitation timer invisible — add diegetic review clock</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-m">P2</span></td>
+        </tr>
+        <tr>
+          <td><code>F-02</code></td>
+          <td>Inference panel below large empty space — restructure as drawer</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">High</span></td>
+          <td><span class="sev sev-m">P2</span></td>
+        </tr>
+        <tr>
+          <td><code>F-08</code></td>
+          <td>Cross-domain inference callout is a footnote</td>
+          <td><span class="sev sev-h">High</span></td>
+          <td><span class="effort">Medium</span></td>
+          <td><span class="sev sev-m">P2</span></td>
+        </tr>
+        <tr>
+          <td><code>F-17</code></td>
+          <td>Flag submission has no transition or weight</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-m">P2</span></td>
+        </tr>
+        <tr>
+          <td><code>F-16</code></td>
+          <td>"No Action" reads as cancel, not a meaningful decision</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-m">P2</span></td>
+        </tr>
+        <tr>
+          <td><code>F-20</code></td>
+          <td>Start screen is functional but misses normalization opportunity</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-m">P2</span></td>
+        </tr>
+        <tr>
+          <td><code>F-21</code></td>
+          <td>Tutorial doesn't ground the first flag in real consequence</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-m">P2</span></td>
+        </tr>
+        <tr>
+          <td><code>F-14</code></td>
+          <td>Queue has no sense of backlog pressure or volume weight</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-m">P2</span></td>
+        </tr>
+        <tr>
+          <td><code>F-03</code></td>
+          <td>Topbar too dense — quota counter not prominent enough</td>
+          <td><span class="sev sev-l">Low</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-l">P3</span></td>
+        </tr>
+        <tr>
+          <td><code>F-04</code></td>
+          <td>No persistent narrative time label in the UI</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-l">P3</span></td>
+        </tr>
+        <tr>
+          <td><code>F-19</code></td>
+          <td>Bot confidence percentages don't feel like theater</td>
+          <td><span class="sev sev-l">Low</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-l">P3</span></td>
+        </tr>
+        <tr>
+          <td><code>F-22</code></td>
+          <td>Pin affordance is invisible without tutorial</td>
+          <td><span class="sev sev-l">Low</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-l">P3</span></td>
+        </tr>
+        <tr>
+          <td><code>F-23</code></td>
+          <td>PIN button invisible — no ambient discoverability of inference creation</td>
+          <td><span class="sev sev-c">Critical</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-c">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>F-24</code></td>
+          <td>Pinned items disappear on tab switch — evidence chain has no spatial anchor</td>
+          <td><span class="sev sev-c">Critical</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-c">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>F-27</code></td>
+          <td>News feed headlines too similar — editorial stance invisible at a glance</td>
+          <td><span class="sev sev-c">Critical</span></td>
+          <td><span class="effort">Medium</span></td>
+          <td><span class="sev sev-c">P0</span></td>
+        </tr>
+        <tr>
+          <td><code>F-25</code></td>
+          <td>Pattern Registry modal warning text is fine print — undersells player responsibility</td>
+          <td><span class="sev sev-h">High</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-h">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>F-26</code></td>
+          <td>No feedback after rule registration — causal chain invisible</td>
+          <td><span class="sev sev-h">High</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-h">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>F-28</code></td>
+          <td>News feed has no escalation grouping — Week 7 looks the same as Week 1</td>
+          <td><span class="sev sev-h">High</span></td>
+          <td><span class="effort">Low</span></td>
+          <td><span class="sev sev-h">P1</span></td>
+        </tr>
+        <tr>
+          <td><code>F-29</code></td>
+          <td>News is siloed from case review — consequences don't haunt the work screen</td>
+          <td><span class="sev sev-m">Medium</span></td>
+          <td><span class="effort">Medium</span></td>
+          <td><span class="sev sev-m">P2</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:40px; padding-top:24px; border-top:1px solid var(--border);">
+      <p style="font-family:var(--mono); font-size:11px; color:var(--text-dim); line-height:1.8;">
+        P0 = Undermines design thesis if unresolved · P1 = Strong improvement, low risk · P2 = Quality-of-life, implement when able · P3 = Polish, nice to have
+      </p>
+    </div>
+  </div>
+
+  <div style="text-align:center; padding-top:32px; border-top:1px solid var(--border);">
+    <a class="back" href="#top">↑ Back to top</a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,10 +1,25 @@
 import type { FinanceRecord } from '@/types/citizen'
+import type { PinnedDataPoint } from '@/types/content'
 
 interface FinanceTabProps {
   finance: FinanceRecord
+  onPin: (point: PinnedDataPoint) => void
+  pinnedIds: string[]
 }
 
-export function FinanceTab({ finance }: FinanceTabProps) {
+const pinBtnStyle = (pinned: boolean): React.CSSProperties => ({
+  fontFamily: 'var(--font-mono)',
+  fontSize: 9,
+  cursor: 'pointer',
+  background: 'transparent',
+  border: `1px solid ${pinned ? 'var(--color-amber)' : 'var(--border-subtle)'}`,
+  color: pinned ? 'var(--color-amber)' : 'var(--text-muted)',
+  padding: '1px 5px',
+  letterSpacing: '0.04em',
+  verticalAlign: 'middle',
+})
+
+export function FinanceTab({ finance, onPin, pinnedIds }: FinanceTabProps) {
   return (
     <div data-testid="finance-tab" style={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}>
       <div style={{ marginBottom: 8 }}>
@@ -77,17 +92,37 @@ export function FinanceTab({ finance }: FinanceTabProps) {
                 <th>Creditor</th>
                 <th>Amount</th>
                 <th>Status</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              {finance.debts.map((d, i) => (
-                <tr key={i} style={d.delinquent ? { color: 'var(--color-red)' } : undefined}>
-                  <td>{d.type}</td>
-                  <td>{d.creditor}</td>
-                  <td>${d.amount.toLocaleString()}</td>
-                  <td>{d.delinquent ? 'DELINQUENT' : 'Current'}</td>
-                </tr>
-              ))}
+              {finance.debts.map((d, i) => {
+                const id = `debt_${i}`
+                const pinned = pinnedIds.includes(id)
+                return (
+                  <tr key={i} style={d.delinquent ? { color: 'var(--color-red)' } : undefined}>
+                    <td>{d.type}</td>
+                    <td>{d.creditor}</td>
+                    <td>${d.amount.toLocaleString()}</td>
+                    <td>{d.delinquent ? 'DELINQUENT' : 'Current'}</td>
+                    <td>
+                      <button
+                        data-testid={`pin-finance-debt-${i}`}
+                        style={pinBtnStyle(pinned)}
+                        aria-pressed={pinned}
+                        onClick={() => onPin({
+                          id,
+                          domain: 'finance',
+                          label: `${d.type} — ${d.creditor} $${d.amount.toLocaleString()}`,
+                          category: 'debt',
+                        })}
+                      >
+                        {pinned ? '● Pinned' : '○ Pin'}
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </>

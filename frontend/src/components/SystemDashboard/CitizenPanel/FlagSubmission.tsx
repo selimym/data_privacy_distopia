@@ -34,7 +34,7 @@ export function FlagSubmission({ citizenId, isVisible, inferenceResults }: FlagS
     if (!canSubmit || selectedType === null) return
     const findings = inferenceResults.map(r => r.rule_key)
     const justification = findings.join(', ')
-    submitFlag(citizenId, selectedType, justification, findings)
+    submitFlag(citizenId, selectedType, justification, findings, inferenceResults)
     setSelectedType(null)
   }
 

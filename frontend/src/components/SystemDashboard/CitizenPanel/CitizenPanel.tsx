@@ -9,10 +9,12 @@ import { calculateRiskScore } from '@/services/RiskScorer'
 import type { CitizenProfile } from '@/types/citizen'
 import type { InferenceResult } from '@/types/citizen'
 import type { DomainKey } from '@/types/game'
+import type { PinnedDataPoint } from '@/types/content'
 import { DataDomainTabs } from './DataDomainTabs'
 import { InferencePanel } from './InferencePanel'
 import { FlagSubmission } from './FlagSubmission'
 import { AutoFlagDecisionPanel } from './AutoFlagDecisionPanel'
+import { CreateInferenceModal } from './CreateInferenceModal'
 
 export function CitizenPanel() {
   const { t } = useTranslation()
@@ -33,6 +35,8 @@ export function CitizenPanel() {
   const [inferenceResults, setInferenceResults] = useState<InferenceResult[]>([])
   const [activeTab, setActiveTab] = useState<DomainKey | 'identity'>('identity')
   const [visitedTabs, setVisitedTabs] = useState<Set<DomainKey>>(new Set())
+  const [pinnedPoints, setPinnedPoints] = useState<PinnedDataPoint[]>([])
+  const [showCreateInference, setShowCreateInference] = useState(false)
   const epsteinEndingTriggered = useRef(false)
 
   useEffect(() => {
@@ -45,7 +49,6 @@ export function CitizenPanel() {
     let cancelled = false
     setIsLoading(true)
     setProfile(null)
-    setInferenceResults([])
     setActiveTab('identity')
     setVisitedTabs(new Set())
     epsteinEndingTriggered.current = false
@@ -56,21 +59,9 @@ export function CitizenPanel() {
       .then(loadedProfile => {
         if (cancelled) return
         setProfile(loadedProfile)
-
-        // Run inference engine
-        const engine = new InferenceEngine(inferenceRules)
-        const unlockedSet = new Set(unlockedDomains as DomainKey[])
-        const results = engine.evaluate(loadedProfile, unlockedSet, country)
-        setInferenceResults(results)
-
-        // Run risk scoring and update cache
-        const riskAssessment = calculateRiskScore(loadedProfile, results, unlockedSet)
-        useCitizenStore.getState().updateSkeletonCache(selectedCitizenId, riskAssessment.score)
       })
       .catch(() => {
-        if (!cancelled) {
-          setProfile(null)
-        }
+        if (!cancelled) setProfile(null)
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)
@@ -79,7 +70,45 @@ export function CitizenPanel() {
     return () => {
       cancelled = true
     }
-  }, [selectedCitizenId, dataBanks, country, inferenceRules, unlockedDomains, getProfile, startDecisionTimer])
+  // tutorialStep intentionally excluded: we only read it once when a new citizen is selected
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCitizenId, dataBanks, country, getProfile, startDecisionTimer])
+
+  // Re-run inference when profile or rules change — no full reload, no flicker
+  useEffect(() => {
+    if (!profile || !country) {
+      setInferenceResults([])
+      return
+    }
+    const engine = new InferenceEngine(inferenceRules)
+    const unlockedSet = new Set(unlockedDomains as DomainKey[])
+    const results = engine.evaluate(profile, unlockedSet, country)
+    setInferenceResults(results)
+
+    const riskAssessment = calculateRiskScore(profile, results, unlockedSet)
+    if (selectedCitizenId) {
+      useCitizenStore.getState().updateSkeletonCache(selectedCitizenId, riskAssessment.score)
+    }
+  }, [profile, inferenceRules, unlockedDomains, country, selectedCitizenId])
+
+  // Reset pins when the selected citizen changes
+  useEffect(() => {
+    setPinnedPoints([])
+    setShowCreateInference(false)
+  }, [selectedCitizenId])
+
+  const handlePin = (point: PinnedDataPoint) => {
+    setPinnedPoints((prev) => {
+      const exists = prev.find((p) => p.id === point.id && p.domain === point.domain)
+      if (exists) return prev.filter((p) => !(p.id === point.id && p.domain === point.domain))
+      return [...prev, point]
+    })
+  }
+
+  const handleClearPins = () => setPinnedPoints([])
+
+  const uniquePinnedDomains = new Set(pinnedPoints.map((p) => p.domain))
+  const canConnect = pinnedPoints.length >= 2 && uniquePinnedDomains.size >= 2
 
   const hasBotDecision = selectedCitizenId !== null &&
     pendingBotDecisions.some(d => d.citizen_id === selectedCitizenId)
@@ -154,6 +183,8 @@ export function CitizenPanel() {
               profile={profile}
               unlockedDomains={unlockedDomains}
               activeTab={activeTab}
+              pinnedPoints={pinnedPoints}
+              onPin={handlePin}
               onTabChange={(tab) => {
                 setActiveTab(tab)
                 if (tab !== 'identity') {
@@ -175,6 +206,52 @@ export function CitizenPanel() {
               }}
             />
           </div>
+
+          {/* Pin connect bar */}
+          {canConnect && (
+            <div style={{ flexShrink: 0, padding: '6px 12px', background: 'var(--bg-surface)', borderTop: '1px solid var(--border-subtle)' }}>
+              <button
+                data-testid="connect-evidence-btn"
+                onClick={() => setShowCreateInference(true)}
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  letterSpacing: '0.06em',
+                  cursor: 'pointer',
+                  background: 'var(--color-amber)',
+                  color: 'var(--bg-primary)',
+                  border: 'none',
+                  padding: '4px 10px',
+                }}
+              >
+                Connect {pinnedPoints.length} items → create inference
+              </button>
+              <button
+                data-testid="clear-pins-btn"
+                onClick={handleClearPins}
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 10,
+                  letterSpacing: '0.06em',
+                  cursor: 'pointer',
+                  background: 'transparent',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border-subtle)',
+                  padding: '4px 8px',
+                  marginLeft: 8,
+                }}
+              >
+                Clear pins
+              </button>
+            </div>
+          )}
+          {showCreateInference && (
+            <CreateInferenceModal
+              pinnedPoints={pinnedPoints}
+              onClose={() => setShowCreateInference(false)}
+              onCreated={handleClearPins}
+            />
+          )}
 
           {/* Divider */}
           <div style={{ height: 2, background: 'var(--border-default)', flexShrink: 0 }} />

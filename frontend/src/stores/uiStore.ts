@@ -148,7 +148,7 @@ export const useUIStore = create<UIState>((set, get) => ({
     const { tutorialStep } = get()
     if (tutorialStep === null) return
     const next = tutorialStep + 1
-    set({ tutorialStep: next > 3 ? null : next })
+    set({ tutorialStep: next > 4 ? null : next })
   },
 
   skipTutorial: () => {

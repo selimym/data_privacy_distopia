@@ -14,6 +14,18 @@ interface InferencePanelProps {
   isProtectedCitizen?: boolean
 }
 
+const ORIGIN_LABELS: Record<string, string> = {
+  legacy: 'LEGACY SYSTEM',
+  player: 'YOUR RULE',
+  system: 'ML PIPELINE',
+}
+
+const ORIGIN_COLORS: Record<string, string> = {
+  legacy: '#6b7280',
+  player: '#2563eb',
+  system: '#7c3aed',
+}
+
 function formatCategory(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
@@ -121,7 +133,24 @@ export function InferencePanel({ results, isLoading, visitedTabs, unlockedDomain
                   onClick={() => setExpandedKey(expandedKey === r.rule_key ? null : r.rule_key)}
                 >
                   <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatCategory(r.category)}</td>
-                  <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.rule_name}</td>
+                  <td style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {r.origin && (
+                      <span
+                        data-testid={`inference-origin-badge-${r.rule_key}`}
+                        style={{
+                          color: ORIGIN_COLORS[r.origin] ?? '#6b7280',
+                          fontSize: '0.6rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.08em',
+                          marginRight: 6,
+                          verticalAlign: 'middle',
+                        }}
+                      >
+                        {ORIGIN_LABELS[r.origin]}
+                      </span>
+                    )}
+                    {r.rule_name}
+                  </td>
                   <td>
                     <Badge variant={scarinessVariant(r.scariness_level)}>
                       {scarinessLabel(r.scariness_level)}
