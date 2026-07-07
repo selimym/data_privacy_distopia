@@ -46,6 +46,8 @@ await page.evaluate(() => {
 ```
 Use injection to *arrange*, never to *assert the journey*: at least one test per mechanic must reach it through real clicks, or you've only proven the store works, not that a player can get there.
 
+Gotchas: `__stores` entries are **`getState` functions** (GameOrchestrator overwrites the hook-based version from `stores/index.ts`) — `w.__stores['game'].setState(...)` throws. Mutate state through store *actions* only; if no action reaches the state you need (e.g. `autoFlagState.is_available`), drive the real path instead — loop `advanceDirective(next)` + `ui.closeModal()` per week (see `22-system-rule-absorption.spec.ts`). Advancing with quota shortfalls is safe: terminal endings are only checked on flag submission or game end.
+
 ## Boot Sequence (copy verbatim)
 
 ```ts
